@@ -148,7 +148,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
             {lesson.grand ? 'Bu nota hangisi? Üst porte sağ el, alt porte sol el.' : 'Bu nota hangisi? Klavyede bas!'}
           </p>
           {combo >= 3 && (
-            <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={combo}>
+            <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={`c${combo}`}>
               🔥 {combo} doğru üst üste{combo % COMBO_STEP === 0 ? '!' : ''}
             </p>
           )}

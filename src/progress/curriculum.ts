@@ -1,3 +1,4 @@
+import { CHORD_LESSONS } from '../games/chords/lessons'
 import { BASS_KEYBOARD, BASS_LESSONS } from '../games/noteHunter/bassLessons'
 import { GRAND_KEYBOARD, HANDS_LESSONS } from '../games/noteHunter/handsLessons'
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
@@ -60,8 +61,7 @@ export const UNITS: Unit[] = [
     title: 'Ünite 6: Akorlar',
     subtitle: 'Üçlüler, çevrimler, arpejler',
     color: '#ff9600',
-    lessons: [],
-    comingSoon: true,
+    lessons: CHORD_LESSONS,
   },
 ]
 

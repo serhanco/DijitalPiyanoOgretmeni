@@ -22,6 +22,12 @@ export interface LessonOutcome {
   rhythm?: boolean
   /** Tempo merdiveni: every round passed, so the starting tempo went up. */
   tempoRaised?: boolean
+  /** Chord lessons: `firstTry` counts chords. */
+  chords?: boolean
+  /** Chord lessons: every chord played had its notes within TOGETHER_MS (at least five chords). */
+  allTogether?: boolean
+  /** Arcade games: no target got away (no invader landed, no dish burnt). */
+  noneMissed?: boolean
 }
 
 export interface XpLine {
@@ -30,7 +36,11 @@ export interface XpLine {
 }
 
 export function xpFor(outcome: LessonOutcome): XpLine[] {
-  const label = outcome.rhythm ? 'Vuruşunda çalınan notalar' : 'İlk denemede doğru notalar'
+  const label = outcome.rhythm
+    ? 'Vuruşunda çalınan notalar'
+    : outcome.chords
+      ? 'İlk denemede doğru akorlar'
+      : 'İlk denemede doğru notalar'
   const lines: XpLine[] = [{ label, xp: outcome.firstTry * XP_PER_FIRST_TRY }]
   if (outcome.failed) return lines
   lines.push({ label: 'Ders tamamlandı', xp: XP_LESSON_COMPLETE })
@@ -102,6 +112,7 @@ export interface BadgeContext {
   allTrebleLessonIds: string[]
   allBassLessonIds: string[]
   allScaleLessonIds?: string[]
+  allChordLessonIds?: string[]
 }
 
 export interface Badge {
@@ -200,6 +211,41 @@ export const BADGES: Badge[] = [
     description: 'Bir Tempo Merdiveni’nin bütün turlarını geç ve tempoyu yükselt',
     icon: '🚄',
     earned: (c) => !!c.outcome.tempoRaised,
+  },
+  {
+    id: 'chef',
+    title: 'Akor Şefi',
+    description: 'Bir Akor Aşçısı dersini %90 üstü doğrulukla bitir',
+    icon: '👨‍🍳',
+    earned: (c) => c.outcome.lessonId.startsWith('chord-chef') && !c.outcome.failed && c.outcome.accuracy >= 0.9,
+  },
+  {
+    id: 'space',
+    title: 'Uzay Kahramanı',
+    description: 'Uzay Savunması’nda hiç can kaybetmeden bütün istilacıları vur',
+    icon: '🛸',
+    earned: (c) => c.outcome.lessonId.startsWith('chord-space') && !c.outcome.failed && !!c.outcome.noneMissed,
+  },
+  {
+    id: 'surfer',
+    title: 'Sörf Ustası',
+    description: 'Bir Arpej Sörfü dersini %90 üstü zamanlamayla bitir',
+    icon: '🏄',
+    earned: (c) => c.outcome.lessonId.startsWith('surf') && !c.outcome.failed && c.outcome.accuracy >= 0.9,
+  },
+  {
+    id: 'together',
+    title: 'Tek Hamlede',
+    description: 'Bir akor dersinde bütün akorların notalarına aynı anda bas',
+    icon: '🤲',
+    earned: (c) => !c.outcome.failed && !!c.outcome.allTogether,
+  },
+  {
+    id: 'chord-master',
+    title: 'Akor Ustası',
+    description: 'Akorlar ünitesindeki tüm dersleri 3 yıldızla bitir',
+    icon: '👑',
+    earned: (c) => !!c.allChordLessonIds?.length && c.allChordLessonIds.every((id) => c.threeStarLessons.includes(id)),
   },
   {
     id: 'scale-master',

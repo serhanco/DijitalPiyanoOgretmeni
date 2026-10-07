@@ -8,19 +8,20 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 
 ## Durum
 
-| Faz                                           | Durum            |
-| --------------------------------------------- | ---------------- |
-| 0 Altyapı                                     | Birleşti (PR #1) |
-| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1) |
-| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2) |
-| 3 Karakterler ve animasyon                    | Birleşti (PR #3) |
-| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4) |
-| 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5) |
-| Cila turu (Faz 5 sonrası)                     | Birleşti (PR #6) |
-| 6 Fa anahtarı ve iki el                       | Birleşti (PR #7) |
-| 7 Gamlar                                      | Birleşti (PR #9) |
-| Faz 7 iyileştirmeleri                         | PR #10           |
-| 8 ve sonrası                                  | Başlanmadı       |
+| Faz                                           | Durum             |
+| --------------------------------------------- | ----------------- |
+| 0 Altyapı                                     | Birleşti (PR #1)  |
+| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1)  |
+| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2)  |
+| 3 Karakterler ve animasyon                    | Birleşti (PR #3)  |
+| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4)  |
+| 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5)  |
+| Cila turu (Faz 5 sonrası)                     | Birleşti (PR #6)  |
+| 6 Fa anahtarı ve iki el                       | Birleşti (PR #7)  |
+| 7 Gamlar                                      | Birleşti (PR #9)  |
+| Faz 7 iyileştirmeleri                         | Birleşti (PR #10) |
+| 8 Akorlar, çevrimler, arpejler                | PR #11            |
+| 9 ve sonrası                                  | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -159,6 +160,14 @@ geçişleri, eşit tempo, el başına başarı ve iki el uyumu (ms). Plan:
   Piyano sesi yüklenemezse tuşlar yine yanar.
 
 ### Faz 8 — Akorlar, çevrimler, arpejler
+
+Yapılan: Ünite 6, 20 ders. Akorlar 350 ms içinde basılan (ya da birlikte tutulan) tuşlardan algılanır; bütün notalar
+inince değerlendirilir, ilk ve son nota arası 100 ms içindeyse "aynı anda" sayılır. Majör, minör üçlüler, sol elle
+akorlar, kök durum ve iki çevrim, yedili akorlar (Sol7, Do Majör 7, Re Minör 7…), I–IV–V–I, I–V–vi–IV ve I–IV–V7–I
+ilerlemeleri (çevrimler en az hareketle seçilir; iki elde sol el kök notayı çalar), tek ve iki elle arpejler (1-2-3-5,
+iki oktavda başparmak geçişi). Oyunlar: Akor Aşçısı, Uzay Savunması, Arpej Sörfü (3/4'te, tempo merdiveniyle). Rapor:
+akor ailesi, çevrim, el ve derece başına başarı, aynı anda basma oranı, geç kalan nota (bas, alt, üst), yanlış çevrim
+sayısı, en zayıf akorlar; arpejlerde parmak geçişleri ve eşit aralık. Plan:
 
 - Akor algılama (aynı anda basılan notaları pencere içinde gruplama)
 - Majör/minör üçlüler, sonra 7'li akorlar; akor çevrimleri (kök, 1. çevrim, 2. çevrim)

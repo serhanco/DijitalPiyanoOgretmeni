@@ -1,3 +1,4 @@
+import { type ChordSummary, LATE_VOICE_TEXT } from '../games/chords/report'
 import type { MemorySummary } from '../games/memory/engine'
 import { type NoteLesson, PATTERN_KINDS } from '../games/noteHunter/lessons'
 import type { ScaleSummary } from '../games/scales/steps'
@@ -132,19 +133,20 @@ function HandsCard({ hands, sync }: { hands?: HandStat[]; sync?: SyncSummary }) 
   )
 }
 
-/** Evenness of the scale and how the thumb crossings went. */
-function ScaleCard({ scale }: { scale: ScaleSummary }) {
+/** Evenness of the scale (or arpeggio) and how the thumb crossings went. */
+function ScaleCard({ scale, arpeggio }: { scale: ScaleSummary; arpeggio: boolean }) {
   const { evenness, meanIntervalMs, crossings } = scale
   const crossAcc = crossings.shown ? crossings.firstTry / crossings.shown : null
+  const what = arpeggio ? 'Arpejin' : 'Gamın'
   const advice =
     crossAcc !== null && crossAcc < 0.8
       ? 'Parmak geçişlerinde zorlanıyorsun: geçişten önceki notada başparmağını hazırla ve yavaş çal.'
       : evenness !== null && evenness < 0.7
-        ? 'Notalar arasındaki süre değişiyor. İçinden sayarak her notaya eşit süre ver, sonra Gam Merdiveni’nde metronomla dene.'
-        : 'Gamın düzgün akıyor. Bir sonraki adım: aynı eşitlikle biraz daha hızlı.'
+        ? `Notalar arasındaki süre değişiyor. İçinden sayarak her notaya eşit süre ver, sonra ${arpeggio ? 'Arpej Sörfü' : 'Gam Merdiveni'}’nde metronomla dene.`
+        : `${what} düzgün akıyor. Bir sonraki adım: aynı eşitlikle biraz daha hızlı.`
   return (
     <section className="card scale-card">
-      <h2>Gam tekniği</h2>
+      <h2>{arpeggio ? 'Arpej tekniği' : 'Gam tekniği'}</h2>
       <p className="small muted">
         {crossings.shown > 0 && (
           <>
@@ -159,6 +161,52 @@ function ScaleCard({ scale }: { scale: ScaleSummary }) {
         )}
       </p>
       <p className="small">{advice}</p>
+    </section>
+  )
+}
+
+/** How together the chords' notes came down, which note lags, and the chords to practise. */
+function ChordCard({ chords }: { chords: ChordSummary }) {
+  const share = chords.played ? chords.together / chords.played : null
+  const advice =
+    chords.inversionMistakes > 0
+      ? 'Çevrimlerde en alttaki notaya dikkat: kök durumda kök, 1. çevrimde üçlü, 2. çevrimde beşli en altta.'
+      : share !== null && share < 0.7
+        ? `Notalar doğru ama birlikte inmiyor${chords.lateVoice ? `; genelde ${LATE_VOICE_TEXT[chords.lateVoice]} geç geliyor` : ''}. Parmakları önce tuşların üstüne koy, sonra tek hareketle bas.`
+        : chords.lateVoice
+          ? `Dağınık basılan akorlarda genelde ${LATE_VOICE_TEXT[chords.lateVoice]} geç geliyor.`
+          : 'Akorların derli toplu iniyor. Sırada daha hızlı geçişler var.'
+  return (
+    <section className="card chord-card">
+      <h2>Akor tekniği</h2>
+      {share !== null && (
+        <p>
+          Çaldığın {chords.played} akorun <b>{chords.together}</b> tanesinde bütün notalar aynı anda indi ({pct(share)}
+          ).
+          {chords.meanSpreadMs !== null && (
+            <span className="small muted"> İlk ve son nota arası ortalama {Math.round(chords.meanSpreadMs)} ms.</span>
+          )}
+        </p>
+      )}
+      {(chords.inversionMistakes > 0 || chords.incomplete > 0) && (
+        <p className="small muted">
+          {chords.inversionMistakes > 0 && <>{chords.inversionMistakes} kez yanlış çevrim. </>}
+          {chords.incomplete > 0 && <>{chords.incomplete} kez akor yarım bırakıldı.</>}
+        </p>
+      )}
+      <p className="small">{advice}</p>
+      {chords.weakest.length > 0 && (
+        <>
+          <h3>Biraz daha çalışalım</h3>
+          <ul className="weak-list">
+            {chords.weakest.map((c) => (
+              <li key={c.name}>
+                <b>{c.name}</b>: {c.shown} kez çıktı, {c.firstTry} kez ilk denemede doğru
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   )
 }
@@ -386,7 +434,10 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
         ))}
       </section>
 
-      {summary.scale && <ScaleCard scale={summary.scale} />}
+      {summary.chords && <ChordCard chords={summary.chords} />}
+      {summary.scale && (
+        <ScaleCard scale={summary.scale} arpeggio={lesson.kind === 'arpeggio' || lesson.kind === 'surf'} />
+      )}
       {summary.memory && <MemoryCard memory={summary.memory} />}
       {summary.tempoLadder && <TempoLadderCard ladder={summary.tempoLadder} />}
 

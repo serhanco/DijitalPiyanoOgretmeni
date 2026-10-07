@@ -8,6 +8,7 @@ import {
   ladderPlan,
   ladderReport,
   PART_BEATS,
+  partTitle,
   runLength,
   scaleKeyboard,
   scaleReport,
@@ -141,7 +142,7 @@ describe('Gam Merdiveni plan', () => {
       track.update(100_000)
       return track.records
     })
-    const report = ladderReport(rounds, plan.meta, parts)
+    const report = ladderReport(rounds, plan.meta, parts.map(partTitle))
     expect(report.sync).toMatchObject({ pairs: 30, together: 30, meanLeadMs: 20 })
     expect(report.perCategory[0]).toMatchObject({ id: 'part-0', shown: 60 })
   })
@@ -157,7 +158,7 @@ describe('Gam Merdiveni plan', () => {
       expect(track.press(r.target, r.dueAt + late)[0].type).toBe('hit')
     }
     track.update(100_000)
-    const report = ladderReport([track.records], plan.meta, parts)
+    const report = ladderReport([track.records], plan.meta, parts.map(partTitle))
     expect(report.sync).toMatchObject({ pairs: 2, together: 2, meanLeadMs: 30 })
     expect(report.hands?.map((h) => h.shown)).toEqual([15, 15])
     expect(report.perCategory[0].id).toBe('part-0')

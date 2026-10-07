@@ -6,7 +6,8 @@ import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { MelodySession, paginate, parseMelodies, type Step, syncSummary } from '../games/melody/session'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
-import { partTitle, scaleKeyboard, scaleReport, scaleSteps, spelledNames } from '../games/scales/steps'
+import { arpeggioSteps, arpeggioTitle } from '../games/chords/arpeggio'
+import { partTitle, patternReport, scaleSteps, spelledNames, stepsKeyboard } from '../games/scales/steps'
 import { setComputerKeyboardBase } from '../input/computerKeyboard'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
@@ -41,16 +42,24 @@ function fingerTip(step: Step): { text: string; cross: boolean } | null {
 
 export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
   const { ignoreOctave, showKeyLabels, relaxedMode } = useSettings()
+  // Scales and arpeggios are runs of parts, each with its title.
+  const pattern = useMemo(
+    () =>
+      lesson.scales
+        ? { steps: scaleSteps(lesson.scales), titles: lesson.scales.map(partTitle) }
+        : lesson.arpeggios
+          ? { steps: arpeggioSteps(lesson.arpeggios), titles: lesson.arpeggios.map(arpeggioTitle) }
+          : null,
+    [lesson],
+  )
   const session = useMemo(
     () =>
       new MelodySession({
-        steps: lesson.scales
-          ? scaleSteps(lesson.scales)
-          : parseMelodies(lesson.melodies ?? [], lesson.grand ? undefined : lesson.clef),
+        steps: pattern?.steps ?? parseMelodies(lesson.melodies ?? [], lesson.grand ? undefined : lesson.clef),
         hearts: relaxedMode ? undefined : HEARTS_PER_LESSON,
         ignoreOctave,
       }),
-    [lesson, ignoreOctave, relaxedMode],
+    [lesson, pattern, ignoreOctave, relaxedMode],
   )
   const pages = useMemo(() => paginate(session.steps), [session])
   const names = useMemo(() => spelledNames(session.steps), [session])
@@ -92,9 +101,9 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
       let summary = summarize(session.attempted, lesson.clef, failed)
       const sync = syncSummary(session.stepRecords.filter((rs) => rs[0].shownAt !== null))
       if (sync) summary = { ...summary, sync }
-      if (lesson.scales) {
-        // Scales are reported per scale, at the crossings and by evenness, not by staff position.
-        const { perCategory, scale } = scaleReport(session.steps, session.stepRecords, lesson.scales)
+      if (pattern) {
+        // Scales and arpeggios are reported per part, at the crossings and by evenness, not by staff position.
+        const { perCategory, scale } = patternReport(session.steps, session.stepRecords, pattern.titles)
         summary = { ...summary, perCategory, scale, noteNames: Object.fromEntries(spelledNames(session.steps)) }
       }
       onFinishRef.current(summary)
@@ -146,7 +155,7 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
       unsubscribe()
       pending.forEach(clearTimeout)
     }
-  }, [session, lesson.clef, lesson.scales])
+  }, [session, lesson.clef, pattern])
 
   useEffect(() => {
     if (!flash.length) return
@@ -165,13 +174,14 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
   )
   const pending = done ? [] : session.steps[position].notes.map((n) => n.midi).filter((m) => !hit.includes(m))
   const partIndex = page.steps[0].melody
-  const melodyTitle = lesson.scales?.[partIndex]
-    ? partTitle(lesson.scales[partIndex])
-    : lesson.melodies?.[partIndex]?.title
+  const melodyTitle = pattern ? pattern.titles[partIndex] : lesson.melodies?.[partIndex]?.title
   const twoKeys = !done && session.steps[position].notes.length > 1
   const tip = done ? null : fingerTip(session.steps[position])
-  // Scales: only the current scale's keys, so a lesson spanning four octaves stays playable on a phone.
-  const keyboard = lesson.scales?.[partIndex] ? scaleKeyboard([lesson.scales[partIndex]]) : lesson.keyboard
+  // Scales and arpeggios: only the current part's keys, so a lesson spanning four octaves stays playable on a phone.
+  const keyboard = useMemo(
+    () => (pattern ? stepsKeyboard(pattern.steps.filter((s) => s.melody === partIndex)) : lesson.keyboard),
+    [pattern, partIndex, lesson.keyboard],
+  )
   useEffect(() => setComputerKeyboardBase(keyboard.low), [keyboard.low])
 
   const marks: Partial<Record<number, KeyMark>> = {}
@@ -218,7 +228,7 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
             </p>
           )}
           {combo >= 3 && (
-            <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={combo}>
+            <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={`c${combo}`}>
               🔥 {combo} doğru üst üste{combo % COMBO_STEP === 0 ? '!' : ''}
             </p>
           )}
