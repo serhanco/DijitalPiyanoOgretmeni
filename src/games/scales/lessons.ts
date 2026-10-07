@@ -1,8 +1,17 @@
 import { parseTonic, type ScaleType, scaleOctave } from '../../music/scales'
+import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
 import type { NoteLesson } from '../noteHunter/lessons'
 import { PART_BEATS, type ScalePart, scaleKeyboard } from './steps'
 
-const part = (tonic: string, type: ScaleType, hands: ScalePart['hands']): ScalePart => ({ tonic, type, hands })
+const part = (tonic: string, type: ScaleType, hands: ScalePart['hands'], octaves: 1 | 2 = 1): ScalePart => ({
+  tonic,
+  type,
+  hands,
+  ...(octaves === 2 && { octaves }),
+})
+
+/** Three rounds, 12 BPM faster each: 60 → 72 → 84. */
+const TEMPO_LADDER: TempoLadderSpec = { rounds: 3, stepBpm: 12 }
 
 /** A scale lesson read from the staff, with fingers and crossings, at the player's own pace. */
 function scaleLesson(id: string, title: string, description: string, scales: ScalePart[]): NoteLesson {
@@ -20,12 +29,25 @@ function scaleLesson(id: string, title: string, description: string, scales: Sca
   }
 }
 
-/** Gam Merdiveni: the same scales on the metronome, one note per beat. */
-function ladderLesson(id: string, title: string, description: string, bpm: number, scales: ScalePart[]): NoteLesson {
+/** Gam Merdiveni: the same scales on the metronome, one note per beat; with `tempoLadder`, again faster. */
+function ladderLesson(
+  id: string,
+  title: string,
+  description: string,
+  bpm: number,
+  scales: ScalePart[],
+  tempoLadder?: TempoLadderSpec,
+): NoteLesson {
   return {
     ...scaleLesson(id, title, description, scales),
     kind: 'ladder',
-    rhythm: { bpm, beatsPerBar: 4, bars: (scales.length * PART_BEATS) / 4, values: ['q'] },
+    rhythm: {
+      bpm,
+      beatsPerBar: 4,
+      bars: (scales.length * PART_BEATS) / 4,
+      values: ['q'],
+      ...(tempoLadder && { tempoLadder }),
+    },
   }
 }
 
@@ -38,6 +60,7 @@ function memoryLesson(
   type: ScaleType,
   octave: number,
   maxLength: number,
+  listenOnly = false,
 ): NoteLesson {
   const notes = scaleOctave(parseTonic(tonic), type, octave).map((n) => n.midi)
   return {
@@ -49,13 +72,15 @@ function memoryLesson(
     notes,
     length: 0,
     keyboard: { low: notes[0] - (notes[0] % 12), high: notes[notes.length - 1] },
-    memory: { startLength: 3, maxLength },
+    memory: { startLength: 3, maxLength, ...(listenOnly && { listenOnly }) },
   }
 }
 
 /**
  * Unit 5: scales. Right hand, then left hand, then both hands in parallel
- * and contrary motion; majors first, then the three minors.
+ * and contrary motion; majors first, then the three minors. The last six
+ * lessons go further: tempo ladders, the four-finger fingerings of B and E♭,
+ * two octaves, and memory by ear.
  */
 export const SCALE_LESSONS: NoteLesson[] = [
   scaleLesson('scale-c-right', 'Do Majör', 'Sağ el; parmak numaralarını takip et', [part('C', 'major', 'right')]),
@@ -114,4 +139,35 @@ export const SCALE_LESSONS: NoteLesson[] = [
     part('A', 'harmonic', 'right'),
     part('E', 'harmonic', 'right'),
   ]),
+  ladderLesson(
+    'scale-tempo-1',
+    'Tempo Merdiveni',
+    'Aynı gam üç kez, her seferinde daha hızlı',
+    60,
+    [part('C', 'major', 'right')],
+    TEMPO_LADDER,
+  ),
+  scaleLesson('scale-b-eb', 'Si ve Mi♭ Majör', 'Sol elde 4. parmakla başlayan Si, 3. parmakla Mi♭', [
+    part('B', 'major', 'right'),
+    part('B', 'major', 'left'),
+    part('Eb', 'major', 'right'),
+    part('Eb', 'major', 'left'),
+  ]),
+  scaleLesson('scale-two-octaves', 'İki Oktav', 'Do Majör iki oktav; ortadaki Do’da da geçiş var', [
+    part('C', 'major', 'right', 2),
+    part('C', 'major', 'left', 2),
+  ]),
+  memoryLesson('scale-memory-ear', 'Kulaktan Hafıza', 'Tuşlar yanmaz: yalnızca dinle', 'C', 'major', 4, 6, true),
+  scaleLesson('scale-two-octaves-hands', 'İki Oktav: İki El', 'Do Majör ve La armonik minör, iki el iki oktav', [
+    part('C', 'major', 'parallel', 2),
+    part('A', 'harmonic', 'parallel', 2),
+  ]),
+  ladderLesson(
+    'scale-tempo-2',
+    'Tempo Merdiveni: İki El',
+    'İki el birlikte, 54 → 66 → 78 BPM',
+    54,
+    [part('C', 'major', 'parallel')],
+    TEMPO_LADDER,
+  ),
 ]

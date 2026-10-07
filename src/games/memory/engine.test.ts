@@ -28,6 +28,13 @@ function playRound(g: MemoryGame, now: number, wrongAt = -1): number {
 }
 
 describe('MemoryGame', () => {
+  it('can start every run on a fixed note (the tonic, by ear)', () => {
+    for (const seed of [1, 7, 42]) {
+      const g = new MemoryGame({ pool: POOL, firstPosition: 0, random: seeded(seed) })
+      expect(g.sequence[0]).toBe(60)
+    }
+  })
+
   it('builds runs of scale steps that grow by one note every round', () => {
     const g = new MemoryGame({ pool: POOL, random: seeded(3), maxLength: 5 })
     expect(g.length).toBe(3)

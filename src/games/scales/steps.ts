@@ -18,7 +18,7 @@ import type { RhythmValue } from '../../rhythm/rhythm'
 import { clean, scoreOf } from '../../rhythm/summary'
 import type { TimingRecord } from '../../rhythm/track'
 import type { SkillProvider, SkillTarget } from '../arcade/skill'
-import { type Step, TOGETHER_MS } from '../melody/session'
+import { paginate, type Step, TOGETHER_MS } from '../melody/session'
 import { firstTryOk, type PromptRecord } from '../noteHunter/session'
 import type { CategoryStat, HandStat, SyncSummary } from '../noteHunter/summary'
 import { avg } from '../noteHunter/summary'
@@ -31,6 +31,8 @@ export interface ScalePart {
   tonic: string
   type: ScaleType
   hands: ScaleHands
+  /** One octave up and back (the default) or two. */
+  octaves?: 1 | 2
 }
 
 export const HANDS_TITLES: Record<ScaleHands, string> = {
@@ -40,13 +42,15 @@ export const HANDS_TITLES: Record<ScaleHands, string> = {
   contrary: 'zıt hareket',
 }
 
-/** Notes in one scale part: up an octave and back down. */
+/** Notes in a one-octave scale part: up an octave and back down. Gam Merdiveni parts are always this long. */
 export const RUN_LENGTH = 15
-/** Steps on one page of the staff: the way up, then the way down. */
-export const SCALE_PAGE = 8
+
+/** Notes in a scale part: 15 for one octave, 29 for two. */
+export const runLength = (part: ScalePart) => 14 * (part.octaves ?? 1) + 1
 
 export function partTitle(part: ScalePart): string {
-  return `${scaleTitle(parseTonic(part.tonic), part.type)} · ${HANDS_TITLES[part.hands]}`
+  const octaves = part.octaves === 2 ? ' · 2 oktav' : ''
+  return `${scaleTitle(parseTonic(part.tonic), part.type)} · ${HANDS_TITLES[part.hands]}${octaves}`
 }
 
 const handsOf = (h: ScaleHands): Hand[] => (h === 'right' ? ['right'] : h === 'left' ? ['left'] : ['right', 'left'])
@@ -55,11 +59,14 @@ const clefOfHand = (hand: Hand): Clef => (hand === 'right' ? 'treble' : 'bass')
 /**
  * Octave of the tonic a hand starts on, chosen to sit well on its staff:
  * the right hand from the 4th octave, the left hand an octave or two lower,
- * and in contrary motion both thumbs share the tonic nearest middle C.
+ * and in contrary motion both thumbs share the tonic nearest middle C. Two
+ * octaves start lower in the right hand when the top would climb too high,
+ * and the left hand plays two octaves below the right.
  */
-function startOctave(tonic: Tonic, hands: ScaleHands, hand: Hand): number {
+function startOctave(tonic: Tonic, hands: ScaleHands, hand: Hand, octaves: number): number {
   const high = tonic.letter === 'g' || tonic.letter === 'a' || tonic.letter === 'b'
   if (hands === 'contrary') return high ? 3 : 4
+  if (octaves === 2) return hand === 'right' ? (high ? 3 : 4) : high ? 1 : 2
   return hand === 'right' ? 4 : high ? 2 : 3
 }
 
@@ -68,20 +75,25 @@ export function scaleSteps(parts: ScalePart[]): Step[] {
     const tonic = parseTonic(part.tonic)
     const keySig = keySignature(tonic, part.type)
     const keyAcc = keyAccidentals(tonic, part.type)
+    const octaves = part.octaves ?? 1
     const runs = handsOf(part.hands).map((hand) => ({
       hand,
       run: scaleRun(
         tonic,
         part.type,
         hand,
-        startOctave(tonic, part.hands, hand),
+        startOctave(tonic, part.hands, hand, octaves),
         part.hands === 'contrary' && hand === 'left',
+        octaves,
       ),
     }))
-    return Array.from({ length: RUN_LENGTH }, (_, i) => ({
+    // The way down starts a new page: a melodic minor's raised notes never carry over.
+    const top = 7 * octaves
+    return Array.from({ length: runLength(part) }, (_, i) => ({
       melody: p,
       keySig,
       keyAcc,
+      ...(i === top + 1 && { newPage: true }),
       notes: runs.map(({ hand, run }) => ({
         midi: run[i].midi,
         clef: clefOfHand(hand),
@@ -159,14 +171,13 @@ export function scaleReport(
   if (crossed.length)
     perCategory.push(topic('crossings', 'Parmak geçişleri', crossed.length, crossOk, crossOk / crossed.length))
 
-  // Time between two clean steps of the same part; the page turn halfway is not counted.
+  // Time between two clean steps of the same part; page turns are not counted.
   const doneAt = (rs: PromptRecord[]) =>
     rs.every((r) => r.answeredAt !== null && firstTryOk(r)) ? Math.max(...rs.map((r) => r.answeredAt!)) : null
   const perPart: number[][] = parts.map(() => [])
-  let inPart = 0
+  const pageStarts = new Set(paginate(steps).map((p) => p.start))
   steps.forEach((s, i) => {
-    inPart = i > 0 && steps[i - 1].melody === s.melody ? inPart + 1 : 0
-    if (inPart === 0 || inPart === SCALE_PAGE) return
+    if (pageStarts.has(i)) return
     const a = doneAt(stepRecords[i - 1])
     const b = doneAt(stepRecords[i])
     if (a !== null && b !== null) perPart[s.melody].push(b - a)
@@ -211,8 +222,9 @@ export interface LadderPlan {
 /** Beats one part takes: fifteen quarters, the last note held for two beats. */
 export const PART_BEATS = RUN_LENGTH + 1
 
-/** A scale on the metronome: one note per beat, both hands' notes on the same beat. */
+/** A scale on the metronome: one note per beat, both hands' notes on the same beat. One octave per part. */
 export function ladderPlan(parts: ScalePart[], ignoreOctave = false): LadderPlan {
+  if (parts.some((p) => runLength(p) !== RUN_LENGTH)) throw new Error('Gam Merdiveni parts are one octave')
   const steps = scaleSteps(parts)
   const targets: SkillTarget[] = []
   const meta: LadderMeta[] = []
@@ -248,13 +260,19 @@ export function ladderPlan(parts: ScalePart[], ignoreOctave = false): LadderPlan
   }
 }
 
-/** The scale parts of a Gam Merdiveni report: per part, crossings, each hand, and the two hands together. */
+/**
+ * The scale parts of a Gam Merdiveni report: per part, crossings, each hand,
+ * and the two hands together. `rounds` holds the records of each time the
+ * plan was played (a tempo ladder plays it at several tempos).
+ */
 export function ladderReport(
-  records: TimingRecord[],
+  rounds: TimingRecord[][],
   meta: LadderMeta[],
   parts: ScalePart[],
 ): { perCategory: CategoryStat[]; scale: ScaleSummary; hands?: HandStat[]; sync?: SyncSummary } {
-  const settled = records.map((r, i) => ({ r, m: meta[i] })).filter(({ r }) => r.judgement !== null)
+  const settled = rounds
+    .flatMap((records, round) => records.map((r, i) => ({ r, m: meta[i], round })))
+    .filter(({ r }) => r.judgement !== null)
   const stat = (id: string, label: string, xs: TimingRecord[]) =>
     topic(id, label, xs.length, xs.filter(clean).length, xs.reduce((n, r) => n + scoreOf(r), 0) / xs.length)
 
@@ -284,12 +302,13 @@ export function ladderReport(
     })
     // Pairs: the two hands' notes on the same beat, both played.
     const leads: number[] = []
-    const byBeat = new Map<number, { left?: number; right?: number }>()
-    for (const { r, m } of settled) {
+    const byBeat = new Map<string, { left?: number; right?: number }>()
+    for (const { r, m, round } of settled) {
       if (r.offsetMs === null) continue
-      const pair = byBeat.get(r.beat) ?? {}
+      const key = `${round}:${r.beat}`
+      const pair = byBeat.get(key) ?? {}
       pair[m.clef === 'bass' ? 'left' : 'right'] = r.offsetMs
-      byBeat.set(r.beat, pair)
+      byBeat.set(key, pair)
     }
     for (const { left, right } of byBeat.values())
       if (left !== undefined && right !== undefined) leads.push(left - right)

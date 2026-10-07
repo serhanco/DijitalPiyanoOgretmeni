@@ -1,5 +1,7 @@
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 import type { RhythmValue } from '../../rhythm/rhythm'
+import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
+import type { MemorySpec } from '../memory/engine'
 import type { ScalePart } from '../scales/steps'
 
 /**
@@ -23,6 +25,8 @@ export interface RhythmSpec {
   values: RhythmValue[]
   /** Any key counts; only the timing is judged. */
   anyKey?: boolean
+  /** Tempo merdiveni: the same plan again at rising tempos. */
+  tempoLadder?: TempoLadderSpec
 }
 
 export interface NoteLesson {
@@ -47,7 +51,7 @@ export interface NoteLesson {
   /** Scale and Gam Merdiveni lessons: the scales, played in order. */
   scales?: ScalePart[]
   /** Melodi Hafızası: run lengths; `notes` is the scale the runs are made of. */
-  memory?: { startLength: number; maxLength: number }
+  memory?: MemorySpec
 }
 
 export interface Melody {

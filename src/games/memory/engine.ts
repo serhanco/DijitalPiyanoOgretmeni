@@ -18,6 +18,19 @@ export interface MemoryOptions {
   random?: () => number
   /** Time from one played note to the next. */
   noteMs?: number
+  /** Index in `pool` of the first note of every run; random when not given. */
+  firstPosition?: number
+}
+
+/** A Melodi Hafızası lesson: run lengths, and whether the run is only heard. */
+export interface MemorySpec {
+  startLength: number
+  maxLength: number
+  /**
+   * Ear mode: the keys do not light up while the run plays; only its first
+   * note is shown, so the rest is found by ear from there.
+   */
+  listenOnly?: boolean
 }
 
 export type MemoryPhase = 'ready' | 'listen' | 'play' | 'done'
@@ -69,6 +82,7 @@ export class MemoryGame {
     ignoreOctave = false,
     random = Math.random,
     noteMs = 650,
+    firstPosition,
   }: MemoryOptions) {
     if (pool.length < 2) throw new Error('Melodi Hafızası needs at least two notes')
     this.pool = pool
@@ -78,7 +92,7 @@ export class MemoryGame {
     this.noteMs = noteMs
     this.random = random
     this.ignoreOctave = ignoreOctave
-    this.positions.push(Math.floor(random() * pool.length))
+    this.positions.push(firstPosition ?? Math.floor(random() * pool.length))
     while (this.positions.length < startLength) this.grow()
   }
 

@@ -4,6 +4,7 @@ import {
   keyAccidentals,
   keySignature,
   parseTonic,
+  scaleFingering,
   scaleOctave,
   scaleRun,
   scaleTitle,
@@ -72,6 +73,45 @@ describe('fingering and crossings', () => {
     ).toEqual([1, 2, 3, 4, 1, 2, 3, 4])
     const bb = scaleRun(parseTonic('Bb'), 'major', 'left', 2)
     expect(bb.slice(0, 8).map((n) => n.finger)).toEqual([3, 2, 1, 4, 3, 2, 1, 3])
+  })
+
+  it('uses the four-finger fingerings of B, E flat and A flat', () => {
+    const fingers = (tonic: string, hand: 'right' | 'left') => scaleFingering(parseTonic(tonic), hand)
+    expect(fingers('B', 'left')).toEqual([4, 3, 2, 1, 4, 3, 2, 1])
+    expect(fingers('B', 'right')).toEqual([1, 2, 3, 1, 2, 3, 4, 5])
+    expect(fingers('Eb', 'right')).toEqual([3, 1, 2, 3, 4, 1, 2, 3])
+    expect(fingers('Eb', 'left')).toEqual([3, 2, 1, 4, 3, 2, 1, 3])
+    expect(fingers('Ab', 'right')).toEqual([3, 4, 1, 2, 3, 1, 2, 3])
+  })
+
+  it('continues the pattern through two octaves', () => {
+    const two = (tonic: string, hand: 'right' | 'left') => scaleFingering(parseTonic(tonic), hand, 2).join('')
+    expect(two('C', 'right')).toBe('123123412312345')
+    expect(two('C', 'left')).toBe('543213214321321')
+    expect(two('F', 'right')).toBe('123412312341234')
+    // B♭: the fourth finger always lands on B♭ after the start.
+    expect(two('Bb', 'right')).toBe('212312341231234')
+    expect(two('B', 'left')).toBe('432143213214321')
+    const run = scaleRun(parseTonic('C'), 'major', 'right', 4, false, 2)
+    expect(run).toHaveLength(29)
+    expect(run[14]).toMatchObject({ midi: 84, finger: 5 })
+    expect(run.map((n, i) => (n.cross ? `${i}${n.cross}` : null)).filter(Boolean)).toEqual([
+      '3under',
+      '7under',
+      '10under',
+      '19over',
+      '22over',
+      '26over',
+    ])
+  })
+
+  it('goes down two octaves first for the left hand in contrary motion', () => {
+    const run = scaleRun(parseTonic('C'), 'major', 'left', 4, true, 2)
+    expect(run[0].midi).toBe(60)
+    expect(run[14].midi).toBe(36)
+    expect(run[28].midi).toBe(60)
+    expect(run[0].finger).toBe(1)
+    expect(run[14].finger).toBe(5)
   })
 
   it('goes down first for the left hand in contrary motion', () => {

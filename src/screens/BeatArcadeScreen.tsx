@@ -60,9 +60,13 @@ function LadderScreen({ lesson, onFinish, onExit }: Props) {
   const nameOf = useCallback((m: number) => names.get(m) ?? solfegeName(m), [names])
   const twoHands = plan.steps.some((s) => s.notes.length > 1)
   const report = useCallback(
-    (track: BeatTrack, summary: SessionSummary): SessionSummary => ({
+    (tracks: BeatTrack[], summary: SessionSummary): SessionSummary => ({
       ...summary,
-      ...ladderReport(track.records, plan.meta, lesson.scales!),
+      ...ladderReport(
+        tracks.map((t) => t.records),
+        plan.meta,
+        lesson.scales!,
+      ),
       noteNames: Object.fromEntries(names),
     }),
     [plan, lesson.scales, names],

@@ -1,5 +1,5 @@
 // Scales: spelling (letters and accidentals), key signatures, the standard
-// one-octave fingerings and the thumb crossings they need. Pure data.
+// fingerings (one or two octaves) and the thumb crossings they need. Pure data.
 
 import { type Hand, LETTER_SEMITONES, LETTERS, type Letter, midiFrom, SOLFEGE } from './notes'
 
@@ -93,18 +93,41 @@ export function keyAccidentals(tonic: Tonic, type: ScaleType): Record<Letter, Ac
   return out
 }
 
-const RIGHT = [1, 2, 3, 1, 2, 3, 4, 5]
-const LEFT = [5, 4, 3, 2, 1, 3, 2, 1]
-/** Scales whose fingering differs from the C major pattern (major and minor alike). */
-const SPECIAL: Partial<Record<string, Partial<Record<Hand, number[]>>>> = {
-  f: { right: [1, 2, 3, 4, 1, 2, 3, 4] },
-  bb: { right: [2, 1, 2, 3, 1, 2, 3, 4], left: [3, 2, 1, 4, 3, 2, 1, 3] },
+/**
+ * A hand's fingering as a cycle: the finger of each scale degree in the
+ * middle of a run (degree 0 = the tonic), plus the fingers of the lowest and
+ * highest tonic when they differ from the cycle. One cycle gives one octave
+ * or two: C major in the right hand is 1231234 1231234 5.
+ */
+interface Fingering {
+  cycle: number[]
+  first?: number
+  last?: number
 }
 
-/** Standard fingering of one octave going up, one finger per note (1 = thumb). */
-export function scaleFingering(tonic: Tonic, hand: Hand): number[] {
-  const special = SPECIAL[`${tonic.letter}${accText(tonic.acc, 'b')}`]?.[hand]
-  return special ?? (hand === 'right' ? RIGHT : LEFT)
+const RIGHT: Fingering = { cycle: [1, 2, 3, 1, 2, 3, 4], last: 5 }
+const LEFT: Fingering = { cycle: [1, 4, 3, 2, 1, 3, 2], first: 5 }
+/** The four flats' left hand: the fourth finger on the fourth degree, the third on the tonic. */
+const FLATS_LEFT: Fingering = { cycle: [3, 2, 1, 4, 3, 2, 1] }
+/**
+ * Scales whose fingering differs from the C major pattern. Keyed by tonic:
+ * the minors of these tonics (B, B♭, E♭ minor) use the same fingers.
+ */
+const SPECIAL: Partial<Record<string, Partial<Record<Hand, Fingering>>>> = {
+  f: { right: { cycle: [1, 2, 3, 4, 1, 2, 3], last: 4 } },
+  bb: { right: { cycle: [4, 1, 2, 3, 1, 2, 3], first: 2 }, left: FLATS_LEFT },
+  eb: { right: { cycle: [3, 1, 2, 3, 4, 1, 2] }, left: FLATS_LEFT },
+  ab: { right: { cycle: [3, 4, 1, 2, 3, 1, 2] }, left: FLATS_LEFT },
+  b: { left: { cycle: [1, 3, 2, 1, 4, 3, 2], first: 4 } },
+}
+
+/** Standard fingering going up, one finger per note (1 = thumb): 8 notes per octave, 15 for two. */
+export function scaleFingering(tonic: Tonic, hand: Hand, octaves = 1): number[] {
+  const f = SPECIAL[`${tonic.letter}${accText(tonic.acc, 'b')}`]?.[hand] ?? (hand === 'right' ? RIGHT : LEFT)
+  const n = 7 * octaves + 1
+  return Array.from({ length: n }, (_, i) =>
+    i === 0 ? (f.first ?? f.cycle[0]) : i === n - 1 ? (f.last ?? f.cycle[0]) : f.cycle[i % 7],
+  )
 }
 
 /** The thumb passes under the hand, or a finger crosses over the thumb. */
@@ -139,24 +162,42 @@ export interface RunNote extends SpelledNote {
   cross: Crossing | null
 }
 
+/** `octaves` octaves going up from the tonic in `octave` (8 notes for one, 15 for two). */
+function scaleSpan(tonic: Tonic, type: ScaleType, octave: number, octaves: number, form: 'up' | 'down'): SpelledNote[] {
+  return Array.from({ length: octaves }, (_, k) => scaleOctave(tonic, type, octave + k, form)).flatMap((o, k) =>
+    k ? o.slice(1) : o,
+  )
+}
+
 /**
- * A scale up an octave and back (15 notes) from the tonic in `octave`.
- * `downFirst` starts on the tonic of `octave`, goes down an octave and back
- * up: the left hand's part in contrary motion.
+ * A scale up `octaves` octaves and back (15 notes for one, 29 for two) from
+ * the tonic in `octave`. `downFirst` starts on the tonic of `octave`, goes
+ * down and back up: the left hand's part in contrary motion.
  */
-export function scaleRun(tonic: Tonic, type: ScaleType, hand: Hand, octave: number, downFirst = false): RunNote[] {
-  const fingers = scaleFingering(tonic, hand)
+export function scaleRun(
+  tonic: Tonic,
+  type: ScaleType,
+  hand: Hand,
+  octave: number,
+  downFirst = false,
+  octaves = 1,
+): RunNote[] {
+  const fingers = scaleFingering(tonic, hand, octaves)
   const reversed = [...fingers].reverse()
   let notes: SpelledNote[]
   let fs: number[]
   if (downFirst) {
+    const low = octave - octaves
     notes = [
-      ...scaleOctave(tonic, type, octave - 1, 'down').reverse(),
-      ...scaleOctave(tonic, type, octave - 1).slice(1),
+      ...scaleSpan(tonic, type, low, octaves, 'down').reverse(),
+      ...scaleSpan(tonic, type, low, octaves, 'up').slice(1),
     ]
     fs = [...reversed, ...fingers.slice(1)]
   } else {
-    notes = [...scaleOctave(tonic, type, octave), ...scaleOctave(tonic, type, octave, 'down').reverse().slice(1)]
+    notes = [
+      ...scaleSpan(tonic, type, octave, octaves, 'up'),
+      ...scaleSpan(tonic, type, octave, octaves, 'down').reverse().slice(1),
+    ]
     fs = [...fingers, ...reversed.slice(1)]
   }
   return notes.map((n, i) => ({
