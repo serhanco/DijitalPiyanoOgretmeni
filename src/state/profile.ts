@@ -139,8 +139,3 @@ export const useProfile = create<ProfileState>()(
     },
   ),
 )
-
-/** Today's XP, or 0 if nothing was played today yet. */
-export function todaysXp(daily: { day: string; xp: number }, now = new Date()): number {
-  return daily.day === dayKey(now) ? daily.xp : 0
-}

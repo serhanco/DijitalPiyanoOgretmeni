@@ -125,8 +125,7 @@ export const BADGES: Badge[] = [
     title: 'Şimşek Parmaklar',
     description: '%90 üstü doğrulukla ortalama 1 saniyenin altında yanıt ver',
     icon: '⚡',
-    earned: (c) =>
-      !c.outcome.failed && c.outcome.accuracy >= 0.9 && (c.outcome.avgReactionMs ?? Infinity) < 1000,
+    earned: (c) => !c.outcome.failed && c.outcome.accuracy >= 0.9 && (c.outcome.avgReactionMs ?? Infinity) < 1000,
   },
   { id: 'streak-3', title: 'Isınıyoruz', description: '3 günlük seri yap', icon: '🔥', earned: (c) => c.streak >= 3 },
   { id: 'streak-7', title: 'Bir Hafta', description: '7 günlük seri yap', icon: '🏅', earned: (c) => c.streak >= 7 },

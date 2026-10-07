@@ -6,7 +6,7 @@ import { db, noteStatKey, type NoteStatRow, type SessionRow } from './db'
 /** Store a finished session and add its per-note results to the running totals. */
 export async function recordSession(row: Omit<SessionRow, 'id'>, clef: Clef, perNote: NoteStat[]): Promise<void> {
   await db.transaction('rw', db.sessions, db.noteStats, async () => {
-    await db.sessions.add(row)
+    await db.sessions.add({ ...row }) // copy: Dexie writes the new id onto the object
     for (const n of perNote) {
       const key = noteStatKey(clef, n.midi)
       const prev = await db.noteStats.get(key)

@@ -19,9 +19,30 @@ export const UNITS: Unit[] = [
     color: '#58cc02',
     lessons: TREBLE_LESSONS,
   },
-  { id: 'rhythm', title: 'Ünite 2: Ritim ve Tempo', subtitle: 'Zamanında çal', color: '#ce82ff', lessons: [], comingSoon: true },
-  { id: 'bass', title: 'Ünite 3: Fa Anahtarı', subtitle: 'Sol elin notaları', color: '#1cb0f6', lessons: [], comingSoon: true },
-  { id: 'chords', title: 'Ünite 4: Akorlar', subtitle: 'Üçlüler, çevrimler, arpejler', color: '#ff9600', lessons: [], comingSoon: true },
+  {
+    id: 'rhythm',
+    title: 'Ünite 2: Ritim ve Tempo',
+    subtitle: 'Zamanında çal',
+    color: '#ce82ff',
+    lessons: [],
+    comingSoon: true,
+  },
+  {
+    id: 'bass',
+    title: 'Ünite 3: Fa Anahtarı',
+    subtitle: 'Sol elin notaları',
+    color: '#1cb0f6',
+    lessons: [],
+    comingSoon: true,
+  },
+  {
+    id: 'chords',
+    title: 'Ünite 4: Akorlar',
+    subtitle: 'Üçlüler, çevrimler, arpejler',
+    color: '#ff9600',
+    lessons: [],
+    comingSoon: true,
+  },
 ]
 
 export const ALL_LESSONS: NoteLesson[] = UNITS.flatMap((u) => u.lessons)

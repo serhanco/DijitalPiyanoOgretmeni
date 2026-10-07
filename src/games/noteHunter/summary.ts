@@ -130,7 +130,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     perCategory,
     weakest,
     message: failed
-      ? 'Kalplerin bitti, ama sorun değil. Notaları yavaş yavaş bulmaya odaklanıp tekrar dene.'
+      ? 'Sorun değil, hata yapa yapa öğreniyoruz. Notaları acele etmeden bulmaya odaklanıp tekrar dene.'
       : messageFor(accuracy, avgReactionMs),
   }
 }

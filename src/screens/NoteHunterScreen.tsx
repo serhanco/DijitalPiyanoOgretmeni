@@ -114,7 +114,11 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
 
       <p className="prompt">Bu nota hangisi? Klavyede bas!</p>
 
-      <div key={shake} className={`staff-wrap ${shake && wrongKey !== null ? 'shake' : ''}`}>
+      <div
+        key={shake}
+        data-note={target ?? undefined}
+        className={`staff-wrap ${shake && wrongKey !== null ? 'shake' : ''}`}
+      >
         <Staff clef={lesson.clef} note={target} color={solved !== null ? GREEN : undefined} />
       </div>
 
