@@ -81,7 +81,7 @@ Principles:
 | `faz-1-cekirdek`     | PR #1: phases 0 + 1                                                 |
 | `faz-2-oyunlastirma` | PR #2: phase 2, stacked on `faz-1-cekirdek` (base branch of the PR) |
 
-If PR #1 is merged first, retarget PR #2 to `main`. Check live PR state with `gh pr list` before branching.
+When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
 Phase 2 (done on `faz-2-oyunlastirma`):
 
@@ -93,12 +93,34 @@ Phase 2 (done on `faz-2-oyunlastirma`):
 - Hearts in `NoteHunterSession`, `relaxedMode` setting, `summarize(records, clef, failed)`
 - Screens: lesson map (`HomeScreen` + `TopBar`), rewards on `ResultsScreen`, `ProfileScreen`
 
-Next: **phase 3, characters and animation** (see `docs/PLAN.md`). Suggested shape: a `Mascot` SVG component with
-named moods (`idle | happy | sad | cheer | sleep`) animated with Motion (`motion` package), reacting to `inputBus`
-results in lessons and celebrating on the results screen (confetti, counting XP, level-up and badge reveals). Then
-phase 4: mini-game engine (PixiJS, lazy chunk) with a `SkillProvider` interface
-(`next(): Target`, `check(pressed: number[]): 'correct' | 'wrong' | 'partial'`), first games Nota Kuşu and Balon
-Patlatma, reusing the summary/report and `completeLesson` flow.
+Phase 3 (done on `faz-3-karakterler`):
+
+- `src/components/Mascot.tsx`: Notiş, an SVG eighth-note character with moods
+  `idle | happy | sad | cheer | sleep | think`, animated with Motion (`motion/react`); `pulse` replays a reaction
+- `Greeting` on the map (context-aware line: first lesson, streak at risk, goal reached, night-time sleep)
+- In lessons: mascot reacts to every answer, combo counter (celebration every 5 first-try answers in a row)
+- `src/audio/sfx.ts`: synthesized WebAudio sound effects (correct, wrong, combo, fanfare, fail) and vibration, both
+  toggleable in settings
+- Results: mascot with the message, confetti (`canvas-confetti`), counting XP, level-up overlay
+
+Phase 4 (done on `faz-4-mini-oyunlar`):
+
+- `src/games/arcade/skill.ts`: `SkillProvider` (clef, range, planned targets, `matches`); `noteSkill()` for notes.
+  New skills (bass notes, chords, scale steps) plug into every game through this.
+- `src/games/arcade/staffGeometry.ts` (steps from the bottom line, ledger lines, `fitStaff` with a max gap) and
+  `draw.ts` (Pixi staff lines and note heads)
+- `src/games/arcade/bird/engine.ts` (**Nota Kuşu**) and `balloon/engine.ts` (**Balon Patlatma**): pure engines with
+  `update(dtMs, now)` / `press(midi, now)` returning events, `records` in the same `PromptRecord` shape as the drill
+  (plus `missed`), so `summarize` and `completeLesson` work unchanged. Unit tested by simulating frames.
+- `scene.ts` per game: PixiJS drawing only; `PixiStage` mounts a Pixi `Application`; `ArcadeScreen` (own lazy chunk,
+  ~90 kB gzip) wires input, HUD, mascot and sfx. The clef is an SVG `<text>` overlay in the Bravura font.
+- Lessons have `kind: 'drill' | 'bird' | 'balloon'`; the treble unit now mixes drills and games (map icons ♪ 🐦 🎈).
+- `window.__dpoArcade` exposes the running game so the smoke test can play it.
+
+Next: **phase 5, rhythm and timing** (see `docs/PLAN.md`): metronome on `Tone.Transport`, timing windows, Bluetooth
+latency calibration, rhythm exercises, then **Dino Koşusu** (Chrome Dino-like: obstacles on the beat) and **Ritim
+Davulcusu** as new arcade games on the same engine pattern. A rhythm skill needs targets with a time
+(`{ midi, beat }`), so extend `SkillTarget` rather than replacing it.
 
 ## Testing in a real browser
 

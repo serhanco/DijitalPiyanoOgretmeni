@@ -8,12 +8,14 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 
 ## Durum
 
-| Faz                        | Durum                        |
-| -------------------------- | ---------------------------- |
-| 0 Altyapı                  | PR #1 (`faz-1-cekirdek`)     |
-| 1 Çekirdek ve Nota Avcısı  | PR #1 (`faz-1-cekirdek`)     |
-| 2 Oyunlaştırma ve ilerleme | PR #2 (`faz-2-oyunlastirma`) |
-| 3 ve sonrası               | Başlanmadı                   |
+| Faz                                           | Durum                        |
+| --------------------------------------------- | ---------------------------- |
+| 0 Altyapı                                     | PR #1 (`faz-1-cekirdek`)     |
+| 1 Çekirdek ve Nota Avcısı                     | PR #1 (`faz-1-cekirdek`)     |
+| 2 Oyunlaştırma ve ilerleme                    | PR #2 (`faz-2-oyunlastirma`) |
+| 3 Karakterler ve animasyon                    | PR #3 (`faz-3-karakterler`)  |
+| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | PR #4 (`faz-4-mini-oyunlar`) |
+| 5 ve sonrası                                  | Başlanmadı                   |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -92,14 +94,14 @@ Her faz ayrı bir PR olarak gelir ve sonunda denenebilir bir uygulama bırakır.
 - "Zayıf Notalar" tekrar dersi (birikimli istatistikten en zayıf notalar)
 - Profil ekranı: seviye, rozetler, son dersler, nota bazında başarı haritası
 
-### Faz 3 — Karakterler ve animasyon
+### Faz 3 — Karakterler ve animasyon (PR #3)
 
 - Maskot karakter (SVG + Motion): sevinme, üzülme, cesaretlendirme, uyuma halleri; ders içinde tepki verir
 - Ders sonu kutlaması (konfeti, seri alevi, XP sayacı), seviye atlama ve rozet animasyonları
 - Ses efektleri ve dokunmatik titreşim
 - İsteğe bağlı: Rive ile daha zengin karakter animasyonları
 
-### Faz 4 — Mini oyun motoru ve ilk arcade oyunlar
+### Faz 4 — Mini oyun motoru ve ilk arcade oyunlar (PR #4)
 
 - Ortak motor: PixiJS sahnesi, oyun döngüsü, beceri sağlayıcısı arayüzü, ortak skor ve sonuç ekranı entegrasyonu
 - **Nota Kuşu** ve **Balon Patlatma** (sol anahtar notalarıyla)
