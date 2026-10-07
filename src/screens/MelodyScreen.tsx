@@ -6,7 +6,8 @@ import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { MelodySession, parseMelodies, type Step, syncSummary } from '../games/melody/session'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
-import { partTitle, scaleReport, scaleSteps, spelledNames } from '../games/scales/steps'
+import { partTitle, scaleKeyboard, scaleReport, scaleSteps, spelledNames } from '../games/scales/steps'
+import { setComputerKeyboardBase } from '../input/computerKeyboard'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
 import { CROSSING_TIPS } from '../music/scales'
@@ -182,6 +183,9 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
     : lesson.melodies?.[partIndex]?.title
   const twoKeys = !done && session.steps[position].notes.length > 1
   const tip = done ? null : fingerTip(session.steps[position])
+  // Scales: only the current scale's keys, so a lesson spanning four octaves stays playable on a phone.
+  const keyboard = lesson.scales?.[partIndex] ? scaleKeyboard([lesson.scales[partIndex]]) : lesson.keyboard
+  useEffect(() => setComputerKeyboardBase(keyboard.low), [keyboard.low])
 
   const marks: Partial<Record<number, KeyMark>> = {}
   if (wrongCount >= HINT_AFTER) for (const m of pending) marks[m] = 'hint'
@@ -259,7 +263,7 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
               : ' '}
       </p>
 
-      <PianoKeyboard low={lesson.keyboard.low} high={lesson.keyboard.high} marks={marks} showLabels={showKeyLabels} />
+      <PianoKeyboard low={keyboard.low} high={keyboard.high} marks={marks} showLabels={showKeyLabels} />
     </div>
   )
 }
