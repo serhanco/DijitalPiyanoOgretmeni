@@ -37,6 +37,7 @@ npm run lint          # oxlint
 npm run format:check  # Prettier (npm run format to fix)
 npm run typecheck     # tsc -b
 npm run build         # tsc -b && vite build → dist/
+npm run smoke         # Playwright smoke test against a running preview (see below)
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR. `deploy.yml` publishes `dist/` to
@@ -74,47 +75,44 @@ Principles:
 
 ## Current state and next steps
 
-| Branch               | State                                                                         |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `main`               | README, docs, CLAUDE.md only                                                  |
-| `faz-1-cekirdek`     | PR #1, phases 0 + 1, CI expected green                                        |
-| `faz-2-oyunlastirma` | Phase 2 work in progress, stacked on `faz-1-cekirdek`, **does not build yet** |
+| Branch               | State                                                               |
+| -------------------- | ------------------------------------------------------------------- |
+| `main`               | README, docs, CLAUDE.md only                                        |
+| `faz-1-cekirdek`     | PR #1: phases 0 + 1                                                 |
+| `faz-2-oyunlastirma` | PR #2: phase 2, stacked on `faz-1-cekirdek` (base branch of the PR) |
 
-Phase 2 is done in pure logic but not in UI. Already written on `faz-2-oyunlastirma`:
+If PR #1 is merged first, retarget PR #2 to `main`. Check live PR state with `gh pr list` before branching.
+
+Phase 2 (done on `faz-2-oyunlastirma`):
 
 - `src/progress/gamification.ts`: XP lines, levels, streak (`extendStreak`/`currentStreak`), badges
 - `src/progress/db.ts`, `history.ts`: Dexie tables `sessions`, `noteStats`, `kv`; `recordSession`, `noteScores`
 - `src/progress/curriculum.ts`: units (treble + "coming soon" units), unlock rule, `weakestNotes`, review lesson
-- `src/state/profile.ts`: `completeLesson(outcome)` returns a `Reward` (XP breakdown, level up, streak, daily goal, new
-  badges, previous best)
-- Hearts in `NoteHunterSession` (`hearts`, `failed`, `heartsLeft`, `attempted`), `relaxedMode` setting,
-  `summarize(records, clef, failed)`
-- `src/state/progress.ts` was deleted (replaced by `profile.ts`)
+- `src/state/profile.ts`: `completeLesson(outcome)` returns a `Reward` (XP breakdown, level up, streak, daily goal,
+  new badges, previous best); persisted to IndexedDB
+- Hearts in `NoteHunterSession`, `relaxedMode` setting, `summarize(records, clef, failed)`
+- Screens: lesson map (`HomeScreen` + `TopBar`), rewards on `ResultsScreen`, `ProfileScreen`
 
-Remaining for phase 2:
-
-1. `HomeScreen` → Duolingo-style lesson map (zigzag path of lesson nodes per unit, locked/unlocked, stars, "BAŞLA"
-   bubble on the current node, coming-soon units, a "Zayıf Notalar" review node built from `noteScores` +
-   `weakestNotes`). Top bar: streak 🔥, XP/level, daily goal ring, profile button. Move `MidiPanel` and settings (add a
-   `relaxedMode` toggle) to the top of the map or a settings sheet.
-2. `App.tsx` finish flow: build `LessonOutcome` from the summary, call `useProfile.getState().completeLesson`,
-   `recordSession(...)`, then show results with the `Reward`.
-3. `ResultsScreen`: add XP breakdown, streak, daily goal progress, new badges, comparison with previous best, failed
-   (hearts ran out) state, and a "practise weak notes" button.
-4. `ProfileScreen`: level bar, badges grid (locked/earned), recent sessions, per-note accuracy heat map.
-5. Unit tests for gamification (XP, levels, streak across days, badges), curriculum (unlock, weakestNotes) and the
-   profile store; re-run the Playwright check (below); update docs; open the phase 2 PR.
-
-After that: phase 3 (characters and animation), then phase 4 (mini-game engine with PixiJS + Nota Kuşu + Balon
-Patlatma). See `docs/PLAN.md`.
+Next: **phase 3, characters and animation** (see `docs/PLAN.md`). Suggested shape: a `Mascot` SVG component with
+named moods (`idle | happy | sad | cheer | sleep`) animated with Motion (`motion` package), reacting to `inputBus`
+results in lessons and celebrating on the results screen (confetti, counting XP, level-up and badge reveals). Then
+phase 4: mini-game engine (PixiJS, lazy chunk) with a `SkillProvider` interface
+(`next(): Target`, `check(pressed: number[]): 'correct' | 'wrong' | 'partial'`), first games Nota Kuşu and Balon
+Patlatma, reusing the summary/report and `completeLesson` flow.
 
 ## Testing in a real browser
 
-Chromium is available in cloud sessions. A quick end-to-end check: `npm run build && npx vite preview --port 4173`,
-then a Playwright script that opens the home screen, starts "İlk Adımlar", and for each prompt clicks
-`.key.white[data-midi]` keys until `.feedback.good` appears, then waits ~550 ms; finally asserts `.results` is shown and
-takes screenshots (desktop 820×1100 and phone 390×844). Piano samples fail to load in the sandbox (no network from
-headless Chromium); that error is expected there.
+`scripts/smoke.mjs` plays real lessons in Chromium: a perfect "İlk Adımlar", a "Bir Oktav" that runs out of hearts,
+then checks the map, the profile and that progress survives a reload. The staff exposes the current note as
+`.staff-wrap[data-note]`, and keys are `.key[data-midi]`.
+
+```bash
+npm run build && (npx vite preview --port 4173 &) && sleep 3
+CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -- /tmp/screens
+```
+
+Look at the screenshots after UI changes. Piano samples fail to load in a sandbox without network; the script ignores
+that error.
 
 ## Known gaps
 

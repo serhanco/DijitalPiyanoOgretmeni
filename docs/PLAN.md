@@ -8,12 +8,12 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 
 ## Durum
 
-| Faz                        | Durum                                                |
-| -------------------------- | ---------------------------------------------------- |
-| 0 Altyapı                  | PR #1 (`faz-1-cekirdek`)                             |
-| 1 Çekirdek ve Nota Avcısı  | PR #1 (`faz-1-cekirdek`)                             |
-| 2 Oyunlaştırma ve ilerleme | Yarım: `faz-2-oyunlastirma` dalı (henüz derlenmiyor) |
-| 3 ve sonrası               | Başlanmadı                                           |
+| Faz                        | Durum                        |
+| -------------------------- | ---------------------------- |
+| 0 Altyapı                  | PR #1 (`faz-1-cekirdek`)     |
+| 1 Çekirdek ve Nota Avcısı  | PR #1 (`faz-1-cekirdek`)     |
+| 2 Oyunlaştırma ve ilerleme | PR #2 (`faz-2-oyunlastirma`) |
+| 3 ve sonrası               | Başlanmadı                   |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -82,7 +82,7 @@ Her faz ayrı bir PR olarak gelir ve sonunda denenebilir bir uygulama bırakır.
 - Nota Avcısı: 5 ders (İlk Adımlar, Bir Oktav, Çizgiler, Aralar, Porte Ustası)
 - Sonuç ekranı v1: doğruluk, tepki süresi, konu bazında başarı, karıştırılan notalar
 
-### Faz 2 — Oyunlaştırma ve ilerleme (yarım)
+### Faz 2 — Oyunlaştırma ve ilerleme (PR #2)
 
 - XP, seviye, günlük seri, can (kalp) sistemi, günlük hedef, "rahat mod" (kalpsiz)
 - Duolingo tarzı ders haritası: üniteler → dersler → kilit açma
