@@ -1,6 +1,8 @@
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 import type { RhythmValue } from '../../rhythm/rhythm'
 import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
+import type { ArpeggioPart } from '../chords/arpeggio'
+import type { ChordSpec } from '../chords/lessons'
 import type { MemorySpec } from '../memory/engine'
 import type { ScalePart } from '../scales/steps'
 
@@ -9,13 +11,34 @@ import type { ScalePart } from '../scales/steps'
  * rhythm exercise or one of the arcade games.
  */
 export type LessonKind =
-  'drill' | 'melody' | 'bird' | 'balloon' | 'bar' | 'rhythm' | 'dino' | 'drum' | 'scale' | 'ladder' | 'memory'
+  | 'drill'
+  | 'melody'
+  | 'bird'
+  | 'balloon'
+  | 'bar'
+  | 'rhythm'
+  | 'dino'
+  | 'drum'
+  | 'scale'
+  | 'ladder'
+  | 'memory'
+  | 'chord'
+  | 'chef'
+  | 'space'
+  | 'arpeggio'
+  | 'surf'
 
 /** Kinds played against a metronome. */
-export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder']
+export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'surf']
 
-/** Kinds whose notes are known in advance (scales, memory runs): kept out of the note-reading statistics. */
-export const PATTERN_KINDS: LessonKind[] = ['scale', 'ladder', 'memory']
+/**
+ * Kinds whose notes are known in advance (scales, memory runs, arpeggios) or
+ * that are judged per chord: kept out of the note-reading statistics.
+ */
+export const PATTERN_KINDS: LessonKind[] = ['scale', 'ladder', 'memory', 'chord', 'chef', 'space', 'arpeggio', 'surf']
+
+/** Chord kinds: judged per chord, reported with the chord card. */
+export const CHORD_KINDS: LessonKind[] = ['chord', 'chef', 'space']
 
 export interface RhythmSpec {
   bpm: number
@@ -52,6 +75,10 @@ export interface NoteLesson {
   scales?: ScalePart[]
   /** Melodi Hafızası: run lengths; `notes` is the scale the runs are made of. */
   memory?: MemorySpec
+  /** Chord lessons (drill, Akor Aşçısı, Uzay Savunması): the chords and how they are judged. */
+  chords?: ChordSpec
+  /** Arpeggio and Arpej Sörfü lessons: the arpeggios, played in order. */
+  arpeggios?: ArpeggioPart[]
 }
 
 export interface Melody {

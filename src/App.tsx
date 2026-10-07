@@ -17,8 +17,12 @@ const NoteHunterScreen = lazy(() => loadGame().then((m) => ({ default: m.NoteHun
 // Arcade games bring PixiJS: their own chunk, loaded on demand.
 // Melodies read from the staff (VexFlow, like the drill).
 const MelodyScreen = lazy(() => import('./screens/MelodyScreen').then((m) => ({ default: m.MelodyScreen })))
+const ChordScreen = lazy(() => import('./screens/ChordScreen').then((m) => ({ default: m.ChordScreen })))
 const MemoryScreen = lazy(() => import('./screens/MemoryScreen').then((m) => ({ default: m.MemoryScreen })))
 const ArcadeScreen = lazy(() => import('./screens/ArcadeScreen').then((m) => ({ default: m.ArcadeScreen })))
+const ChordArcadeScreen = lazy(() =>
+  import('./screens/ChordArcadeScreen').then((m) => ({ default: m.ChordArcadeScreen })),
+)
 // Rhythm activities: the notation drill (VexFlow) and the beat arcade games (PixiJS).
 const RhythmScreen = lazy(() => import('./screens/RhythmScreen').then((m) => ({ default: m.RhythmScreen })))
 const BeatArcadeScreen = lazy(() => import('./screens/BeatArcadeScreen').then((m) => ({ default: m.BeatArcadeScreen })))
@@ -69,6 +73,9 @@ export default function App() {
       stars: summary.stars,
       failed: summary.failed,
       rhythm: summary.timing !== undefined,
+      chords: summary.chords !== undefined,
+      allTogether: !!summary.chords && summary.chords.played >= 5 && summary.chords.together === summary.chords.played,
+      noneMissed: !!summary.chords && summary.chords.played === summary.total,
       tempoRaised: !!summary.tempoLadder?.raisedTo,
     }
     const reward = useProfile.getState().completeLesson(outcome)
@@ -108,13 +115,20 @@ export default function App() {
         <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
           {screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' || screen.lesson.kind === 'bar' ? (
             <ArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
-          ) : screen.lesson.kind === 'melody' || screen.lesson.kind === 'scale' ? (
+          ) : screen.lesson.kind === 'melody' || screen.lesson.kind === 'scale' || screen.lesson.kind === 'arpeggio' ? (
             <MelodyScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          ) : screen.lesson.kind === 'chord' ? (
+            <ChordScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          ) : screen.lesson.kind === 'chef' || screen.lesson.kind === 'space' ? (
+            <ChordArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : screen.lesson.kind === 'rhythm' ? (
             <RhythmScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : screen.lesson.kind === 'memory' ? (
             <MemoryScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
-          ) : screen.lesson.kind === 'dino' || screen.lesson.kind === 'drum' || screen.lesson.kind === 'ladder' ? (
+          ) : screen.lesson.kind === 'dino' ||
+            screen.lesson.kind === 'drum' ||
+            screen.lesson.kind === 'ladder' ||
+            screen.lesson.kind === 'surf' ? (
             <BeatArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : (
             <NoteHunterScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />

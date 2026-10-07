@@ -107,7 +107,12 @@ export function scaleSteps(parts: ScalePart[]): Step[] {
 
 /** The keyboard to show: from the C at or below the lowest note to the highest white key needed. */
 export function scaleKeyboard(parts: ScalePart[]): { low: number; high: number } {
-  const midis = scaleSteps(parts).flatMap((s) => s.notes.map((n) => n.midi))
+  return stepsKeyboard(scaleSteps(parts))
+}
+
+/** The keyboard for any steps: from the C at or below the lowest note to the highest white key needed. */
+export function stepsKeyboard(steps: Step[]): { low: number; high: number } {
+  const midis = steps.flatMap((s) => s.notes.map((n) => n.midi))
   const low = Math.min(...midis)
   const high = Math.max(...midis)
   const blackTop = [1, 3, 6, 8, 10].includes(pitchClass(high))
@@ -155,13 +160,22 @@ export function scaleReport(
   stepRecords: PromptRecord[][],
   parts: ScalePart[],
 ): { perCategory: CategoryStat[]; scale: ScaleSummary } {
+  return patternReport(steps, stepRecords, parts.map(partTitle))
+}
+
+/** The report of any run read from the staff (a scale, an arpeggio); `titles` names each part. */
+export function patternReport(
+  steps: Step[],
+  stepRecords: PromptRecord[][],
+  titles: string[],
+): { perCategory: CategoryStat[]; scale: ScaleSummary } {
   const perCategory: CategoryStat[] = []
-  parts.forEach((part, p) => {
+  titles.forEach((title, p) => {
     const rs = stepRecords.filter((_, i) => steps[i].melody === p).flat()
     const seen = rs.filter((r) => r.shownAt !== null)
     if (!seen.length) return
     const ok = seen.filter(firstTryOk).length
-    perCategory.push(topic(`part-${p}`, partTitle(part), seen.length, ok, ok / seen.length))
+    perCategory.push(topic(`part-${p}`, title, seen.length, ok, ok / seen.length))
   })
 
   const crossed = steps.flatMap((s, i) =>
@@ -174,7 +188,7 @@ export function scaleReport(
   // Time between two clean steps of the same part; page turns are not counted.
   const doneAt = (rs: PromptRecord[]) =>
     rs.every((r) => r.answeredAt !== null && firstTryOk(r)) ? Math.max(...rs.map((r) => r.answeredAt!)) : null
-  const perPart: number[][] = parts.map(() => [])
+  const perPart: number[][] = titles.map(() => [])
   const pageStarts = new Set(paginate(steps).map((p) => p.start))
   steps.forEach((s, i) => {
     if (pageStarts.has(i)) return
@@ -268,7 +282,7 @@ export function ladderPlan(parts: ScalePart[], ignoreOctave = false): LadderPlan
 export function ladderReport(
   rounds: TimingRecord[][],
   meta: LadderMeta[],
-  parts: ScalePart[],
+  titles: string[],
 ): { perCategory: CategoryStat[]; scale: ScaleSummary; hands?: HandStat[]; sync?: SyncSummary } {
   const settled = rounds
     .flatMap((records, round) => records.map((r, i) => ({ r, m: meta[i], round })))
@@ -277,12 +291,38 @@ export function ladderReport(
     topic(id, label, xs.length, xs.filter(clean).length, xs.reduce((n, r) => n + scoreOf(r), 0) / xs.length)
 
   const perCategory: CategoryStat[] = []
-  parts.forEach((part, p) => {
+  titles.forEach((title, p) => {
     const xs = settled.filter(({ m }) => m.part === p).map(({ r }) => r)
-    if (xs.length) perCategory.push(stat(`part-${p}`, partTitle(part), xs))
+    if (xs.length) perCategory.push(stat(`part-${p}`, title, xs))
   })
   const crossed = settled.filter(({ m }) => m.cross).map(({ r }) => r)
   if (crossed.length) perCategory.push(stat('crossings', 'Parmak geçişleri', crossed))
+
+  // Evenness: the time from one played note to the next within a part, per round and hand.
+  const intervals = new Map<string, number[]>()
+  rounds.forEach((records, round) => {
+    records.forEach((r, i) => {
+      const m = meta[i]
+      if (m.step === 0 || r.offsetMs === null) return
+      const j = meta.findIndex((x) => x.part === m.part && x.clef === m.clef && x.step === m.step - 1)
+      const prev = records[j]
+      if (!prev || prev.offsetMs === null) return
+      const key = `${round}:${m.clef}`
+      intervals.set(key, [...(intervals.get(key) ?? []), r.dueAt + r.offsetMs - (prev.dueAt + prev.offsetMs)])
+    })
+  })
+  let weight = 0
+  let sum = 0
+  for (const xs of intervals.values()) {
+    const e = evennessOf(xs)
+    if (e === null) continue
+    weight += xs.length
+    sum += e * xs.length
+  }
+  const evenness = weight ? sum / weight : null
+  const allIntervals = [...intervals.values()].flat()
+  if (evenness !== null)
+    perCategory.push(topic('evenness', 'Eşit aralık', allIntervals.length, allIntervals.length, evenness))
 
   const clefs = new Set(meta.map((m) => m.clef))
   let hands: HandStat[] | undefined
@@ -326,8 +366,8 @@ export function ladderReport(
   return {
     perCategory,
     scale: {
-      evenness: null,
-      meanIntervalMs: null,
+      evenness,
+      meanIntervalMs: avg(allIntervals),
       crossings: { shown: crossed.length, firstTry: crossed.filter(clean).length },
     },
     ...(hands && { hands }),

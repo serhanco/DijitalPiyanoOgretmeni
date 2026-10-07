@@ -74,6 +74,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Faz 6: fa anahtarı ünitesi (10 ders), iki el ünitesi (7 ders), büyük porte, Orta Do köprüsü, melodi dersleri, Nota Barmeni, ellere göre rapor ve iki el uyumu, 3 yeni rozet                      | PR #7                           |
 | 2026-10-07 | Faz 7: gamlar ünitesi (18 ders), doğru yazım ve donanım imi, parmak numaraları ve geçiş uyarıları, Gam Merdiveni, Melodi Hafızası, gam raporu (eşit tempo, geçişler, iki el uyumu), 3 yeni rozet | PR #9                           |
 | 2026-10-07 | Faz 7 iyileştirmeleri: Tempo Merdiveni (kalıcı tempo artışı), iki oktavlık gamlar, Si, Mi♭, La♭ parmak düzenleri, Kulaktan Hafıza, 6 yeni ders, "Hız Treni" rozeti                               | PR #10                          |
+| 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                          |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                          |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -95,6 +96,16 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   yükseltmez. Gam Merdiveni (merdiven oyunu) bir oktavda kaldı: iki oktav serbest tempolu gam derslerinde. Kulaktan
   Hafıza'da diziler toniğe başlar ve ilk nota gösterilir, çünkü mutlak kulak olmadan ilk notayı duyarak bulmak
   beklenemez.
+
+- **Akorlar (Faz 8):** Bir akor, tutulan ya da son 350 ms içinde basılan tuşlardan oluşur; bütün notalar inince
+  değerlendirilir. Notalar tek tek basılsa da doğru sayılır, ama "aynı anda" (ilk ve son nota arası 100 ms içi) oranı
+  ayrı raporlanır, çünkü akor çalmayı öğrenen biri önce notaları bulmalı. Üç eşleşme biçimi: portede okunan akorlar
+  tam tuşuyla (`exact`), çevrim isteyen oyunlar oktav serbest ama en alttaki nota doğru olmalı (`voicing`), yalnızca
+  adı verilen tarifler herhangi bir çevrimde (`pcs`). Derslerde yanlış tuş ve yanlış çevrim can götürür, oyunlarda
+  götürmez (inen istilacı, yanan yemek götürür); yarım bırakılan akor can götürmez ama ilk deneme sayılmaz.
+  İlerlemelerde her akor bir öncekine en az hareketle (her nota en yakın notaya uzaklık toplamı) ulaşan çevrimde
+  yazılır: Do'da I–IV–V–I = Do-Mi-Sol, Do-Fa-La, Si-Re-Sol, Do-Mi-Sol. Arpej Sörfü 3/4'te: bir oktav 6 vuruş ve
+  tutulan son nota (3 vuruş) = 3 ölçü.
 
 ## Açık konular
 

@@ -238,7 +238,203 @@ async function dismissOverlay() {
   }
 }
 
+/** Press keys from the page, `gapMs` apart, each released `holdMs` after it went down. */
+async function pressTogether(keys, gapMs, holdMs = 150) {
+  await page.evaluate(
+    ({ keys, gap, hold }) => {
+      keys.forEach((midi, k) =>
+        window.setTimeout(() => {
+          const el = document.querySelector(`.key[data-midi="${midi}"]`)
+          el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 40 + k, isPrimary: k === 0 }))
+          window.setTimeout(
+            () => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 40 + k })),
+            hold,
+          )
+        }, k * gap),
+      )
+    },
+    { keys, gap: gapMs, hold: holdMs },
+  )
+  await page.waitForTimeout(keys.length * gapMs + holdMs + 60)
+}
+
+/** Play a chord drill: every note of the current chord, `gapMs` apart. */
+async function playChords(lessonTitle, shotName, { gapMs = 25, shotAfter = 3 } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.waitForSelector('.chord-wrap .staff svg')
+  for (let i = 0; i < 60 && !(await page.$('.results')); i++) {
+    const pending = await page.getAttribute('.chord-wrap', 'data-pending').catch(() => null)
+    if (pending) await pressTogether(pending.split(' ').map(Number), gapMs)
+    if (shotName && i === shotAfter) await page.screenshot({ path: `${out}/${shotName}.png` })
+    await page.waitForTimeout(120)
+  }
+  await page.waitForSelector('.results', { timeout: 3000 })
+  await page.waitForTimeout(800)
+}
+
+/**
+ * Play Akor Aşçısı or Uzay Savunması from the game object. `wrongInversion`
+ * first plays one inverted chord in another inversion.
+ */
+async function playChordArcade(lessonTitle, shotName, { wrongInversion = false } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.waitForSelector('.pixi-stage canvas')
+  let shot = false
+  for (let i = 0; i < 600 && !(await page.$('.results')); i++) {
+    const chord = await page.evaluate(() => {
+      const g = window.__dpoChordArcade
+      if (!g) return null
+      const target = 'invaders' in g ? (g.urgent && g.urgent.y > 0.15 ? g.urgent : null) : g.cooking
+      return target
+        ? { notes: target.record.chord.notes.map((n) => n.midi), inversion: target.record.chord.inversion }
+        : null
+    })
+    if (chord) {
+      if (wrongInversion && chord.inversion > 0) {
+        // The same notes with the bottom one moved up an octave: another inversion.
+        const [bottom, ...rest] = chord.notes
+        const top = rest.pop()
+        const up = [...rest, top, bottom + 12]
+        const down = [top - 12, bottom, ...rest]
+        const onKeyboard = async (keys) =>
+          (await Promise.all(keys.map((m) => page.$(`.key[data-midi="${m}"]`)))).every(Boolean)
+        await pressTogether((await onKeyboard(up)) ? up : down, 20)
+        wrongInversion = false
+        await page.waitForTimeout(400)
+      }
+      if (!shot && i > 4) {
+        await page.screenshot({ path: `${out}/${shotName}.png` })
+        shot = true
+      }
+      await pressTogether(chord.notes, 20)
+    }
+    await page.waitForTimeout(150)
+  }
+  await page.waitForSelector('.results', { timeout: 5000 })
+  await page.waitForTimeout(800)
+}
+
+/** Unit 6: chords, inversions, progressions, arpeggios and their games, in order. */
+async function chordsUnit() {
+  const back = () => page.getByText('Derslere dön').click()
+  await page.locator('.unit').nth(5).scrollIntoViewIfNeeded()
+  await playChords('Majör Üçlüler', 'chord-major')
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-chords.png`, fullPage: true })
+  const majorCard = await page.textContent('.chord-card')
+  if (!majorCard?.includes('12 akorun 12 tanesinde')) errors.push(`Chord card: ${majorCard}`)
+  if (!(await page.getByText('İlk denemede doğru akorlar').count())) errors.push('Chord XP line has the note label')
+  await back()
+  await playChordArcade('Akor Aşçısı', 'game-chef')
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-chef.png`, fullPage: true })
+  await back()
+  // Spread out: right notes, but never together.
+  await playChords('Minör Üçlüler', 'chord-minor', { gapMs: 140 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-chords-spread.png`, fullPage: true })
+  const spreadCard = await page.textContent('.chord-card')
+  if (!spreadCard?.includes('12 akorun 0 tanesinde')) errors.push(`Spread chord card: ${spreadCard}`)
+  await back()
+  await playChords('Sol Elle Akorlar', 'chord-left')
+  await dismissOverlay()
+  await back()
+  await playChordArcade('Uzay Savunması', 'game-space')
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-space.png`, fullPage: true })
+  await back()
+  await playChords('Akor Çevrimleri', 'chord-inversions', { shotAfter: 4 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-inversions.png`, fullPage: true })
+  const inversionTopics = await page.textContent('.results')
+  if (!inversionTopics?.includes('2. çevrim')) errors.push('Inversion lesson has no per-inversion topics')
+  await back()
+  await playChords('Çevrimleri Oku', 'chord-inversions-read')
+  await dismissOverlay()
+  await back()
+  await playChordArcade('Aşçı: Çevrimler', 'game-chef-inversions', { wrongInversion: true })
+  await dismissOverlay()
+  const chefCard = await page.textContent('.chord-card')
+  if (!chefCard?.includes('1 kez yanlış çevrim')) errors.push(`Wrong inversion not reported: ${chefCard}`)
+  await back()
+  await playChordArcade('Uzay: Çevrimler', 'game-space-inversions')
+  await dismissOverlay()
+  await back()
+  await playMelody('Arpejler', 'arpeggio', { shotAfter: 3 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-arpeggio.png`, fullPage: true })
+  const arpCard = await page.textContent('.scale-card')
+  if (!arpCard?.includes('Arpej tekniği')) errors.push(`Arpeggio card: ${arpCard}`)
+  await back()
+  await playBeat('Arpej Sörfü', 'game-surf', { shotAt: 0.35 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-surf.png`, fullPage: true })
+  const surfTopics = await page.textContent('.results')
+  if (!surfTopics?.includes('Eşit aralık')) errors.push('Surf report has no evenness topic')
+  if (!surfTopics?.includes('Sol Majör arpej · sağ el')) errors.push('Surf report has no per-arpeggio topics')
+  await back()
+  await playChords('I – IV – V – I', 'progression', { shotAfter: 2 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-progression.png`, fullPage: true })
+  const progTopics = await page.textContent('.results')
+  if (!progTopics?.includes('IV (Fa Majör)')) errors.push('Progression report has no per-degree topics')
+  await back()
+  await playChords('İki El: I – IV – V – I', 'progression-hands', { gapMs: 30, shotAfter: 5 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-progression-hands.png`, fullPage: true })
+  await back()
+  await playMelody('İki Elle Arpej', 'arpeggio-hands', { gapMs: 30, shotAfter: 4 })
+  await dismissOverlay()
+  const arpSync = await page.textContent('.sync')
+  if (!arpSync?.includes('14 tanesinde')) errors.push(`Two-hand arpeggio sync: ${arpSync}`)
+  await back()
+  await playChords('I – V – vi – IV', 'progression-pop', { gapMs: 30, shotAfter: 3 })
+  await dismissOverlay()
+  await back()
+  await playChords('Yedili Akorlar', 'chord-sevenths', { shotAfter: 4 })
+  await dismissOverlay()
+  await back()
+  await playChords('I – IV – V7 – I', 'progression-v7', { gapMs: 30, shotAfter: 2 })
+  await dismissOverlay()
+  await back()
+  await playChordArcade('Aşçı: Yedililer', 'game-chef-sevenths')
+  await dismissOverlay()
+  await back()
+  const surfRounds = await playBeat('Sörf: Tempo Merdiveni', 'game-surf-tempo', { shotAt: 0.5 })
+  if (surfRounds !== 3) errors.push(`Surf tempo ladder played ${surfRounds} rounds instead of 3`)
+  await dismissOverlay()
+  await back()
+  await playBeat('Sörf: İki El', 'game-surf-hands', { shotAt: 0.4 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-surf-hands.png`, fullPage: true })
+  const surfSync = await page.textContent('.sync')
+  if (!surfSync?.includes('14 tanesinde')) errors.push(`Two-hand surf sync: ${surfSync}`)
+  await back()
+  await page.waitForTimeout(400)
+  await page
+    .locator('.unit')
+    .nth(5)
+    .screenshot({ path: `${out}/map-chords.png` })
+}
+
+async function finish() {
+  await browser.close()
+  if (errors.length) {
+    console.error('Smoke test failed:', [...new Set(errors)])
+    process.exit(1)
+  }
+}
+
 await page.goto(url)
+
+// SMOKE_ONLY=chords plays only unit 6 (its first lesson is open from the start).
+if (process.env.SMOKE_ONLY === 'chords') {
+  await page.waitForTimeout(800)
+  await chordsUnit()
+  await finish()
+  console.log(`Smoke test (chords) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
 await page.waitForTimeout(800)
 await page.screenshot({ path: `${out}/map-empty.png` })
 
@@ -501,6 +697,8 @@ await page
   .locator('.unit')
   .nth(4)
   .screenshot({ path: `${out}/map-scales.png` })
+
+await chordsUnit()
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.
 await page.locator('.calib-tip').click()

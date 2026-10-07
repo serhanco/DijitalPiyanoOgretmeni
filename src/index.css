@@ -1543,3 +1543,35 @@ button.chip {
 .tempo-step.todo {
   color: var(--muted);
 }
+
+/* Phase 8: chords */
+.numerals {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 2px;
+  font-weight: 900;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.numerals span {
+  padding: 1px 8px;
+  border-radius: 8px;
+  color: var(--muted);
+  border: 2px solid var(--border);
+}
+.numerals span.done {
+  color: var(--primary-dark);
+  border-color: transparent;
+}
+.numerals span.on {
+  color: #fff;
+  background: #ff9600;
+  border-color: #ff9600;
+  animation: pop-in 0.25s ease-out;
+}
+.chord-card h3 {
+  margin: 10px 0 4px;
+  font-size: 1rem;
+}
+.chord-card p {
+  margin: 6px 0;
+}

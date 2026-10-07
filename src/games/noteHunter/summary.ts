@@ -11,6 +11,7 @@ import {
 } from '../../music/notes'
 import type { Judgement } from '../../rhythm/timing'
 import type { TempoLadderSummary } from '../../rhythm/tempoLadder'
+import type { ChordSummary } from '../chords/report'
 import type { MemorySummary } from '../memory/engine'
 import type { ScaleSummary } from '../scales/steps'
 import { firstTryOk, type PromptRecord } from './session'
@@ -63,6 +64,8 @@ export interface SessionSummary {
   memory?: MemorySummary
   /** Tempo merdiveni: the tempos played, passed, and the new starting tempo. */
   tempoLadder?: TempoLadderSummary
+  /** Chord lessons: how together the notes came down, the late note, the weakest chords. */
+  chords?: ChordSummary
   /** Written names of black keys when they differ from the sharp name (Si♭, not La#). */
   noteNames?: Record<number, string>
 }

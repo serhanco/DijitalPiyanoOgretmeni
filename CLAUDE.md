@@ -61,6 +61,8 @@ src/
   music/scales.ts         (phase 7) scale spelling, key signatures, fingerings, thumb crossings
   games/scales/           (phase 7) scale steps, Gam Merdiveni plan, scale reports, unit 5 lessons
   games/memory/           (phase 7) Melodi Hafızası engine (Simon with scale fragments)
+  music/chords.ts         (phase 8) chord spelling, inversions, fingers, identifyChord, progressions, arpeggio runs
+  games/chords/           (phase 8) ChordListener + ChordSession, chord report, arpeggio steps / Arpej Sörfü plan, unit 6
   screens/                Home, NoteHunter, Results (simple state machine in App.tsx, no router)
   state/settings.ts       Zustand + localStorage settings
   progress/               (phase 2) gamification rules, Dexie DB, history, curriculum
@@ -81,8 +83,8 @@ Principles:
 
 | Branch | State                                                                                    |
 | ------ | ---------------------------------------------------------------------------------------- |
-| `main` | Phases 0–7 and the polish round (PRs #1–#9 merged on 2026-10-07), live on GitHub Pages   |
-| PR #10 | Phase 7 improvements: tempo ladder, two-octave scales, B/E♭/A♭ fingerings, memory by ear |
+| `main` | Phases 0–7, the polish round and phase 7 improvements (PRs #1–#10), live on GitHub Pages |
+| PR #11 | Phase 8: chords, inversions, progressions, arpeggios (unit 6)                            |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -218,7 +220,41 @@ Phase 7 improvements (`claude/faz-7-iyilestirme-655r1z`, unit 5 now 24 lessons):
 - `MemorySpec.listenOnly` (Kulaktan Hafıza): only the first note lights up, every run starts on the tonic
   (`firstPosition`), falls back to lit keys when the piano samples did not load (`.memory-board[data-ear]`).
 
-Next: **phase 8, chords, inversions, arpeggios** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+Phase 8 (chords, `claude/faz-8-akorlar-0xd3ut`, unit 6 = 20 lessons):
+
+- `src/music/chords.ts`: `chordTones` spells by thirds (B♭-D-F); qualities major, minor, dim, dom7, maj7, min7;
+  `invert`, `chordFingers` (RH 1-3-5 / 1-2-5, LH 5-3-1 / 5-2-1, sevenths 1-2-3-5), `chordTarget(root, quality,
+inversion, hands)` places a `ChordTarget` (right hand ≤ G5, left hand ≤ C4; `hands: 'both'` adds the root as the left
+  hand's bass), `identifyChord`, `progression(key, numerals, { hands, voiceLead })` (each chord takes the inversion
+  that moves least: in C, I–IV–V–I = C-E-G, C-F-A, B-D-G, C-E-G), `arpeggioRun` (1-2-3-5, two octaves 1-2-3-1-2-3-5,
+  LH 5-4-2-1-4-2-1, crossings via `crossingBetween`).
+- `src/games/chords/session.ts`: **`ChordListener`** groups presses: held keys plus keys released within
+  `CHORD_WINDOW_MS` (350 ms); `abandoned(now)` reports an attempt released unfinished. `matchChord(target, presses,
+mode)` with modes `exact` (written keys), `voicing` (any octave, right bottom note) and `pcs` (any inversion) returns
+  `partial | wrong (octave?) | inversion | complete (spreadMs, lastVoice)`. `judgePress` does the bookkeeping of a
+  `ChordRecord` (wrong keys, inversion mistakes, incomplete attempts, spread). **`ChordSession`** is the drill (a wrong
+  key or inversion costs a heart, an incomplete chord does not). Together = spread ≤ `TOGETHER_MS`.
+- `report.ts` `summarizeChords`: topics per family, inversion, hand, degree ("IV (Fa Majör)") and "Notalara aynı anda
+  basma"; `SessionSummary.chords` (together share, mean spread, the late voice: bass/bottom/middle/top, inversion
+  mistakes, weakest chords) → results "Akor tekniği" card. `feedback.ts`: messages per chord event.
+- `arpeggio.ts`: `ArpeggioPart { root, quality, hands: right | left | parallel, octaves }`, `arpeggioSteps` (melody
+  steps with fingers; played in `MelodyScreen`, `kind: 'arpeggio'`, reported by `patternReport` = the generalised
+  `scaleReport`), `surfPlan` (one note per beat in 3/4, the last note a dotted half). `ladderReport(rounds, meta,
+titles)` now also measures "Eşit aralık" (evenness of the played intervals) for Gam Merdiveni and Arpej Sörfü.
+- `lessons.ts`: `ChordSpec { chords, draw | repeat, mode, showName, showNotes, progression }`, `chordSequence`
+  (random draws never repeat a chord back to back). Kinds `chord` (`ChordScreen`: `MelodyStaff` pages of chords,
+  numerals line, fingers, `.chord-wrap[data-pending]`, `window.__dpoChord`), `chef` and `space`
+  (`ChordArcadeScreen`, `window.__dpoChordArcade`), `arpeggio`, `surf` (`BeatArcadeScreen` → `SurfScreen`).
+- Games: **Akor Aşçısı** (`arcade/chef/`: one recipe at a time with a patience bar, ingredients float in the pot while
+  the keys are down, a burnt dish costs a heart), **Uzay Savunması** (`arcade/space/`: invaders in three lanes carry a
+  chord on a mini staff, the cannon shoots the one whose chord is played; a key that fits another invader starts a new
+  chord; a landed invader costs a heart), **Arpej Sörfü** (`arcade/surf/scene.ts`: the wave is the arpeggio's pitch
+  contour, buoys with names and finger badges, the surfer wipes out on a miss; one lesson with a tempo ladder).
+- All chord kinds are in `PATTERN_KINDS` (no note statistics). XP line "İlk denemede doğru akorlar"
+  (`LessonOutcome.chords`). Badges: Akor Şefi, Uzay Kahramanı (`noneMissed`), Sörf Ustası, Tek Hamlede
+  (`allTogether`), Akor Ustası.
+
+Next: **phase 9, ear training and memory** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
@@ -227,7 +263,9 @@ the plan against the code, test, report with suggestions, and wait for the go be
 runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
 all twenty-four scale lessons (scale drills with one and two hands and two octaves, four Gam Merdiveni runs at a faster
 tempo, two tempo ladders: one passed in three rounds whose raised tempo is checked on reopening, one with a late second
-round that stops the ladder; three Melodi Hafızası games, one with a wrong key, one by ear), a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
+round that stops the ladder; three Melodi Hafızası games, one with a wrong key, one by ear), all twenty chord lessons
+(chords pressed 25 ms apart and once 140 ms apart, a wrong inversion in Aşçı: Çevrimler, progressions with both hands,
+arpeggios, three Arpej Sörfü runs incl. a tempo ladder), a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
 `.staff-wrap[data-note]`, and keys are `.key[data-midi]`.
 
 ```bash
@@ -235,7 +273,8 @@ npm run build && (npx vite preview --port 4173 &) && sleep 3
 CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -- /tmp/screens
 ```
 
-Look at the screenshots after UI changes. Piano samples fail to load in a sandbox without network; the script ignores
+`SMOKE_ONLY=chords` plays only unit 6 (a few minutes instead of the whole curriculum). Look at the screenshots after UI
+changes. Piano samples fail to load in a sandbox without network; the script ignores
 that error.
 
 ## Known gaps
