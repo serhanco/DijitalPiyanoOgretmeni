@@ -992,3 +992,53 @@ button.chip {
 .combo.big {
   font-size: 1.2rem;
 }
+
+/* Arcade games */
+.arcade-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.arcade-message {
+  flex: 1;
+  font-weight: 800;
+}
+.arcade-score {
+  font-weight: 900;
+  font-size: 1.2rem;
+  color: var(--warn);
+}
+.pixi-stage {
+  flex: 1;
+  min-height: 240px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 2px solid var(--border);
+  position: relative;
+}
+.pixi-stage canvas {
+  position: absolute;
+  inset: 0;
+}
+.arcade .keyboard {
+  margin-top: 0;
+}
+.clef-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: #2b2f3a;
+  opacity: 0.75;
+  z-index: 1;
+}
+@media (max-width: 420px) {
+  .top-bar {
+    gap: 4px;
+  }
+  .chip {
+    padding: 4px 8px;
+    font-size: 0.85rem;
+  }
+}

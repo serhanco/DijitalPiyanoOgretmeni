@@ -14,6 +14,8 @@ import { type Reward, useProfile } from './state/profile'
 // The staff renderer (VexFlow + music font) is large, so load it after the home screen.
 const loadGame = () => import('./screens/NoteHunterScreen')
 const NoteHunterScreen = lazy(() => loadGame().then((m) => ({ default: m.NoteHunterScreen })))
+// Arcade games bring PixiJS: their own chunk, loaded on demand.
+const ArcadeScreen = lazy(() => import('./screens/ArcadeScreen').then((m) => ({ default: m.ArcadeScreen })))
 
 type Screen =
   | { name: 'home' }
@@ -71,7 +73,11 @@ export default function App() {
       {screen.name === 'profile' && <ProfileScreen onBack={home} />}
       {screen.name === 'play' && (
         <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-          <NoteHunterScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          {screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' ? (
+            <ArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          ) : (
+            <NoteHunterScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          )}
         </Suspense>
       )}
       {screen.name === 'results' && (

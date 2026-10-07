@@ -1,7 +1,12 @@
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 
+/** How a lesson is played: the staff drill or one of the arcade games. */
+export type LessonKind = 'drill' | 'bird' | 'balloon'
+
 export interface NoteLesson {
   id: string
+  /** Defaults to 'drill'. */
+  kind?: LessonKind
   title: string
   description: string
   clef: Clef
@@ -33,6 +38,16 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     keyboard: TREBLE_KEYBOARD,
   },
   {
+    id: 'treble-bird-1',
+    kind: 'bird',
+    title: 'Nota Kuşu',
+    description: 'Kuşu borulardaki boşluğun notasına uçur',
+    clef: 'treble',
+    notes: whiteKeysBetween(parseNote('C4'), parseNote('C5')),
+    length: 15,
+    keyboard: TREBLE_KEYBOARD,
+  },
+  {
     id: 'treble-3',
     title: 'Çizgiler',
     description: 'Mi, Sol, Si, Re, Fa',
@@ -51,9 +66,29 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     keyboard: TREBLE_KEYBOARD,
   },
   {
+    id: 'treble-balloon-1',
+    kind: 'balloon',
+    title: 'Balon Patlatma',
+    description: 'Balonlar kaçmadan notalarını çal',
+    clef: 'treble',
+    notes: whiteKeysBetween(parseNote('E4'), parseNote('F5')),
+    length: 20,
+    keyboard: TREBLE_KEYBOARD,
+  },
+  {
     id: 'treble-5',
     title: 'Porte Ustası',
     description: 'Do4 ile Sol5 arasındaki tüm notalar',
+    clef: 'treble',
+    notes: whiteKeysBetween(parseNote('C4'), parseNote('G5')),
+    length: 25,
+    keyboard: TREBLE_KEYBOARD,
+  },
+  {
+    id: 'treble-bird-2',
+    kind: 'bird',
+    title: 'Nota Kuşu: Usta',
+    description: 'Ek çizgiler dahil, daha hızlı borular',
     clef: 'treble',
     notes: whiteKeysBetween(parseNote('C4'), parseNote('G5')),
     length: 25,
