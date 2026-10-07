@@ -44,6 +44,12 @@ interface Props {
   onFinish: (summary: SessionSummary) => void
   onExit: () => void
   renderField: (props: FieldProps) => ReactNode
+  /** Fixed targets (a scale) instead of random bars from the lesson's rhythm spec. */
+  plan?: { bars: RhythmValue[][]; skill: SkillProvider }
+  /** Adds activity-specific parts to the rhythm report. */
+  report?: (track: BeatTrack, summary: SessionSummary) => SessionSummary
+  /** Note names for messages (a scale says Si♭, not La#). */
+  nameOf?: (midi: number) => string
 }
 
 interface Popup {
@@ -79,15 +85,27 @@ function BeatHud({ track, now, spec }: { track: BeatTrack | null; now: number; s
   )
 }
 
-export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, renderField }: Props) {
+export function BeatFrame({
+  lesson,
+  hearts,
+  howTo,
+  className,
+  onFinish,
+  onExit,
+  renderField,
+  plan,
+  report,
+  nameOf = solfegeName,
+}: Props) {
   const spec = lesson.rhythm!
   const { ignoreOctave, showKeyLabels, metronome, latency, deviceLatency, set } = useSettings()
   const bars = useMemo(
-    () => generateBars({ values: spec.values, bars: spec.bars, beatsPerBar: spec.beatsPerBar }),
-    [spec],
+    () => plan?.bars ?? generateBars({ values: spec.values, bars: spec.bars, beatsPerBar: spec.beatsPerBar }),
+    [spec, plan],
   )
   const skill = useMemo(
     () =>
+      plan?.skill ??
       rhythmSkill({
         clef: lesson.clef,
         bars,
@@ -96,7 +114,7 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
         ignoreOctave,
         beatsPerBar: spec.beatsPerBar,
       }),
-    [lesson, bars, spec, ignoreOctave],
+    [lesson, bars, spec, ignoreOctave, plan],
   )
 
   // The tempo the player chose last time in this lesson.
@@ -112,8 +130,10 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
   const metronomeRef = useRef<Metronome | null>(null)
   const finished = useRef(false)
   const onFinishRef = useRef(onFinish)
+  const reportRef = useRef(report)
   useEffect(() => {
     onFinishRef.current = onFinish
+    reportRef.current = report
   })
 
   // Warm up Tone.js while the player reads the instructions.
@@ -151,30 +171,33 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
     [],
   )
 
-  const react = useCallback((events: TrackEvent[]) => {
-    const t = trackRef.current
-    for (const ev of events) {
-      if (ev.type === 'hit') {
-        setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: ev.judgement, text: JUDGEMENT_LABELS[ev.judgement] }))
-        if (onTime(ev.judgement)) {
-          const cheer = t !== null && t.combo > 0 && t.combo % COMBO_STEP === 0
-          setMood((m) => ({ mood: cheer ? 'cheer' : 'happy', pulse: m.pulse + 1 }))
-          if (cheer) setMessage(`🔥 ${t.combo} vuruş üst üste tam zamanında!`)
-        } else {
-          setMessage(ev.judgement === 'early' ? 'Biraz erken! Vuruşu bekle.' : 'Biraz geç! Vuruşu dinle.')
+  const react = useCallback(
+    (events: TrackEvent[]) => {
+      const t = trackRef.current
+      for (const ev of events) {
+        if (ev.type === 'hit') {
+          setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: ev.judgement, text: JUDGEMENT_LABELS[ev.judgement] }))
+          if (onTime(ev.judgement)) {
+            const cheer = t !== null && t.combo > 0 && t.combo % COMBO_STEP === 0
+            setMood((m) => ({ mood: cheer ? 'cheer' : 'happy', pulse: m.pulse + 1 }))
+            if (cheer) setMessage(`🔥 ${t.combo} vuruş üst üste tam zamanında!`)
+          } else {
+            setMessage(ev.judgement === 'early' ? 'Biraz erken! Vuruşu bekle.' : 'Biraz geç! Vuruşu dinle.')
+          }
+        } else if (ev.type === 'miss') {
+          setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: 'miss', text: JUDGEMENT_LABELS.miss }))
+          setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
+          setMessage(ev.record.rest ? 'Es sırasında sus!' : 'Bu vuruşu kaçırdın.')
+          vibrate(60)
+        } else if (ev.type === 'wrong') {
+          setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: 'wrong', text: 'Yanlış nota' }))
+          setMessage(`${nameOf(ev.midi)} değil, ${nameOf(ev.record.target)} çal!`)
+          setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
         }
-      } else if (ev.type === 'miss') {
-        setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: 'miss', text: JUDGEMENT_LABELS.miss }))
-        setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
-        setMessage(ev.record.rest ? 'Es sırasında sus!' : 'Bu vuruşu kaçırdın.')
-        vibrate(60)
-      } else if (ev.type === 'wrong') {
-        setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: 'wrong', text: 'Yanlış nota' }))
-        setMessage(`${solfegeName(ev.midi)} değil, ${solfegeName(ev.record.target)} çal!`)
-        setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
       }
-    }
-  }, [])
+    },
+    [nameOf],
+  )
 
   // Key presses, corrected by the measured delay of their device.
   useEffect(
@@ -203,19 +226,16 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
       if (track.done && !finished.current) {
         finished.current = true
         metronomeRef.current?.stop()
-        window.setTimeout(
-          () =>
-            onFinishRef.current(
-              summarizeRhythm(track.attempted, {
-                failed: track.failed,
-                pitched: !spec.anyKey,
-                stray: track.stray,
-                bestCombo: track.bestCombo,
-                bpm: track.bpm,
-              }),
-            ),
-          FINISH_DELAY_MS,
-        )
+        window.setTimeout(() => {
+          const summary = summarizeRhythm(track.attempted, {
+            failed: track.failed,
+            pitched: !spec.anyKey && !reportRef.current,
+            stray: track.stray,
+            bestCombo: track.bestCombo,
+            bpm: track.bpm,
+          })
+          onFinishRef.current(reportRef.current ? reportRef.current(track, summary) : summary)
+        }, FINISH_DELAY_MS)
       }
       if (!finished.current) raf = requestAnimationFrame(loop)
     }

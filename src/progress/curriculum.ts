@@ -2,6 +2,7 @@ import { BASS_KEYBOARD, BASS_LESSONS } from '../games/noteHunter/bassLessons'
 import { GRAND_KEYBOARD, HANDS_LESSONS } from '../games/noteHunter/handsLessons'
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import type { Clef } from '../music/notes'
+import { SCALE_LESSONS } from '../games/scales/lessons'
 import { RHYTHM_LESSONS } from '../rhythm/lessons'
 
 export interface Unit {
@@ -52,8 +53,7 @@ export const UNITS: Unit[] = [
     title: 'Ünite 5: Gamlar',
     subtitle: 'Sağ el, sol el, iki el eş zamanlı',
     color: '#2bc4a8',
-    lessons: [],
-    comingSoon: true,
+    lessons: SCALE_LESSONS,
   },
   {
     id: 'chords',

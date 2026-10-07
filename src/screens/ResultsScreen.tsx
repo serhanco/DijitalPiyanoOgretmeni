@@ -1,4 +1,6 @@
-import type { NoteLesson } from '../games/noteHunter/lessons'
+import type { MemorySummary } from '../games/memory/engine'
+import { type NoteLesson, PATTERN_KINDS } from '../games/noteHunter/lessons'
+import type { ScaleSummary } from '../games/scales/steps'
 import type { HandStat, SessionSummary, SyncSummary, TimingSummary } from '../games/noteHunter/summary'
 import { describeOffset, JUDGEMENT_LABELS, JUDGEMENTS } from '../rhythm/timing'
 import { AnimatePresence, motion } from 'motion/react'
@@ -129,6 +131,58 @@ function HandsCard({ hands, sync }: { hands?: HandStat[]; sync?: SyncSummary }) 
   )
 }
 
+/** Evenness of the scale and how the thumb crossings went. */
+function ScaleCard({ scale }: { scale: ScaleSummary }) {
+  const { evenness, meanIntervalMs, crossings } = scale
+  const crossAcc = crossings.shown ? crossings.firstTry / crossings.shown : null
+  const advice =
+    crossAcc !== null && crossAcc < 0.8
+      ? 'Parmak geçişlerinde zorlanıyorsun: geçişten önceki notada başparmağını hazırla ve yavaş çal.'
+      : evenness !== null && evenness < 0.7
+        ? 'Notalar arasındaki süre değişiyor. İçinden sayarak her notaya eşit süre ver, sonra Gam Merdiveni’nde metronomla dene.'
+        : 'Gamın düzgün akıyor. Bir sonraki adım: aynı eşitlikle biraz daha hızlı.'
+  return (
+    <section className="card scale-card">
+      <h2>Gam tekniği</h2>
+      <p className="small muted">
+        {crossings.shown > 0 && (
+          <>
+            {crossings.shown} geçişin {crossings.firstTry} tanesinde doğru notaya ilk denemede bastın.{' '}
+          </>
+        )}
+        {meanIntervalMs !== null && (
+          <>
+            Notalar arası ortalama {(meanIntervalMs / 1000).toFixed(2).replace('.', ',')} sn (yaklaşık{' '}
+            {Math.round(60000 / meanIntervalMs)} BPM).
+          </>
+        )}
+      </p>
+      <p className="small">{advice}</p>
+    </section>
+  )
+}
+
+/** The longest runs remembered in Melodi Hafızası. */
+function MemoryCard({ memory }: { memory: MemorySummary }) {
+  return (
+    <section className="card memory-card">
+      <h2>Hafıza</h2>
+      <div className="memory-dots result">
+        {Array.from({ length: memory.maxLength }, (_, i) => (
+          <span
+            key={i}
+            className={`memory-dot ${i < memory.longestClean ? 'played' : i < memory.longest ? 'half' : ''}`}
+          />
+        ))}
+      </div>
+      <p>
+        En uzun hatasız dizi: <b>{memory.longestClean}</b> / {memory.maxLength} nota
+        {memory.longest > memory.longestClean && <> · hatayla tamamlanan en uzun dizi {memory.longest} nota</>}
+      </p>
+    </section>
+  )
+}
+
 function handAdvice(right: HandStat, left: HandStat): string {
   const diff = right.accuracy - left.accuracy
   if (Math.abs(diff) < 0.1) return 'İki elin de benzer gidiyor, güzel denge!'
@@ -154,8 +208,11 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
   const practiceClefs = new Set(summary.weakest.map((n) => n.clef))
   const practiceClef: Clef | 'grand' = practiceClefs.size === 1 ? [...practiceClefs][0] : 'grand'
   // On the grand staff a note name alone does not say which staff it was read on.
+  const nameOf = (midi: number) => summary.noteNames?.[midi] ?? solfegeName(midi)
   const noteLabel = (n: { midi: number; clef: Clef }) =>
-    summary.hands ? `${solfegeName(n.midi)} (${CLEF_NAMES[n.clef]})` : solfegeName(n.midi)
+    summary.hands ? `${nameOf(n.midi)} (${CLEF_NAMES[n.clef]})` : nameOf(n.midi)
+  // Scales and memory runs are not about reading: no "practise these notes" drill.
+  const canPractice = !PATTERN_KINDS.includes(lesson.kind ?? 'drill')
   const leveledUp = reward.levelAfter > reward.levelBefore
   const [showLevelUp, setShowLevelUp] = useState(leveledUp)
   const mood: MascotMood = summary.failed || summary.stars === 0 ? 'sad' : summary.stars >= 2 ? 'cheer' : 'happy'
@@ -299,6 +356,9 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
         ))}
       </section>
 
+      {summary.scale && <ScaleCard scale={summary.scale} />}
+      {summary.memory && <MemoryCard memory={summary.memory} />}
+
       {(summary.hands || summary.sync) && <HandsCard hands={summary.hands} sync={summary.sync} />}
 
       {summary.weakest.length > 0 && (
@@ -308,11 +368,11 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
             {summary.weakest.map((n) => (
               <li key={`${n.clef}${n.midi}`}>
                 <b>{noteLabel(n)}</b>: {n.shown} kez çıktı, {n.firstTry} kez ilk denemede bildin
-                {n.confusedWith[0] && <> · genelde {solfegeName(n.confusedWith[0].midi)} ile karıştırdın</>}
+                {n.confusedWith[0] && <> · genelde {nameOf(n.confusedWith[0].midi)} ile karıştırdın</>}
               </li>
             ))}
           </ul>
-          {practiceNotes.length >= 2 && (
+          {canPractice && practiceNotes.length >= 2 && (
             <button className="btn btn-small practice-btn" onClick={() => onPractice(practiceNotes, practiceClef)}>
               Bu notaları çalış
             </button>

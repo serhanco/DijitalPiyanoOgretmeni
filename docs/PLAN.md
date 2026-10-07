@@ -18,7 +18,8 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5) |
 | Cila turu (Faz 5 sonrası)                     | Birleşti (PR #6) |
 | 6 Fa anahtarı ve iki el                       | Birleşti (PR #7) |
-| 7 ve sonrası                                  | Başlanmadı       |
+| 7 Gamlar                                      | Birleşti (PR #9) |
+| 8 ve sonrası                                  | Başlanmadı       |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -131,7 +132,12 @@ Her faz ayrı bir PR olarak gelir ve sonunda denenebilir bir uygulama bırakır.
 - El bazında rapor (sağ el / sol el doğruluk ve tepki süresi) ve iki el uyumu (aynı anda basma farkı, ms)
 - Haritada gamlar (Ünite 5) ve akorlar (Ünite 6) "yakında" olarak duruyor
 
-### Faz 7 — Gamlar (sol anahtarı, fa anahtarı, iki el eş zamanlı)
+### Faz 7 — Gamlar (sol anahtarı, fa anahtarı, iki el eş zamanlı) (PR #9)
+
+Yapılan: Ünite 5, 18 ders. Do, Sol, Re, La, Mi, Fa, Si♭ majör; La, Mi, Re minör (doğal, armonik, melodik). Notalar
+doğru yazılır (Si♭, La# değil), donanım imi ve parmak numaraları portede; geçiş gereken notalar turuncu ve "Başparmağı
+altından geçir" ipucuyla. Gam Merdiveni metronomla, Melodi Hafızası gam parçalarıyla. Rapor: gam başına başarı, parmak
+geçişleri, eşit tempo, el başına başarı ve iki el uyumu (ms). Plan:
 
 - Majör gamlar: Do, Sol, Re, La, Mi, Fa, Si♭…; sonra doğal, armonik ve melodik minör gamlar
 - Sıra: sağ el (sol anahtarı) → sol el (fa anahtarı) → **iki el eş zamanlı** (paralel hareket) → zıt hareket

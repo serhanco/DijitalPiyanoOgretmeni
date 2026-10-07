@@ -6,8 +6,11 @@ import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { MelodySession, parseMelodies, type Step, syncSummary } from '../games/melody/session'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
+import { partTitle, scaleKeyboard, scaleReport, scaleSteps, spelledNames } from '../games/scales/steps'
+import { setComputerKeyboardBase } from '../input/computerKeyboard'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
+import { CROSSING_TIPS } from '../music/scales'
 import { HEARTS_PER_LESSON } from '../progress/gamification'
 import { useSettings } from '../state/settings'
 
@@ -35,18 +38,36 @@ function paginate(steps: Step[]): { start: number; steps: Step[] }[] {
   return pages
 }
 
+/** The current step's fingers, and the crossing to make if there is one. */
+function fingerTip(step: Step): { text: string; cross: boolean } | null {
+  const fingered = step.notes.filter((n) => n.finger)
+  if (!fingered.length) return null
+  const crossing = fingered.find((n) => n.cross)
+  const hand = (clef: string) => (clef === 'treble' ? 'sağ el' : 'sol el')
+  const fingers = fingered
+    .map((n) => (fingered.length > 1 ? `${hand(n.clef)} ${n.finger}` : `${n.finger}. parmak`))
+    .join(', ')
+  if (!crossing) return { text: `Parmak: ${fingers}`, cross: false }
+  const who = fingered.length > 1 ? ` (${hand(crossing.clef)})` : ''
+  return { text: `↪ ${CROSSING_TIPS[crossing.cross!]}${who}: ${fingers}`, cross: true }
+}
+
 export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
   const { ignoreOctave, showKeyLabels, relaxedMode } = useSettings()
   const session = useMemo(
     () =>
       new MelodySession({
-        steps: parseMelodies(lesson.melodies ?? [], lesson.grand ? undefined : lesson.clef),
+        steps: lesson.scales
+          ? scaleSteps(lesson.scales)
+          : parseMelodies(lesson.melodies ?? [], lesson.grand ? undefined : lesson.clef),
         hearts: relaxedMode ? undefined : HEARTS_PER_LESSON,
         ignoreOctave,
       }),
     [lesson, ignoreOctave, relaxedMode],
   )
   const pages = useMemo(() => paginate(session.steps), [session])
+  const names = useMemo(() => spelledNames(session.steps), [session])
+  const nameOf = (midi: number) => names.get(midi) ?? solfegeName(midi)
   const [position, setPosition] = useState(0)
   const [hit, setHit] = useState<number[]>([])
   const [wrongKey, setWrongKey] = useState<number | null>(null)
@@ -81,9 +102,15 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
   useEffect(() => {
     const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms))
     const finish = (failed: boolean) => {
-      const summary = summarize(session.attempted, lesson.clef, failed)
+      let summary = summarize(session.attempted, lesson.clef, failed)
       const sync = syncSummary(session.stepRecords.filter((rs) => rs[0].shownAt !== null))
-      onFinishRef.current(sync ? { ...summary, sync } : summary)
+      if (sync) summary = { ...summary, sync }
+      if (lesson.scales) {
+        // Scales are reported per scale, at the crossings and by evenness, not by staff position.
+        const { perCategory, scale } = scaleReport(session.steps, session.stepRecords, lesson.scales)
+        summary = { ...summary, perCategory, scale, noteNames: Object.fromEntries(spelledNames(session.steps)) }
+      }
+      onFinishRef.current(summary)
     }
     const unsubscribe = subscribe((e) => {
       if (e.type !== 'on' || session.done) return
@@ -132,7 +159,7 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
       unsubscribe()
       pending.forEach(clearTimeout)
     }
-  }, [session, lesson.clef])
+  }, [session, lesson.clef, lesson.scales])
 
   useEffect(() => {
     if (!flash.length) return
@@ -150,8 +177,15 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
     page.start + i < position ? 'done' : page.start + i === position ? 'current' : 'todo',
   )
   const pending = done ? [] : session.steps[position].notes.map((n) => n.midi).filter((m) => !hit.includes(m))
-  const melodyTitle = lesson.melodies?.[page.steps[0].melody]?.title
+  const partIndex = page.steps[0].melody
+  const melodyTitle = lesson.scales?.[partIndex]
+    ? partTitle(lesson.scales[partIndex])
+    : lesson.melodies?.[partIndex]?.title
   const twoKeys = !done && session.steps[position].notes.length > 1
+  const tip = done ? null : fingerTip(session.steps[position])
+  // Scales: only the current scale's keys, so a lesson spanning four octaves stays playable on a phone.
+  const keyboard = lesson.scales?.[partIndex] ? scaleKeyboard([lesson.scales[partIndex]]) : lesson.keyboard
+  useEffect(() => setComputerKeyboardBase(keyboard.low), [keyboard.low])
 
   const marks: Partial<Record<number, KeyMark>> = {}
   if (wrongCount >= HINT_AFTER) for (const m of pending) marks[m] = 'hint'
@@ -185,11 +219,17 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
         <Mascot mood={mood.mood} pulse={mood.pulse} size={76} />
         <div>
           <p className="prompt">{melodyTitle ? `🎶 ${melodyTitle}` : 'Melodiyi çal'}</p>
-          <p className="small muted">
-            {twoKeys
-              ? 'İki tuşa birlikte bas: sol el alttaki, sağ el üstteki nota.'
-              : 'Mavi notayı çal, melodi ilerlesin.'}
-          </p>
+          {tip ? (
+            <p className={`finger-tip ${tip.cross ? 'cross' : ''}`} key={tip.text}>
+              {tip.text}
+            </p>
+          ) : (
+            <p className="small muted">
+              {twoKeys
+                ? 'İki tuşa birlikte bas: sol el alttaki, sağ el üstteki nota.'
+                : 'Mavi notayı çal, melodi ilerlesin.'}
+            </p>
+          )}
           {combo >= 3 && (
             <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={combo}>
               🔥 {combo} doğru üst üste{combo % COMBO_STEP === 0 ? '!' : ''}
@@ -215,15 +255,15 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
 
       <p className={`feedback ${wrongKey !== null ? 'bad' : ''}`} aria-live="polite">
         {wrongKey !== null
-          ? `${solfegeName(wrongKey)} değil, tekrar dene`
+          ? `${nameOf(wrongKey)} değil, tekrar dene`
           : wrongCount >= HINT_AFTER && pending.length
-            ? `İpucu: ${pending.map((m) => solfegeName(m)).join(' + ')}`
+            ? `İpucu: ${pending.map(nameOf).join(' + ')}`
             : hit.length
               ? 'Şimdi öbür el!'
               : ' '}
       </p>
 
-      <PianoKeyboard low={lesson.keyboard.low} high={lesson.keyboard.high} marks={marks} showLabels={showKeyLabels} />
+      <PianoKeyboard low={keyboard.low} high={keyboard.high} marks={marks} showLabels={showKeyLabels} />
     </div>
   )
 }

@@ -74,12 +74,13 @@ export class BeatTrack {
       }
     })
     // A note's window never reaches halfway to its neighbours, so a press
-    // always belongs to the closest note.
-    const notes = this.records.filter((r) => !r.rest)
+    // always belongs to the closest note. Notes due together (both hands)
+    // share a window.
+    const times = [...new Set(this.records.filter((r) => !r.rest).map((r) => r.dueAt))].sort((a, b) => a - b)
     this.windows = this.records.map((r) => {
       if (r.rest) return 0
-      const i = notes.indexOf(r)
-      const gaps = [notes[i - 1], notes[i + 1]].filter(Boolean).map((n) => Math.abs(n.dueAt - r.dueAt) / 2)
+      const i = times.indexOf(r.dueAt)
+      const gaps = [times[i - 1], times[i + 1]].filter((t) => t !== undefined).map((t) => Math.abs(t - r.dueAt) / 2)
       return Math.min(MAX_WINDOW_MS, ...gaps)
     })
   }
@@ -143,12 +144,18 @@ export class BeatTrack {
   press(midi: number, time: number): TrackEvent[] {
     // Presses during the count-in are warm-up, not mistakes.
     if (this.done || time < this.startAt - MAX_WINDOW_MS) return []
-    let best: TimingRecord | null = null
+    let nearest: TimingRecord | null = null
+    let matching: TimingRecord | null = null
     for (const r of this.records) {
       if (r.rest || r.judgement !== null) continue
       const off = Math.abs(time - r.dueAt)
-      if (off <= this.windowOf(r) && (!best || off < Math.abs(time - best.dueAt))) best = r
+      if (off > this.windowOf(r)) continue
+      if (!nearest || off < Math.abs(time - nearest.dueAt)) nearest = r
+      if (this.skill.matches({ midi: r.target }, midi) && (!matching || off < Math.abs(time - matching.dueAt)))
+        matching = r
     }
+    // Of notes due together, the key decides which one was played.
+    const best = matching ?? nearest
 
     let event: TrackEvent
     if (best) {

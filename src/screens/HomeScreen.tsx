@@ -27,6 +27,9 @@ const KIND_ICON: Record<LessonKind, string> = {
   rhythm: '🎵',
   dino: '🦖',
   drum: '🥁',
+  scale: '🎹',
+  ladder: '🪜',
+  memory: '🧠',
 }
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {

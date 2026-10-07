@@ -58,6 +58,9 @@ src/
   components/             Staff (VexFlow, scaled via viewBox), PianoKeyboard (multi-touch, slide), MidiPanel
   games/noteHunter/       lessons.ts (+ bassLessons, handsLessons), session.ts (pure engine), summary.ts (pure report)
   games/melody/           (phase 6) MelodySession: melodies with one or two keys per step
+  music/scales.ts         (phase 7) scale spelling, key signatures, fingerings, thumb crossings
+  games/scales/           (phase 7) scale steps, Gam Merdiveni plan, scale reports, unit 5 lessons
+  games/memory/           (phase 7) Melodi Hafızası engine (Simon with scale fragments)
   screens/                Home, NoteHunter, Results (simple state machine in App.tsx, no router)
   state/settings.ts       Zustand + localStorage settings
   progress/               (phase 2) gamification rules, Dexie DB, history, curriculum
@@ -78,7 +81,7 @@ Principles:
 
 | Branch | State                                                                                  |
 | ------ | -------------------------------------------------------------------------------------- |
-| `main` | Phases 0–6 and the polish round (PRs #1–#7 merged on 2026-10-07), live on GitHub Pages |
+| `main` | Phases 0–7 and the polish round (PRs #1–#9 merged on 2026-10-07), live on GitHub Pages |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -175,14 +178,41 @@ Phase 6 (bass clef and two hands, `claude/faz-6-fa-anahtari-qh59m2`):
   clef unit; profile: a bass heat map. Badges: Fa Anahtarı Ustası, İki El Bir Arada, Usta Barmen.
 - `setComputerKeyboardBase`: each lesson moves the computer keyboard's A key to its keyboard's lowest C.
 
-Next: **phase 7, scales** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+Phase 7 (scales, `claude/faz-7-gamlar-c3g8bj`):
+
+- `src/music/scales.ts`: `scaleOctave` spells a scale letter by letter (`SpelledNote` = midi + letter + accidental, so
+  B♭ is never A#); major, natural, harmonic and melodic minor (descending = natural). `keySignature` ("Bb", "Am"),
+  `keyAccidentals`, `spelledName` ("Si♭4"), `vexSpelled`. `scaleFingering` (C pattern, F and B♭ exceptions),
+  `crossingBetween` (a crossing is when the finger numbers stop following the pitch: to finger 1 = thumb under, else
+  finger over), `scaleRun` (15 notes up and back; `downFirst` for the left hand in contrary motion).
+- `src/games/scales/steps.ts`: `ScalePart { tonic, type, hands: right | left | parallel | contrary }`; `scaleSteps`
+  turns parts into `MelodySession` steps (each `StepNote` carries `spelled`, `finger`, `cross`; each `Step` the key
+  signature). Start octaves keep each hand on its staff; contrary motion starts both thumbs on the tonic nearest middle
+  C. `scaleReport` (topics per scale part, "Parmak geçişleri", "Eşit tempo" = 1 − coefficient of variation of the
+  time between clean steps, the page turn excluded), `ladderPlan` (one note per beat, a part = 15 notes in 16 beats,
+  both hands' notes on the same beat) and `ladderReport` (per part, crossings, hands, sync from the two offsets).
+- `BeatTrack` now handles notes due together: windows are computed between distinct due times and, of notes in the
+  window, the one matching the key wins.
+- Unit 5 (`games/scales/lessons.ts`, 18 lessons): `kind: 'scale'` (played in `MelodyScreen`: key signature, written
+  accidentals per page, finger numbers above treble / below bass notes, crossings in orange, a tip line "↪ Başparmağı
+  altından geçir"), `kind: 'ladder'` (**Gam Merdiveni**, `games/arcade/ladder/`, through `BeatFrame` with its new
+  `plan`, `report` and `nameOf` props: stairs up and down the scale, finger badges, the climber hops on each hit) and
+  `kind: 'memory'` (**Melodi Hafızası**, `MemoryScreen` + `games/memory/engine.ts`: runs of scale steps from 3 to
+  7–8 notes, played with sound and lit keys; a wrong key costs a heart and shows the right one).
+- `PATTERN_KINDS` (scale, ladder, memory) stay out of the note statistics and get no "Bu notaları çalış" button.
+  `SessionSummary` gained `scale` (evenness, mean interval, crossings), `memory` (longest runs) and `noteNames`
+  (spelled names for the report). Results: "Gam tekniği" and "Hafıza" cards. Badges: Merdiven Tırmanıcısı, Fil
+  Hafızası, Gam Ustası. `window.__dpoMemory` for the smoke test.
+
+Next: **phase 8, chords, inversions, arpeggios** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
 
 `scripts/smoke.mjs` plays real lessons in Chromium: the treble unit (drills, Nota Kuşu, Balon Patlatma, a lesson that
 runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
-a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
+all eighteen scale lessons (scale drills with one and two hands, four Gam Merdiveni runs at a faster tempo, two
+Melodi Hafızası games, one with a wrong key), a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
 `.staff-wrap[data-note]`, and keys are `.key[data-midi]`.
 
 ```bash

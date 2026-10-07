@@ -19,11 +19,11 @@ export const HAND_LABELS: Record<Hand, string> = {
 }
 export const CLEF_NAMES: Record<Clef, string> = { treble: 'sol anahtarı', bass: 'fa anahtarı' }
 
-const LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'] as const
+export const LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'] as const
 export type Letter = (typeof LETTERS)[number]
 
 /** Turkish solfège names, indexed by letter. */
-const SOLFEGE: Record<Letter, string> = {
+export const SOLFEGE: Record<Letter, string> = {
   c: 'Do',
   d: 'Re',
   e: 'Mi',
@@ -49,7 +49,7 @@ const PITCH_CLASSES: { letter: Letter; sharp: boolean }[] = [
   { letter: 'b', sharp: false },
 ]
 
-const LETTER_SEMITONES: Record<Letter, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 }
+export const LETTER_SEMITONES: Record<Letter, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 }
 
 export function octaveOf(midi: number): number {
   return Math.floor(midi / 12) - 1
