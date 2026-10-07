@@ -8,17 +8,17 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 
 ## Durum
 
-| Faz                                           | Durum                                                  |
-| --------------------------------------------- | ------------------------------------------------------ |
-| 0 Altyapı                                     | Birleşti (PR #1)                                       |
-| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1)                                       |
-| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2)                                       |
-| 3 Karakterler ve animasyon                    | Birleşti (PR #3)                                       |
-| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4)                                       |
-| 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5)                                       |
-| Cila turu (Faz 5 sonrası)                     | PR #6 (`claude/cila-turu-rbkf3d`)                      |
-| 6 Fa anahtarı ve iki el                       | PR (`claude/faz-6-fa-anahtari-qh59m2`, #6'nın üzerine) |
-| 7 ve sonrası                                  | Başlanmadı                                             |
+| Faz                                           | Durum                                                 |
+| --------------------------------------------- | ----------------------------------------------------- |
+| 0 Altyapı                                     | Birleşti (PR #1)                                      |
+| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1)                                      |
+| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2)                                      |
+| 3 Karakterler ve animasyon                    | Birleşti (PR #3)                                      |
+| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4)                                      |
+| 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5)                                      |
+| Cila turu (Faz 5 sonrası)                     | PR #6 (`claude/cila-turu-rbkf3d`)                     |
+| 6 Fa anahtarı ve iki el                       | PR #7 (`claude/faz-6-fa-anahtari-qh59m2`, #6 üzerine) |
+| 7 ve sonrası                                  | Başlanmadı                                            |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 

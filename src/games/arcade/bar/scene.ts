@@ -19,7 +19,8 @@ const BARTENDER = 0xce82ff
 function clefText(clef: Clef, size: number): Text {
   return new Text({
     text: CLEF_GLYPH[clef].glyph,
-    style: { fontFamily: 'Bravura', fontSize: size, fill: INK },
+    // Bravura glyphs reach far outside the measured line box: pad the texture so they are not cut.
+    style: { fontFamily: 'Bravura', fontSize: size, fill: INK, padding: size },
   })
 }
 
@@ -156,10 +157,14 @@ export function createBarScene(
       .stroke({ width: 2, color: border })
     drawStaffLines(g, cardW * 0.06, cardW * 0.94, layout, INK, 0.7)
     drawNote(g, cardW * 0.66, staffStep(c.record.target, clef), layout, c.state === 'served' ? 0x22a559 : INK)
-    if (card.clef.style.fontSize !== gap * 4) card.clef.style.fontSize = gap * 4
+    if (card.clef.style.fontSize !== gap * 4) {
+      card.clef.style.fontSize = gap * 4
+      card.clef.style.padding = gap * 4
+    }
     // The glyph's baseline sits on its reference line (G or F); Text is placed by its top.
     const ascent = CanvasTextMetrics.measureText(card.clef.text, card.clef.style).fontProperties.ascent
-    card.clef.position.set(cardW * 0.08, layout.bottomY - CLEF_GLYPH[clef].step * (gap / 2) - ascent)
+    // (+1 gap: Pixi's measured ascent comes from fallback metrics, checked against screenshots.)
+    card.clef.position.set(cardW * 0.08, layout.bottomY - CLEF_GLYPH[clef].step * (gap / 2) - ascent + gap)
     const x = xOf(c.x) + (c.state === 'served' ? -c.leftFor * rh * 1.4 : 0)
     card.box.position.set(x - cardW / 2, c.counter * rh + rh * 0.02)
     card.box.alpha = c.state === 'waiting' ? 1 : Math.max(0, 1 - c.leftFor / 0.8)
