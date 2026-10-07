@@ -12,6 +12,10 @@ interface SettingsState {
   ignoreOctave: boolean
   /** Practice without hearts: mistakes never end a lesson. */
   relaxedMode: boolean
+  /** Short synthesized sounds for right/wrong answers and celebrations. */
+  soundEffects: boolean
+  /** Vibrate on mistakes (Android). */
+  vibration: boolean
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void
 }
 
@@ -23,6 +27,8 @@ export const useSettings = create<SettingsState>()(
       showKeyLabels: true,
       ignoreOctave: false,
       relaxedMode: false,
+      soundEffects: true,
+      vibration: true,
       set: (patch) => set(patch),
     }),
     {

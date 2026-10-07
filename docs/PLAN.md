@@ -13,7 +13,8 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 0 Altyapı                  | PR #1 (`faz-1-cekirdek`)     |
 | 1 Çekirdek ve Nota Avcısı  | PR #1 (`faz-1-cekirdek`)     |
 | 2 Oyunlaştırma ve ilerleme | PR #2 (`faz-2-oyunlastirma`) |
-| 3 ve sonrası               | Başlanmadı                   |
+| 3 Karakterler ve animasyon | PR #3 (`faz-3-karakterler`)  |
+| 4 ve sonrası               | Başlanmadı                   |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -92,7 +93,7 @@ Her faz ayrı bir PR olarak gelir ve sonunda denenebilir bir uygulama bırakır.
 - "Zayıf Notalar" tekrar dersi (birikimli istatistikten en zayıf notalar)
 - Profil ekranı: seviye, rozetler, son dersler, nota bazında başarı haritası
 
-### Faz 3 — Karakterler ve animasyon
+### Faz 3 — Karakterler ve animasyon (PR #3)
 
 - Maskot karakter (SVG + Motion): sevinme, üzülme, cesaretlendirme, uyuma halleri; ders içinde tepki verir
 - Ders sonu kutlaması (konfeti, seri alevi, XP sayacı), seviye atlama ve rozet animasyonları
