@@ -1,7 +1,7 @@
 // Turns a finished session into the report shown on the results screen.
 
 import { type Clef, PLACEMENT_LABELS, type StaffPlacement, staffPlacement } from '../../music/notes'
-import type { PromptRecord } from './session'
+import { firstTryOk, type PromptRecord } from './session'
 
 export interface NoteStat {
   midi: number
@@ -70,7 +70,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
   // Reaction time only counts prompts answered right on the first try.
   const cleanReactions = (rs: PromptRecord[]) =>
     rs
-      .filter((r) => r.wrongPresses.length === 0)
+      .filter(firstTryOk)
       .map(reaction)
       .filter((x): x is number => x !== null)
 
@@ -78,7 +78,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     .map(([midi, rs]) => {
       const confusions = new Map<number, number>()
       for (const r of rs) for (const w of r.wrongPresses) confusions.set(w, (confusions.get(w) ?? 0) + 1)
-      const firstTry = rs.filter((r) => r.wrongPresses.length === 0).length
+      const firstTry = rs.filter(firstTryOk).length
       return {
         midi,
         shown: rs.length,
@@ -97,7 +97,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     const p = staffPlacement(r.target, clef)
     const c = categories.get(p) ?? { shown: 0, firstTry: 0 }
     c.shown++
-    if (r.wrongPresses.length === 0) c.firstTry++
+    if (firstTryOk(r)) c.firstTry++
     categories.set(p, c)
   }
   const order: StaffPlacement[] = ['line', 'space', 'outside']
@@ -109,7 +109,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     })
 
   const total = records.length
-  const firstTry = records.filter((r) => r.wrongPresses.length === 0).length
+  const firstTry = records.filter(firstTryOk).length
   const accuracy = total ? firstTry / total : 0
   const avgReactionMs = avg(cleanReactions(records))
 

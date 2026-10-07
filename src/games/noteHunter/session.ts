@@ -9,7 +9,12 @@ export interface PromptRecord {
   answeredAt: number | null
   /** Wrong keys pressed before the right one, in order. */
   wrongPresses: number[]
+  /** Arcade games: the target got away (pipe hit, balloon escaped). Counts as not right on the first try. */
+  missed?: boolean
 }
+
+/** Right on the first try: no wrong key and not missed. */
+export const firstTryOk = (r: PromptRecord) => r.wrongPresses.length === 0 && !r.missed
 
 export type PressResult = 'correct' | 'wrong' | 'ignored'
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
 import { MidiPanel } from '../components/MidiPanel'
 import { TopBar } from '../components/TopBar'
-import type { NoteLesson } from '../games/noteHunter/lessons'
+import type { LessonKind, NoteLesson } from '../games/noteHunter/lessons'
 import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from '../progress/curriculum'
 import { noteScores } from '../progress/history'
 import { useProfile } from '../state/profile'
@@ -16,6 +16,7 @@ interface Props {
 /** Horizontal offsets that make the lesson path zigzag, Duolingo style. */
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
+const KIND_ICON: Record<LessonKind, string> = { drill: '♪', bird: '🐦', balloon: '🎈' }
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -143,7 +144,7 @@ export function HomeScreen({ onStart, onProfile }: Props) {
                       }
                       aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
                     >
-                      {unlocked ? (stars === 3 ? '👑' : '♪') : '🔒'}
+                      {unlocked ? (stars === 3 ? '👑' : KIND_ICON[lesson.kind ?? 'drill']) : '🔒'}
                     </button>
                     <span className="node-title">{lesson.title}</span>
                     <span className="node-stars" aria-label={`${stars} yıldız`}>

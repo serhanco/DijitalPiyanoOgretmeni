@@ -10,6 +10,7 @@ mkdirSync(out, { recursive: true })
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+page.setDefaultTimeout(10000)
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
 // Piano samples cannot load without network; ignore those.
@@ -42,6 +43,36 @@ async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName =
   await page.waitForTimeout(800)
 }
 
+/** Play an arcade lesson perfectly, reading the target from the game object. */
+async function playArcade(lessonTitle, shotName) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.waitForSelector('.pixi-stage canvas')
+  let shot = false
+  for (let i = 0; i < 2000 && !(await page.$('.results')); i++) {
+    const target = await page.evaluate(() => {
+      const g = window.__dpoArcade
+      if (!g) return null
+      if ('pipes' in g) {
+        const cur = g.current
+        return cur && cur.record.answeredAt === null ? cur.record.target : null
+      }
+      const up = g.flying.sort((a, b) => a.y - b.y)[0]
+      return up && up.y < 0.4 ? up.record.target : null
+    })
+    if (target !== null) {
+      await page.click(`.key[data-midi="${target}"]`)
+      if (!shot && i > 20) {
+        await page.waitForTimeout(400)
+        await page.screenshot({ path: `${out}/${shotName}.png` })
+        shot = true
+      }
+    }
+    await page.waitForTimeout(120)
+  }
+  await page.waitForSelector('.results', { timeout: 5000 })
+  await page.waitForTimeout(800)
+}
+
 /** Close the level-up overlay if it is showing. */
 async function dismissOverlay() {
   const btn = page.locator('.overlay .btn')
@@ -61,7 +92,28 @@ await dismissOverlay()
 await page.screenshot({ path: `${out}/results.png`, fullPage: true })
 await page.getByText('Derslere dön').click()
 
-await play('Bir Oktav', { wrongFirst: true }) // runs out of hearts
+await play('Bir Oktav')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+
+await playArcade('Nota Kuşu', 'game-bird')
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-bird.png` })
+await page.getByText('Derslere dön').click()
+
+await play('Çizgiler')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await play('Aralar')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+
+await playArcade('Balon Patlatma', 'game-balloon')
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-balloon.png` })
+await page.getByText('Derslere dön').click()
+
+await play('Porte Ustası', { wrongFirst: true }) // runs out of hearts
 await dismissOverlay()
 await page.screenshot({ path: `${out}/results-failed.png`, fullPage: true })
 await page.getByText('Derslere dön').click()

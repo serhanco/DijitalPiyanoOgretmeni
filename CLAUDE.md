@@ -103,11 +103,24 @@ Phase 3 (done on `faz-3-karakterler`):
   toggleable in settings
 - Results: mascot with the message, confetti (`canvas-confetti`), counting XP, level-up overlay
 
-Next: **phase 4, mini-game engine** (see `docs/PLAN.md`). Suggested shape: PixiJS 8 in a lazy chunk; a `SkillProvider`
-interface (`next(): Target` with the keys that count as correct and how to draw the target, plus a per-target result
-record) so every game reuses `summarize`-style reports and `completeLesson`; first games **Nota Kuşu** (Flappy-like:
-the gap sits at a staff position, playing that note flies the bird there) and **Balon Patlatma**. Add a lesson `kind`
-(`drill | game | boss`) to the curriculum so the map mixes lesson types.
+Phase 4 (done on `faz-4-mini-oyunlar`):
+
+- `src/games/arcade/skill.ts`: `SkillProvider` (clef, range, planned targets, `matches`); `noteSkill()` for notes.
+  New skills (bass notes, chords, scale steps) plug into every game through this.
+- `src/games/arcade/staffGeometry.ts` (steps from the bottom line, ledger lines, `fitStaff` with a max gap) and
+  `draw.ts` (Pixi staff lines and note heads)
+- `src/games/arcade/bird/engine.ts` (**Nota Kuşu**) and `balloon/engine.ts` (**Balon Patlatma**): pure engines with
+  `update(dtMs, now)` / `press(midi, now)` returning events, `records` in the same `PromptRecord` shape as the drill
+  (plus `missed`), so `summarize` and `completeLesson` work unchanged. Unit tested by simulating frames.
+- `scene.ts` per game: PixiJS drawing only; `PixiStage` mounts a Pixi `Application`; `ArcadeScreen` (own lazy chunk,
+  ~90 kB gzip) wires input, HUD, mascot and sfx. The clef is an SVG `<text>` overlay in the Bravura font.
+- Lessons have `kind: 'drill' | 'bird' | 'balloon'`; the treble unit now mixes drills and games (map icons ♪ 🐦 🎈).
+- `window.__dpoArcade` exposes the running game so the smoke test can play it.
+
+Next: **phase 5, rhythm and timing** (see `docs/PLAN.md`): metronome on `Tone.Transport`, timing windows, Bluetooth
+latency calibration, rhythm exercises, then **Dino Koşusu** (Chrome Dino-like: obstacles on the beat) and **Ritim
+Davulcusu** as new arcade games on the same engine pattern. A rhythm skill needs targets with a time
+(`{ midi, beat }`), so extend `SkillTarget` rather than replacing it.
 
 ## Testing in a real browser
 
