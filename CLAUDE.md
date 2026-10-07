@@ -76,11 +76,9 @@ Principles:
 
 ## Current state and next steps
 
-| Branch                            | State                                                                        |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `main`                            | Phases 0–5 (PRs #1–#5 merged on 2026-10-07), live on GitHub Pages            |
-| `claude/cila-turu-rbkf3d`         | Polish round after phase 5 + help for the owner's two keyboards, base `main` |
-| `claude/faz-6-fa-anahtari-qh59m2` | PR #7: phase 6 (bass clef, two hands), base `claude/cila-turu-rbkf3d` (#6)   |
+| Branch | State                                                                                  |
+| ------ | -------------------------------------------------------------------------------------- |
+| `main` | Phases 0–6 and the polish round (PRs #1–#7 merged on 2026-10-07), live on GitHub Pages |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
