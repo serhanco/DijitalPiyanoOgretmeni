@@ -240,6 +240,31 @@ button {
   display: grid;
   gap: 6px;
 }
+.help ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+}
+.keyboard-tip {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.keyboard-tip p {
+  margin: 0;
+}
+.octave-check {
+  margin-top: 4px !important;
+  font-weight: 700;
+}
+.octave-check.good {
+  color: var(--primary-dark);
+}
+.octave-check.bad {
+  color: var(--danger);
+}
 kbd {
   border: 1px solid var(--border);
   border-bottom-width: 2px;
@@ -1322,4 +1347,38 @@ button.chip {
 }
 .timing-mean {
   margin: 12px 0 8px;
+}
+
+.rhythm-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: manipulation;
+}
+.rhythm-chart .grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.rhythm-chart .axis {
+  fill: var(--muted);
+  font-size: 10px;
+}
+.rhythm-chart .value {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+}
+.rhythm-chart .bar {
+  fill: #ce82ff;
+}
+.rhythm-chart .bar.on {
+  fill: #a560e8;
+}
+.rhythm-chart .hit {
+  fill: transparent;
+  cursor: pointer;
+}
+.chart-caption {
+  margin: 6px 0 2px;
+  min-height: 1.4em;
 }

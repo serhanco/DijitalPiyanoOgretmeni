@@ -47,5 +47,18 @@ export function calibrate(offsets: number[]): CalibrationResult | null {
   return { latencyMs, spreadMs, used: kept.length, ok: kept.length >= MIN_TAPS && spreadMs <= MAX_SPREAD_MS }
 }
 
-/** A press time corrected for the delay of the device it came from. */
-export const correctedTime = (time: number, source: InputSource, latency: Latency) => time - (latency[source] ?? 0)
+/**
+ * A press time corrected for the delay of the device it came from: the
+ * keyboard's own measurement when there is one (a Bluetooth piano and a USB
+ * controller differ a lot), otherwise the one of its input source.
+ */
+export function correctedTime(
+  time: number,
+  source: InputSource,
+  latency: Latency,
+  device?: string,
+  byDevice: Record<string, number> = {},
+): number {
+  const own = device !== undefined ? byDevice[device] : undefined
+  return time - (own ?? latency[source] ?? 0)
+}

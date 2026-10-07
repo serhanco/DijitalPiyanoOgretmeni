@@ -81,7 +81,7 @@ function BeatHud({ track, now, spec }: { track: BeatTrack | null; now: number; s
 
 export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, renderField }: Props) {
   const spec = lesson.rhythm!
-  const { ignoreOctave, showKeyLabels, metronome, latency, set } = useSettings()
+  const { ignoreOctave, showKeyLabels, metronome, latency, deviceLatency, set } = useSettings()
   const bars = useMemo(
     () => generateBars({ values: spec.values, bars: spec.bars, beatsPerBar: spec.beatsPerBar }),
     [spec],
@@ -99,7 +99,8 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
     [lesson, bars, spec, ignoreOctave],
   )
 
-  const [bpm, setBpm] = useState(spec.bpm)
+  // The tempo the player chose last time in this lesson.
+  const [bpm, setBpm] = useState(() => clampBpm(useSettings.getState().tempo[lesson.id] ?? spec.bpm))
   const [track, setTrack] = useState<BeatTrack | null>(null)
   const trackRef = useRef<BeatTrack | null>(null)
   const [now, setNow] = useState(() => performance.now())
@@ -121,6 +122,7 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
   const start = useCallback(async () => {
     if (trackRef.current || starting) return
     setStarting(true)
+    set({ tempo: { ...useSettings.getState().tempo, [lesson.id]: bpm } })
     await prepareMetronome()
     const b = beatMs(bpm)
     const countIn = spec.beatsPerBar * COUNT_IN_BARS
@@ -139,7 +141,7 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
     })
     // The game may have ended (or been left) while the metronome was loading.
     if (finished.current || trackRef.current !== t) metronomeRef.current.stop()
-  }, [bpm, spec, skill, hearts, bars, howTo, starting])
+  }, [bpm, spec, skill, hearts, bars, howTo, starting, set, lesson.id])
 
   useEffect(
     () => () => {
@@ -180,7 +182,8 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
       subscribe((e) => {
         const t = trackRef.current
         if (e.type !== 'on' || !t) return
-        const events = t.press(e.midi, correctedTime(e.time, e.source, useSettings.getState().latency))
+        const { latency, deviceLatency } = useSettings.getState()
+        const events = t.press(e.midi, correctedTime(e.time, e.source, latency, e.device, deviceLatency))
         const ev = events[0]
         if (ev?.type === 'hit') setFlash({ midi: e.midi, mark: onTime(ev.judgement) ? 'correct' : 'hint' })
         else if (ev?.type === 'wrong' || ev?.type === 'miss') setFlash({ midi: e.midi, mark: 'wrong' })
@@ -233,7 +236,7 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
   }, [flash])
 
   const marks: Partial<Record<number, KeyMark>> = flash ? { [flash.midi]: flash.mark } : {}
-  const noLatency = Object.values(latency).every((v) => v === 0)
+  const noLatency = Object.values(latency).every((v) => v === 0) && Object.keys(deviceLatency).length === 0
 
   return (
     <div className={`game beat ${className ?? ''}`}>
@@ -284,6 +287,14 @@ export function BeatFrame({ lesson, hearts, howTo, className, onFinish, onExit, 
             </button>
             <span className="muted small">
               {spec.beatsPerBar}/4 · {spec.bars} ölçü
+              {bpm !== spec.bpm && (
+                <>
+                  {' · '}
+                  <button className="link" onClick={() => setBpm(spec.bpm)}>
+                    önerilen {spec.bpm}
+                  </button>
+                </>
+              )}
             </span>
           </div>
           <label className="toggle">

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { noteOff, noteOn } from '../input/inputBus'
+import { keyboardFor, type KeyboardProfile } from './keyboards'
 import { parseMidiMessage } from './midiMessage'
 
 export type MidiStatus = 'unsupported' | 'idle' | 'requesting' | 'ready' | 'denied'
@@ -8,6 +9,8 @@ export interface MidiDevice {
   id: string
   name: string
   manufacturer: string
+  /** One of the owner's keyboards, when recognised. */
+  keyboard: KeyboardProfile | null
 }
 
 interface MidiState {
@@ -19,28 +22,31 @@ interface MidiState {
 
 let access: MIDIAccess | null = null
 
-function handleMessage(e: MIDIMessageEvent) {
+function handleMessage(e: MIDIMessageEvent, device: string) {
   if (!e.data) return
   const msg = parseMidiMessage(e.data)
   if (!msg) return
   // Event timestamps share performance.now()'s clock.
   const time = e.timeStamp || performance.now()
-  if (msg.type === 'on') noteOn(msg.midi, 'midi', msg.velocity, time)
-  else noteOff(msg.midi, 'midi', time)
+  if (msg.type === 'on') noteOn(msg.midi, 'midi', msg.velocity, time, device)
+  else noteOff(msg.midi, 'midi', time, device)
 }
+
+/** Keyboards by port name, so other modules can adapt to the one a note came from. */
+const known = new Map<string, KeyboardProfile | null>()
+export const keyboardOf = (device: string | undefined) => (device ? (known.get(device) ?? null) : null)
 
 function attachInputs(set: (s: Partial<MidiState>) => void) {
   if (!access) return
   const devices: MidiDevice[] = []
   access.inputs.forEach((input) => {
+    const name = input.name || 'MIDI klavye'
+    const keyboard = keyboardFor(name, input.manufacturer || '')
+    known.set(name, keyboard)
     // Assigning (not addEventListener) means re-attaching never doubles up.
-    input.onmidimessage = handleMessage
+    input.onmidimessage = (e) => handleMessage(e, name)
     if (input.state === 'connected') {
-      devices.push({
-        id: input.id,
-        name: input.name || 'MIDI klavye',
-        manufacturer: input.manufacturer || '',
-      })
+      devices.push({ id: input.id, name, manufacturer: input.manufacturer || '', keyboard })
     }
   })
   set({ devices })

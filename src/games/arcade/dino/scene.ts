@@ -93,7 +93,7 @@ export function createDinoScene(
         .fill({ color: tint, alpha })
       world.roundRect(cx + cw * 0.7, groundY - hgt * 0.85, cw * 0.55, hgt * 0.4, cw * 0.27).fill({ color: tint, alpha })
     }
-    if (r.value === 'h') {
+    if (r.value === 'h' || r.value === 'hd') {
       cactus(x - unit * 0.25, unit * 0.95)
       cactus(x + unit * 0.35, unit * 0.75)
     } else {

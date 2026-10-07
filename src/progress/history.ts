@@ -47,3 +47,13 @@ export async function lessonHistory(lessonId: string, limit = 10): Promise<Sessi
   const rows = await db.sessions.where('lessonId').equals(lessonId).sortBy('at')
   return rows.slice(-limit)
 }
+
+/** The latest rhythm sessions (they carry timing), newest first. */
+export async function rhythmSessions(limit = 12): Promise<SessionRow[]> {
+  return db.sessions
+    .orderBy('at')
+    .reverse()
+    .filter((s) => s.timing !== undefined)
+    .limit(limit)
+    .toArray()
+}

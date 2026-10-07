@@ -62,6 +62,30 @@ describe('rhythm patterns', () => {
       expect(new Set(bars.flat())).toEqual(new Set(['q', 'h', 'e', 'qr']))
     }
   })
+
+  it('fills 3/4 bars: halves only on beat 1, dotted halves fill the bar', () => {
+    for (let seed = 1; seed < 30; seed++) {
+      const bars = generateBars({ values: ['q', 'h', 'hd', 'qr'], bars: 6, beatsPerBar: 3, random: seeded(seed) })
+      for (const bar of bars) expect(bar.reduce((n, v) => n + VALUE_BEATS[v], 0)).toBe(3)
+      for (const e of layoutRhythm(bars, 3)) {
+        if (e.value === 'h' || e.value === 'hd') expect(e.beat % 3).toBe(0)
+      }
+    }
+  })
+
+  it('follows every dotted quarter with an eighth, on a strong beat in 4/4', () => {
+    for (let seed = 1; seed < 30; seed++) {
+      const bars = generateBars({ values: ['q', 'qd'], bars: 4, random: seeded(seed) })
+      for (const bar of bars) expect(bar.reduce((n, v) => n + VALUE_BEATS[v], 0)).toBe(4)
+      const events = layoutRhythm(bars)
+      events.forEach((e, i) => {
+        if (e.value !== 'qd') return
+        expect(e.beat % 2).toBe(0)
+        expect(events[i + 1]).toMatchObject({ value: 'e', beat: e.beat + 1.5 })
+      })
+      expect(bars.flat()).toContain('qd')
+    }
+  })
 })
 
 describe('rhythmSkill', () => {
@@ -211,6 +235,9 @@ describe('calibration', () => {
 
   it('corrects a press by its source delay', () => {
     expect(correctedTime(1000, 'midi', { midi: 35, screen: 10, computer: 0 })).toBe(965)
+    const byDevice = { 'CLP-845 Bluetooth': 60 }
+    expect(correctedTime(1000, 'midi', { midi: 35, screen: 10, computer: 0 }, 'CLP-845 Bluetooth', byDevice)).toBe(940)
+    expect(correctedTime(1000, 'midi', { midi: 35, screen: 10, computer: 0 }, 'MPK mini 3', byDevice)).toBe(965)
   })
 })
 

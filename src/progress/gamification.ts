@@ -18,6 +18,8 @@ export interface LessonOutcome {
   stars: number
   /** True when the lesson ended because the hearts ran out. */
   failed: boolean
+  /** Rhythm lessons: `firstTry` counts notes played on the beat (and rests kept). */
+  rhythm?: boolean
 }
 
 export interface XpLine {
@@ -26,7 +28,8 @@ export interface XpLine {
 }
 
 export function xpFor(outcome: LessonOutcome): XpLine[] {
-  const lines: XpLine[] = [{ label: 'İlk denemede doğru notalar', xp: outcome.firstTry * XP_PER_FIRST_TRY }]
+  const label = outcome.rhythm ? 'Vuruşunda çalınan notalar' : 'İlk denemede doğru notalar'
+  const lines: XpLine[] = [{ label, xp: outcome.firstTry * XP_PER_FIRST_TRY }]
   if (outcome.failed) return lines
   lines.push({ label: 'Ders tamamlandı', xp: XP_LESSON_COMPLETE })
   if (outcome.accuracy === 1) lines.push({ label: 'Hatasız ders', xp: XP_PERFECT_BONUS })

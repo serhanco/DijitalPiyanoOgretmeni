@@ -64,6 +64,7 @@ export default function App() {
       avgReactionMs: summary.avgReactionMs,
       stars: summary.stars,
       failed: summary.failed,
+      rhythm: summary.timing !== undefined,
     }
     const reward = useProfile.getState().completeLesson(outcome)
     const timing = summary.timing && {

@@ -9,6 +9,8 @@ export interface NoteEvent {
   velocity: number // 0..1
   source: InputSource
   time: number // performance.now() milliseconds
+  /** MIDI only: the name of the keyboard's port. */
+  device?: string
 }
 
 type Listener = (e: NoteEvent) => void
@@ -27,12 +29,18 @@ export function emit(e: NoteEvent): void {
   for (const l of listeners) l(e)
 }
 
-export function noteOn(midi: number, source: InputSource, velocity = 0.8, time = performance.now()): void {
-  emit({ type: 'on', midi, velocity, source, time })
+export function noteOn(
+  midi: number,
+  source: InputSource,
+  velocity = 0.8,
+  time = performance.now(),
+  device?: string,
+): void {
+  emit({ type: 'on', midi, velocity, source, time, device })
 }
 
-export function noteOff(midi: number, source: InputSource, time = performance.now()): void {
-  emit({ type: 'off', midi, velocity: 0, source, time })
+export function noteOff(midi: number, source: InputSource, time = performance.now(), device?: string): void {
+  emit({ type: 'off', midi, velocity: 0, source, time, device })
 }
 
 export function heldNotes(): number[] {

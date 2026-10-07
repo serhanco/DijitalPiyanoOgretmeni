@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import type { SessionRow } from '../progress/db'
 import { findLesson, REVIEW_LESSON_ID } from '../progress/curriculum'
 import { BADGES, currentStreak, dayKey, levelFromXp } from '../progress/gamification'
-import { noteScores, recentSessions } from '../progress/history'
+import { noteScores, recentSessions, rhythmSessions } from '../progress/history'
+import { rhythmTrend, type RhythmTrend } from '../progress/rhythmTrend'
+import { RhythmChart } from '../components/RhythmChart'
 import { solfegeName } from '../music/notes'
 import { useProfile } from '../state/profile'
 
@@ -24,14 +26,16 @@ export function ProfileScreen({ onBack }: Props) {
   const [today] = useState(() => dayKey(new Date()))
   const [sessions, setSessions] = useState<SessionRow[]>([])
   const [scores, setScores] = useState<Score[]>([])
+  const [trend, setTrend] = useState<RhythmTrend>({ points: [], change: null })
 
   useEffect(() => {
     let alive = true
-    Promise.all([recentSessions(8), noteScores('treble')])
-      .then(([s, n]) => {
+    Promise.all([recentSessions(8), noteScores('treble'), rhythmSessions(12)])
+      .then(([s, n, r]) => {
         if (!alive) return
         setSessions(s)
         setScores(n)
+        setTrend(rhythmTrend(r))
       })
       .catch(() => undefined)
     return () => {
@@ -110,6 +114,15 @@ export function ProfileScreen({ onBack }: Props) {
               )
             })}
           </div>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Ritim gelişimi</h2>
+        {trend.points.length === 0 ? (
+          <p className="muted">Ritim derslerini bitirdikçe vuruşunda çalma oranın burada görünecek.</p>
+        ) : (
+          <RhythmChart trend={trend} />
         )}
       </section>
 

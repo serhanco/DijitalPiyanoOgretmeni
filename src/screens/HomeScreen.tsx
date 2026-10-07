@@ -82,7 +82,7 @@ function Settings({ onCalibrate }: { onCalibrate: () => void }) {
         onChange={(v) => settings.set({ soundForScreen: v })}
       />
       <Toggle
-        label="MIDI klavye için de uygulamadan ses çal (piyanon ses çıkarmıyorsa)"
+        label="MIDI klavye için de uygulamadan ses çal (Akai gibi sessiz klavyelerde hep açık)"
         checked={settings.soundForMidi}
         onChange={(v) => settings.set({ soundForMidi: v })}
       />

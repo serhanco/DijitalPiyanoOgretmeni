@@ -21,6 +21,10 @@ interface SettingsState {
   metronome: boolean
   /** Measured delay of each input, subtracted from presses in rhythm activities. */
   latency: Latency
+  /** Measured delay per MIDI keyboard (by port name); wins over `latency.midi`. */
+  deviceLatency: Record<string, number>
+  /** Tempo last played in each rhythm lesson, by lesson id. */
+  tempo: Record<string, number>
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void
 }
 
@@ -36,6 +40,8 @@ export const useSettings = create<SettingsState>()(
       vibration: true,
       metronome: true,
       latency: NO_LATENCY,
+      deviceLatency: {},
+      tempo: {},
       set: (patch) => set(patch),
     }),
     {

@@ -2,7 +2,7 @@
 // and success per rhythm value (quarters, halves, eighths, rests).
 
 import { avg, type CategoryStat, type NoteStat, type SessionSummary, starsFor } from '../games/noteHunter/summary'
-import { type RhythmTopic, TOPIC_LABELS, VALUE_TOPIC } from './rhythm'
+import { type RhythmTopic, TOPIC_LABELS, TOPIC_ORDER, VALUE_TOPIC } from './rhythm'
 import { describeOffset, JUDGEMENT_SCORE, JUDGEMENTS, type Judgement, onTime } from './timing'
 import type { TimingRecord } from './track'
 
@@ -56,19 +56,16 @@ export function summarizeRhythm(
     const t = VALUE_TOPIC[r.value]
     byTopic.set(t, [...(byTopic.get(t) ?? []), r])
   }
-  const order: RhythmTopic[] = ['quarter', 'half', 'eighth', 'rest']
-  const perCategory: CategoryStat[] = order
-    .filter((t) => byTopic.has(t))
-    .map((t) => {
-      const rs = byTopic.get(t)!
-      return {
-        id: t,
-        label: TOPIC_LABELS[t],
-        shown: rs.length,
-        firstTry: rs.filter(clean).length,
-        accuracy: rs.reduce((n, r) => n + scoreOf(r), 0) / rs.length,
-      }
-    })
+  const perCategory: CategoryStat[] = TOPIC_ORDER.filter((t) => byTopic.has(t)).map((t) => {
+    const rs = byTopic.get(t)!
+    return {
+      id: t,
+      label: TOPIC_LABELS[t],
+      shown: rs.length,
+      firstTry: rs.filter(clean).length,
+      accuracy: rs.reduce((n, r) => n + scoreOf(r), 0) / rs.length,
+    }
+  })
 
   let perNote: NoteStat[] = []
   if (pitched) {
