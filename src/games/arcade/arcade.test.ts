@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { parseNote } from '../../music/notes'
+import { grandClefPicker } from '../noteHunter/session'
 import { summarize } from '../noteHunter/summary'
 import { BalloonGame } from './balloon/engine'
+import { BAR_X, BarGame, clefOfCounter } from './bar/engine'
 import { BIRD_X, BirdGame } from './bird/engine'
 import { noteSkill } from './skill'
 import { fitStaff, ledgerSteps, staffStep, stepY } from './staffGeometry'
@@ -133,5 +135,75 @@ describe('BalloonGame', () => {
     expect(game.failed).toBe(true)
     expect(game.attempted.every((r) => r.missed)).toBe(true)
     expect(summarize(game.attempted, 'treble', true).accuracy).toBe(0)
+  })
+})
+
+describe('BarGame', () => {
+  const lows = [parseNote('C3'), parseNote('E3'), parseNote('G3')]
+  const highs = [C4, E4, G4]
+  const skill = (length = 12, both: number[] = []) =>
+    noteSkill({
+      clef: 'treble',
+      notes: [...lows, ...highs],
+      length,
+      random: seeded(5),
+      clefOf: grandClefPicker(both, seeded(9)),
+    })
+
+  it('seats treble notes at the upper counters and bass notes at the lower ones', () => {
+    const game = new BarGame(skill(), 3, seeded(2))
+    run(game, () => game.customers.length >= 4)
+    for (const c of game.customers) {
+      expect(clefOfCounter(c.counter)).toBe(c.record.clef)
+      expect(c.record.clef).toBe(c.record.target >= 60 ? 'treble' : 'bass')
+    }
+  })
+
+  it('serves every customer when the right notes are played', () => {
+    const game = new BarGame(skill(), 3, seeded(2))
+    const clock = { now: 0 }
+    while (!game.done) {
+      run(game, () => game.waiting.length > 0 || game.done, clock)
+      const next = game.waiting.sort((a, b) => b.x - a.x)[0]
+      if (next) expect(game.press(next.record.target, clock.now)[0].type).toBe('serve')
+    }
+    expect(game.failed).toBe(false)
+    expect(game.score).toBe(12)
+    const summary = summarize(game.attempted, 'treble', game.failed)
+    expect(summary.accuracy).toBe(1)
+    expect(summary.hands?.map((h) => h.shown).reduce((a, b) => a + b)).toBe(12)
+  })
+
+  it('loses a heart when a customer reaches the bartender', () => {
+    const game = new BarGame(skill(3), 3, seeded(2))
+    const events = []
+    const clock = { now: 0 }
+    for (let i = 0; i < 2000 && game.hearts === 3; i++) {
+      clock.now += 16
+      events.push(...game.update(16, clock.now))
+    }
+    expect(events[0].type).toBe('angry')
+    expect(events[0].customer.x).toBe(BAR_X)
+    expect(events[0].customer.record.missed).toBe(true)
+  })
+
+  it('blames a wrong key on the customer of the hand that played it', () => {
+    const game = new BarGame(skill(), 3, seeded(2))
+    run(
+      game,
+      () => game.waiting.some((c) => c.record.clef === 'bass') && game.waiting.some((c) => c.record.clef === 'treble'),
+    )
+    const [ev] = game.press(parseNote('B2'), 1)
+    expect(ev.type).toBe('wrong')
+    expect(ev.customer.record.clef).toBe('bass')
+    expect(game.hearts).toBe(3)
+  })
+
+  it('writes middle C on either staff when asked', () => {
+    const pick = grandClefPicker([C4], seeded(4))
+    const clefs = new Set(Array.from({ length: 20 }, () => pick(C4)))
+    expect(clefs).toEqual(new Set(['treble', 'bass']))
+    expect(pick(parseNote('B3'))).toBe('bass')
+    expect(pick(E4)).toBe('treble')
   })
 })

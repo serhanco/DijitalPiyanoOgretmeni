@@ -58,17 +58,28 @@ describe('completeLesson', () => {
 describe('history', () => {
   it('accumulates per-note stats across sessions', async () => {
     const perNote = [
-      { midi: 60, shown: 2, firstTry: 1, accuracy: 0.5, avgReactionMs: 1000, confusedWith: [] },
-      { midi: 62, shown: 1, firstTry: 0, accuracy: 0, avgReactionMs: null, confusedWith: [] },
+      {
+        midi: 60,
+        clef: 'treble' as const,
+        shown: 2,
+        firstTry: 1,
+        accuracy: 0.5,
+        avgReactionMs: 1000,
+        confusedWith: [],
+      },
+      { midi: 62, clef: 'treble' as const, shown: 1, firstTry: 0, accuracy: 0, avgReactionMs: null, confusedWith: [] },
+      { midi: 60, clef: 'bass' as const, shown: 1, firstTry: 0, accuracy: 0, avgReactionMs: null, confusedWith: [] },
     ]
     const row = { ...outcome, at: 1, xp: 26 }
-    await recordSession(row, 'treble', perNote)
-    await recordSession({ ...row, at: 2 }, 'treble', perNote)
+    await recordSession(row, perNote)
+    await recordSession({ ...row, at: 2 }, perNote)
     const scores = await noteScores('treble')
     expect(scores).toEqual([
       { midi: 60, shown: 4, firstTry: 2, avgReactionMs: 1000 },
       { midi: 62, shown: 2, firstTry: 0, avgReactionMs: null },
     ])
+    // Middle C read on the bass staff is kept apart.
+    expect(await noteScores('bass')).toEqual([{ midi: 60, shown: 2, firstTry: 0, avgReactionMs: null }])
     expect(await db.sessions.count()).toBe(2)
   })
 })

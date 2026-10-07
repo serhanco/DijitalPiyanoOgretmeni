@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Accidental, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow/bravura'
+import { Accidental, Formatter, Renderer, Stave, StaveConnector, StaveNote, Voice } from 'vexflow/bravura'
 import type { Clef } from '../music/notes'
 import { isBlackKey, vexKey } from '../music/notes'
 
@@ -9,10 +9,16 @@ interface StaffProps {
   note: number | null
   /** Colour of the note head, e.g. green after a correct answer. */
   color?: string
+  /** Draw the grand staff (treble above bass); the note goes on `noteClef`. */
+  grand?: boolean
+  noteClef?: Clef
 }
 
 const WIDTH = 260
 const HEIGHT = 170
+const GRAND_HEIGHT = 215
+/** Grand staff: top of each stave (its lines start 40 px lower). */
+const GRAND_Y: Record<Clef, number> = { treble: 0, bass: 95 }
 
 let fontsReady: Promise<unknown> | null = null
 function waitForFonts() {
@@ -20,7 +26,7 @@ function waitForFonts() {
   return fontsReady
 }
 
-export function Staff({ clef, note, color }: StaffProps) {
+export function Staff({ clef, note, color, grand = false, noteClef }: StaffProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [fontsLoaded, setFontsLoaded] = useState(false)
 
@@ -36,14 +42,29 @@ export function Staff({ clef, note, color }: StaffProps) {
     const el = ref.current
     if (!el || !fontsLoaded) return
     el.innerHTML = ''
+    const height = grand ? GRAND_HEIGHT : HEIGHT
     const renderer = new Renderer(el, Renderer.Backends.SVG)
-    renderer.resize(WIDTH, HEIGHT)
+    renderer.resize(WIDTH, height)
     const ctx = renderer.getContext()
-    const stave = new Stave(10, 30, WIDTH - 20)
-    stave.addClef(clef).setContext(ctx).draw()
+    const onClef = grand ? (noteClef ?? clef) : clef
+    let stave: Stave
+    if (grand) {
+      const staves = {
+        treble: new Stave(24, GRAND_Y.treble, WIDTH - 34).addClef('treble'),
+        bass: new Stave(24, GRAND_Y.bass, WIDTH - 34).addClef('bass'),
+      }
+      staves.treble.setContext(ctx).draw()
+      staves.bass.setContext(ctx).draw()
+      for (const type of [StaveConnector.type.BRACE, StaveConnector.type.SINGLE_LEFT, StaveConnector.type.SINGLE_RIGHT])
+        new StaveConnector(staves.treble, staves.bass).setType(type).setContext(ctx).draw()
+      stave = staves[onClef]
+    } else {
+      stave = new Stave(10, 30, WIDTH - 20)
+      stave.addClef(clef).setContext(ctx).draw()
+    }
 
     if (note !== null) {
-      const sn = new StaveNote({ keys: [vexKey(note)], duration: 'w', clef, alignCenter: true })
+      const sn = new StaveNote({ keys: [vexKey(note)], duration: 'w', clef: onClef, alignCenter: true })
       if (isBlackKey(note)) sn.addModifier(new Accidental('#'), 0)
       if (color) sn.setStyle({ fillStyle: color, strokeStyle: color })
       const voice = new Voice({ numBeats: 4, beatValue: 4 }).addTickables([sn])
@@ -54,15 +75,22 @@ export function Staff({ clef, note, color }: StaffProps) {
     // Let CSS scale the drawing to the available width.
     const svg = el.querySelector('svg')
     if (svg) {
-      svg.setAttribute('viewBox', `0 0 ${WIDTH} ${HEIGHT}`)
+      svg.setAttribute('viewBox', `0 0 ${WIDTH} ${height}`)
       svg.removeAttribute('width')
       svg.removeAttribute('height')
       svg.style.removeProperty('width')
       svg.style.removeProperty('height')
       svg.setAttribute('role', 'img')
-      svg.setAttribute('aria-label', note === null ? 'Boş porte' : 'Porte üzerinde bir nota')
+      svg.setAttribute(
+        'aria-label',
+        note === null
+          ? 'Boş porte'
+          : grand
+            ? `${onClef === 'treble' ? 'Üst' : 'Alt'} portede bir nota`
+            : 'Porte üzerinde bir nota',
+      )
     }
-  }, [clef, note, color, fontsLoaded])
+  }, [clef, note, color, fontsLoaded, grand, noteClef])
 
   return <div className="staff" ref={ref} />
 }

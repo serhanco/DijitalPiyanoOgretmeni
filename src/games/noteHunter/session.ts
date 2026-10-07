@@ -1,7 +1,7 @@
 // Pure game logic for "Nota Avcısı": show a note, the player presses a key.
 // Kept free of React and timers so it can be unit tested.
 
-import { pitchClass } from '../../music/notes'
+import { type Clef, naturalClef, pitchClass } from '../../music/notes'
 
 export interface PromptRecord {
   target: number
@@ -11,6 +11,8 @@ export interface PromptRecord {
   wrongPresses: number[]
   /** Arcade games: the target got away (pipe hit, balloon escaped). Counts as not right on the first try. */
   missed?: boolean
+  /** Grand-staff lessons: the staff the note was shown on (otherwise the lesson's clef). */
+  clef?: Clef
 }
 
 /** Right on the first try: no wrong key and not missed. */
@@ -25,6 +27,8 @@ export interface SessionOptions {
   /** Lives: the session fails after this many wrong presses. Unlimited when omitted. */
   hearts?: number
   random?: () => number
+  /** Grand-staff lessons: pick the staff each prompt is shown on. */
+  clefOf?: (midi: number) => Clef
 }
 
 /** Random sequence that never shows the same note twice in a row. */
@@ -61,6 +65,7 @@ export class NoteHunterSession {
       shownAt: null,
       answeredAt: null,
       wrongPresses: [],
+      ...(opts.clefOf && { clef: opts.clefOf(target) }),
     }))
   }
 
@@ -112,4 +117,12 @@ export class NoteHunterSession {
     this.mistakes++
     return 'wrong'
   }
+}
+
+/**
+ * Staff picker for grand-staff lessons: notes in `both` (around middle C)
+ * go to either staff at random, every other note to its natural staff.
+ */
+export function grandClefPicker(both: number[] = [], random: () => number = Math.random): (midi: number) => Clef {
+  return (midi) => (both.includes(midi) ? (random() < 0.5 ? 'treble' : 'bass') : naturalClef(midi))
 }

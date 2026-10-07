@@ -1,8 +1,11 @@
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 import type { RhythmValue } from '../../rhythm/rhythm'
 
-/** How a lesson is played: the staff drill, a rhythm exercise or one of the arcade games. */
-export type LessonKind = 'drill' | 'bird' | 'balloon' | 'rhythm' | 'dino' | 'drum'
+/**
+ * How a lesson is played: the staff drill, a melody read note by note, a
+ * rhythm exercise or one of the arcade games.
+ */
+export type LessonKind = 'drill' | 'melody' | 'bird' | 'balloon' | 'bar' | 'rhythm' | 'dino' | 'drum'
 
 /** Kinds played against a metronome. */
 export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum']
@@ -30,6 +33,22 @@ export interface NoteLesson {
   keyboard: { low: number; high: number }
   /** Rhythm lessons: tempo and the note values to practise. `length` is unused. */
   rhythm?: RhythmSpec
+  /** Read from the grand staff (treble + bass); `clef` is then only the default. */
+  grand?: boolean
+  /** Grand staff: notes around middle C that may be written on either staff. */
+  bothStaves?: number[]
+  /** Melody lessons: the pieces, played in order. `notes` and `length` are unused. */
+  melodies?: Melody[]
+}
+
+export interface Melody {
+  title: string
+  /**
+   * Space separated steps; "C3+E4" plays two keys together. A trailing L or
+   * R ("C4L") writes the note on the left hand's (bass) or right hand's
+   * (treble) staff; otherwise middle C and up go to treble.
+   */
+  notes: string
 }
 
 const TREBLE_KEYBOARD = { low: parseNote('C4'), high: parseNote('G5') }

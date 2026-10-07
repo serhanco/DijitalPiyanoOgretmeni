@@ -27,6 +27,8 @@ page.on('console', (m) => m.type() === 'error' && !m.text().includes('ERR_FAILED
 async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName = '' } = {}) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
   await page.waitForSelector('.staff svg')
+  /** "clef:midi" of every prompt, to check which staff notes were written on. */
+  const seen = new Set()
   const keys = await page.$$eval('.key.white', (els) => els.map((e) => e.dataset.midi))
   for (let i = 0; i < 80 && !(await page.$('.results')); i++) {
     if (wrongFirst) {
@@ -38,6 +40,7 @@ async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName =
     } else {
       // The staff exposes the current note for tests.
       const target = await page.getAttribute('.staff-wrap', 'data-note')
+      seen.add(`${await page.getAttribute('.staff-wrap', 'data-clef')}:${target}`)
       await page.click(`.key[data-midi="${target}"]`)
     }
     if (shotAfter && i + 1 === shotAfter) {
@@ -45,6 +48,42 @@ async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName =
       await page.screenshot({ path: `${out}/${shotName}.png` })
     }
     await page.waitForTimeout(520)
+  }
+  await page.waitForSelector('.results', { timeout: 3000 })
+  await page.waitForTimeout(800)
+  return seen
+}
+
+/**
+ * Play a melody lesson: press the keys of the current step; two keys go
+ * down `gapMs` apart (left hand first), from the page so the gap is exact.
+ */
+async function playMelody(lessonTitle, shotName, { gapMs = 20, shotAfter = 6 } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.waitForSelector('.melody-wrap .staff svg')
+  for (let i = 0; i < 200 && !(await page.$('.results')); i++) {
+    const pending = await page.getAttribute('.melody-wrap', 'data-pending')
+    if (pending) {
+      await page.evaluate(
+        ({ keys, gap }) => {
+          keys.forEach((midi, k) =>
+            window.setTimeout(() => {
+              const el = document.querySelector(`.key[data-midi="${midi}"]`)
+              el.dispatchEvent(
+                new PointerEvent('pointerdown', { bubbles: true, pointerId: 20 + k, isPrimary: k === 0 }),
+              )
+              window.setTimeout(
+                () => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 20 + k })),
+                120,
+              )
+            }, k * gap),
+          )
+        },
+        { keys: pending.split(' ').map(Number), gap: gapMs },
+      )
+    }
+    if (shotName && i === shotAfter) await page.screenshot({ path: `${out}/${shotName}.png` })
+    await page.waitForTimeout(260)
   }
   await page.waitForSelector('.results', { timeout: 3000 })
   await page.waitForTimeout(800)
@@ -59,6 +98,10 @@ async function playArcade(lessonTitle, shotName) {
     const target = await page.evaluate(() => {
       const g = window.__dpoArcade
       if (!g) return null
+      if ('customers' in g) {
+        const next = g.waiting.sort((a, b) => b.x - a.x)[0]
+        return next && next.x > 0.3 ? next.record.target : null
+      }
       if ('pipes' in g) {
         const cur = g.current
         return cur && cur.record.answeredAt === null ? cur.record.target : null
@@ -218,6 +261,56 @@ if (dottedScore !== '%100') errors.push(`Perfectly timed dotted lesson scored ${
 await page.getByText('Derslere dön').click()
 await playBeat('Davulcu: Noktalılar', 'game-drum-dotted')
 await dismissOverlay()
+await page.getByText('Derslere dön').click()
+
+// Phase 6, unit 3: the bass clef with the left hand.
+await play('Sol El: İlk Adımlar', { shotAfter: 3, shotName: 'game-bass' })
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await play("Orta Do'ya Kadar")
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playArcade('Nota Kuşu: Fa Anahtarı', 'game-bird-bass')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playMelody('Sol El Melodileri', 'melody-bass')
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-melody-bass.png`, fullPage: true })
+await page.getByText('Derslere dön').click()
+await play('Fa Çizgileri')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await play('Fa Araları')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playArcade('Balon: Fa Anahtarı', 'game-balloon-bass')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+
+// Unit 4: the grand staff and both hands.
+await play('Büyük Porte', { shotAfter: 4, shotName: 'game-grand' })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-grand.png`, fullPage: true })
+if (!(await page.locator('.hands-card').count())) errors.push('Grand staff results have no hands report')
+await page.getByText('Derslere dön').click()
+const bridge = await play('Orta Do Köprüsü', { shotAfter: 6, shotName: 'game-middle-c' })
+// Notes around middle C must show up on both staves.
+const onBoth = [57, 59, 60, 62, 64].filter((m) => bridge.has(`treble:${m}`) && bridge.has(`bass:${m}`))
+if (onBoth.length < 2) errors.push(`Middle C notes were not written on both staves: ${[...bridge].join(' ')}`)
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playArcade('Nota Barmeni', 'game-bar')
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-bar.png`, fullPage: true })
+await page.getByText('Derslere dön').click()
+await playMelody('Eller Sırayla', 'melody-alternate', { shotAfter: 8 })
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playMelody('İki El Birlikte', 'melody-hands', { gapMs: 30 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-hands.png`, fullPage: true })
+const sync = await page.textContent('.sync')
+if (!sync?.includes('18 tanesinde')) errors.push(`Two-hand sync report: ${sync}`)
 await page.getByText('Derslere dön').click()
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.

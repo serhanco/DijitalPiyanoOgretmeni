@@ -60,18 +60,25 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 
 ## Yapılanlar
 
-| Tarih      | Ne                                                                                                                                  | Nerede                          |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| 2026-10-07 | Repo boştu; README ve yol haritası eklendi                                                                                          | `main`                          |
-| 2026-10-07 | Faz 0 + 1: iskelet, CI, Pages yayını, MIDI, ses, porte, Nota Avcısı, sonuç ekranı                                                   | PR #1, dal `faz-1-cekirdek`     |
-| 2026-10-07 | Faz 2: XP, seri, kalpler, günlük hedef, rozetler, ders haritası, profil, zayıf notalar                                              | PR #2, dal `faz-2-oyunlastirma` |
-| 2026-10-07 | Faz 3: maskot Notiş, ders içi tepkiler ve seri, ses efektleri, konfeti, seviye atlama ekranı                                        | PR #3, dal `faz-3-karakterler`  |
-| 2026-10-07 | Faz 4: PixiJS mini oyun motoru, beceri sağlayıcısı, Nota Kuşu ve Balon Patlatma                                                     | PR #4, dal `faz-4-mini-oyunlar` |
-| 2026-10-07 | Faz 5: metronom, zamanlama değerlendirmesi, gecikme kalibrasyonu, 5 ritim egzersizi, Dino Koşusu, Ritim Davulcusu, zamanlama raporu | PR #5, dal `faz-5-ritim-5xfbrn` |
-| 2026-10-07 | PR #1–#4 sırayla `main`'e birleştirildi (doküman çakışmaları `main` sürümüyle çözüldü)                                              | `main`                          |
-| 2026-10-07 | PR #5 birleşti, GitHub Pages yayını açıldı                                                                                          | `main`                          |
-| 2026-10-07 | Cila turu: 3/4, noktalı notalar (4 yeni ders), tempo hafızası, ritim XP etiketi, profilde ritim grafiği, iki klavyeye göre yardım   | dal `claude/cila-turu-rbkf3d`   |
-| 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                       | `main`                          |
+| Tarih      | Ne                                                                                                                                                                          | Nerede                                |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 2026-10-07 | Repo boştu; README ve yol haritası eklendi                                                                                                                                  | `main`                                |
+| 2026-10-07 | Faz 0 + 1: iskelet, CI, Pages yayını, MIDI, ses, porte, Nota Avcısı, sonuç ekranı                                                                                           | PR #1, dal `faz-1-cekirdek`           |
+| 2026-10-07 | Faz 2: XP, seri, kalpler, günlük hedef, rozetler, ders haritası, profil, zayıf notalar                                                                                      | PR #2, dal `faz-2-oyunlastirma`       |
+| 2026-10-07 | Faz 3: maskot Notiş, ders içi tepkiler ve seri, ses efektleri, konfeti, seviye atlama ekranı                                                                                | PR #3, dal `faz-3-karakterler`        |
+| 2026-10-07 | Faz 4: PixiJS mini oyun motoru, beceri sağlayıcısı, Nota Kuşu ve Balon Patlatma                                                                                             | PR #4, dal `faz-4-mini-oyunlar`       |
+| 2026-10-07 | Faz 5: metronom, zamanlama değerlendirmesi, gecikme kalibrasyonu, 5 ritim egzersizi, Dino Koşusu, Ritim Davulcusu, zamanlama raporu                                         | PR #5, dal `faz-5-ritim-5xfbrn`       |
+| 2026-10-07 | PR #1–#4 sırayla `main`'e birleştirildi (doküman çakışmaları `main` sürümüyle çözüldü)                                                                                      | `main`                                |
+| 2026-10-07 | PR #5 birleşti, GitHub Pages yayını açıldı                                                                                                                                  | `main`                                |
+| 2026-10-07 | Cila turu: 3/4, noktalı notalar (4 yeni ders), tempo hafızası, ritim XP etiketi, profilde ritim grafiği, iki klavyeye göre yardım                                           | dal `claude/cila-turu-rbkf3d`         |
+| 2026-10-07 | Faz 6: fa anahtarı ünitesi (10 ders), iki el ünitesi (7 ders), büyük porte, Orta Do köprüsü, melodi dersleri, Nota Barmeni, ellere göre rapor ve iki el uyumu, 3 yeni rozet | dal `claude/faz-6-fa-anahtari-qh59m2` |
+| 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                               | `main`                                |
+
+- **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
+  el sayılır; El raporu buna göre hesaplanır. Orta Do çevresi (La3–Mi4) bazı derslerde iki portede de çıkar ve nota
+  istatistiği porte başına ayrı tutulur (alt portedeki Do4 ile üst portedeki Do4 ayrı ölçülür). İki tuşlu adımlar
+  sırayla da basılabilir, ama eller arasındaki fark ölçülüp raporlanır (100 ms içi "aynı anda"). Barmen'de yanlış tuş
+  can götürmez, bara ulaşan müşteri götürür (Balon gibi).
 
 ## Açık konular
 

@@ -4,7 +4,7 @@ import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { Staff } from '../components/Staff'
 import type { NoteLesson } from '../games/noteHunter/lessons'
-import { NoteHunterSession } from '../games/noteHunter/session'
+import { grandClefPicker, NoteHunterSession } from '../games/noteHunter/session'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
@@ -35,6 +35,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
         length: lesson.length,
         ignoreOctave,
         hearts: relaxedMode ? undefined : HEARTS_PER_LESSON,
+        clefOf: lesson.grand ? grandClefPicker(lesson.bothStaves) : undefined,
       }),
     [lesson, ignoreOctave, relaxedMode],
   )
@@ -53,6 +54,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
   })
 
   const target = session.records[position]?.target ?? null
+  const targetClef = session.records[position]?.clef ?? lesson.clef
 
   // Settle back to idle after each reaction.
   useEffect(() => {
@@ -142,7 +144,9 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
       <div className="prompt-row">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={76} />
         <div>
-          <p className="prompt">Bu nota hangisi? Klavyede bas!</p>
+          <p className="prompt">
+            {lesson.grand ? 'Bu nota hangisi? Üst porte sağ el, alt porte sol el.' : 'Bu nota hangisi? Klavyede bas!'}
+          </p>
           {combo >= 3 && (
             <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={combo}>
               🔥 {combo} doğru üst üste{combo % COMBO_STEP === 0 ? '!' : ''}
@@ -154,9 +158,16 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
       <div
         key={shake}
         data-note={target ?? undefined}
+        data-clef={targetClef}
         className={`staff-wrap ${shake && wrongKey !== null ? 'shake' : ''}`}
       >
-        <Staff clef={lesson.clef} note={target} color={solved !== null ? GREEN : undefined} />
+        <Staff
+          clef={lesson.clef}
+          grand={lesson.grand}
+          noteClef={targetClef}
+          note={target}
+          color={solved !== null ? GREEN : undefined}
+        />
       </div>
 
       <p className={`feedback ${solved !== null ? 'good' : wrongKey !== null ? 'bad' : ''}`} aria-live="polite">

@@ -5,7 +5,7 @@ import { BADGES, currentStreak, dayKey, levelFromXp } from '../progress/gamifica
 import { noteScores, recentSessions, rhythmSessions } from '../progress/history'
 import { rhythmTrend, type RhythmTrend } from '../progress/rhythmTrend'
 import { RhythmChart } from '../components/RhythmChart'
-import { solfegeName } from '../music/notes'
+import { type Clef, solfegeName } from '../music/notes'
 import { useProfile } from '../state/profile'
 
 interface Props {
@@ -25,16 +25,16 @@ export function ProfileScreen({ onBack }: Props) {
   const { level, intoLevel, needed } = levelFromXp(totalXp)
   const [today] = useState(() => dayKey(new Date()))
   const [sessions, setSessions] = useState<SessionRow[]>([])
-  const [scores, setScores] = useState<Score[]>([])
+  const [scores, setScores] = useState<Record<Clef, Score[]>>({ treble: [], bass: [] })
   const [trend, setTrend] = useState<RhythmTrend>({ points: [], change: null })
 
   useEffect(() => {
     let alive = true
-    Promise.all([recentSessions(8), noteScores('treble'), rhythmSessions(12)])
-      .then(([s, n, r]) => {
+    Promise.all([recentSessions(8), noteScores('treble'), noteScores('bass'), rhythmSessions(12)])
+      .then(([s, treble, bass, r]) => {
         if (!alive) return
         setSessions(s)
-        setScores(n)
+        setScores({ treble, bass })
         setTrend(rhythmTrend(r))
       })
       .catch(() => undefined)
@@ -95,27 +95,32 @@ export function ProfileScreen({ onBack }: Props) {
         </div>
       </section>
 
-      <section className="card">
-        <h2>Sol anahtarı nota haritası</h2>
-        {scores.length === 0 ? (
-          <p className="muted">İlk dersini bitirince her notadaki başarın burada görünecek.</p>
-        ) : (
-          <div className="heat-grid">
-            {scores.map((s) => {
-              const acc = s.firstTry / s.shown
-              return (
-                <div key={s.midi} className="heat-cell" style={{ background: heatColor(acc) }}>
-                  <b>{solfegeName(s.midi)}</b>
-                  <span>%{Math.round(acc * 100)}</span>
-                  <span className="small">
-                    {s.avgReactionMs !== null ? `${(s.avgReactionMs / 1000).toFixed(1)} sn` : '–'}
-                  </span>
+      {(['treble', 'bass'] as const).map(
+        (clef) =>
+          (clef === 'treble' || scores.bass.length > 0) && (
+            <section key={clef} className="card">
+              <h2>{clef === 'treble' ? 'Sol anahtarı nota haritası' : 'Fa anahtarı nota haritası'}</h2>
+              {scores[clef].length === 0 ? (
+                <p className="muted">İlk dersini bitirince her notadaki başarın burada görünecek.</p>
+              ) : (
+                <div className="heat-grid">
+                  {scores[clef].map((s) => {
+                    const acc = s.firstTry / s.shown
+                    return (
+                      <div key={s.midi} className="heat-cell" style={{ background: heatColor(acc) }}>
+                        <b>{solfegeName(s.midi)}</b>
+                        <span>%{Math.round(acc * 100)}</span>
+                        <span className="small">
+                          {s.avgReactionMs !== null ? `${(s.avgReactionMs / 1000).toFixed(1)} sn` : '–'}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
+              )}
+            </section>
+          ),
+      )}
 
       <section className="card">
         <h2>Ritim gelişimi</h2>

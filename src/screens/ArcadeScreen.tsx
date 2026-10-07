@@ -5,12 +5,15 @@ import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { BalloonGame } from '../games/arcade/balloon/engine'
 import { createBalloonScene } from '../games/arcade/balloon/scene'
+import { BarGame } from '../games/arcade/bar/engine'
+import { createBarScene } from '../games/arcade/bar/scene'
 import { BirdGame } from '../games/arcade/bird/engine'
 import { createBirdScene } from '../games/arcade/bird/scene'
 import { PixiStage } from '../games/arcade/PixiStage'
 import { noteSkill } from '../games/arcade/skill'
 import { type StaffLayout, stepY } from '../games/arcade/staffGeometry'
 import type { NoteLesson } from '../games/noteHunter/lessons'
+import { grandClefPicker } from '../games/noteHunter/session'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
@@ -27,9 +30,12 @@ const CLEF = {
   bass: { glyph: '\uE062', step: 6 },
 }
 
-const HOW_TO: Record<'bird' | 'balloon', string> = {
+type ArcadeKind = 'bird' | 'balloon' | 'bar'
+
+const HOW_TO: Record<ArcadeKind, string> = {
   bird: 'Borudaki boşluğun notasını çal, kuş oraya uçsun!',
   balloon: 'Balonun üstündeki notayı çal ve patlat!',
+  bar: 'Müşterinin notasını çal, içeceği kaysın! Üst tezgahlar sağ el, alt tezgahlar sol el.',
 }
 
 interface Props {
@@ -38,13 +44,20 @@ interface Props {
   onExit: () => void
 }
 
-type Game = BirdGame | BalloonGame
+type Game = BirdGame | BalloonGame | BarGame
 
 export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
-  const kind = lesson.kind === 'balloon' ? 'balloon' : 'bird'
+  const kind: ArcadeKind = lesson.kind === 'balloon' || lesson.kind === 'bar' ? lesson.kind : 'bird'
   const { ignoreOctave, showKeyLabels } = useSettings()
   const game: Game = useMemo(() => {
-    const skill = noteSkill({ clef: lesson.clef, notes: lesson.notes, length: lesson.length, ignoreOctave })
+    const skill = noteSkill({
+      clef: lesson.clef,
+      notes: lesson.notes,
+      length: lesson.length,
+      ignoreOctave,
+      clefOf: lesson.grand ? grandClefPicker(lesson.bothStaves) : undefined,
+    })
+    if (kind === 'bar') return new BarGame(skill, ARCADE_HEARTS)
     return kind === 'bird' ? new BirdGame(skill, ARCADE_HEARTS) : new BalloonGame(skill, ARCADE_HEARTS)
   }, [lesson, kind, ignoreOctave])
 
@@ -102,14 +115,19 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
         }
         const [ev] = game.press(e.midi, e.time)
         if (!ev) return
-        if (ev.type === 'pop') {
+        if (ev.type === 'pop' || ev.type === 'serve') {
           sfx.correct()
           setFlash({ midi: e.midi, mark: 'correct' })
-          react(true)
+          react(true, ev.type === 'serve' ? 'Afiyet olsun!' : undefined)
         } else {
           sfx.wrong()
           setFlash({ midi: e.midi, mark: 'wrong' })
-          react(false, `${solfegeName(e.midi)} değil! En üstteki balona bak.`)
+          react(
+            false,
+            game instanceof BarGame
+              ? `${solfegeName(e.midi)} kimsenin notası değil! Bara en yakın müşteriye bak.`
+              : `${solfegeName(e.midi)} değil! En üstteki balona bak.`,
+          )
         }
       }),
     [game, react],
@@ -117,34 +135,43 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
 
   const create = useCallback(
     (app: Application) =>
-      game instanceof BirdGame
-        ? createBirdScene(
-            app,
-            game,
-            lesson.clef,
-            lesson.notes,
-            (events) => {
-              for (const ev of events) {
-                if (ev.type === 'pass') {
-                  sfx.correct()
-                  react(true, 'Harika geçiş!')
-                } else if (ev.type === 'crash') {
-                  sfx.wrong()
-                  react(false, `Bu boşluk ${solfegeName(ev.pipe.record.target)} idi.`)
-                }
-              }
-            },
-            setStaff,
-          )
-        : createBalloonScene(app, game, lesson.clef, lesson.notes, (events) => {
+      game instanceof BarGame
+        ? createBarScene(app, game, lesson.notes, lesson.bothStaves ?? [], (events) => {
             for (const ev of events) {
-              if (ev.type === 'escape') {
+              if (ev.type === 'angry') {
                 sfx.wrong()
-                react(false, `Kaçan balon ${solfegeName(ev.balloon.record.target)} idi.`)
+                react(false, `Müşteri ${solfegeName(ev.customer.record.target)} istiyordu, kızdı gitti!`)
               }
             }
-          }),
-    [game, lesson.clef, lesson.notes, react],
+          })
+        : game instanceof BirdGame
+          ? createBirdScene(
+              app,
+              game,
+              lesson.clef,
+              lesson.notes,
+              (events) => {
+                for (const ev of events) {
+                  if (ev.type === 'pass') {
+                    sfx.correct()
+                    react(true, 'Harika geçiş!')
+                  } else if (ev.type === 'crash') {
+                    sfx.wrong()
+                    react(false, `Bu boşluk ${solfegeName(ev.pipe.record.target)} idi.`)
+                  }
+                }
+              },
+              setStaff,
+            )
+          : createBalloonScene(app, game, lesson.clef, lesson.notes, (events) => {
+              for (const ev of events) {
+                if (ev.type === 'escape') {
+                  sfx.wrong()
+                  react(false, `Kaçan balon ${solfegeName(ev.balloon.record.target)} idi.`)
+                }
+              }
+            }),
+    [game, lesson.clef, lesson.notes, lesson.bothStaves, react],
   )
 
   const marks: Partial<Record<number, KeyMark>> = flash ? { [flash.midi]: flash.mark } : {}
@@ -170,7 +197,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
       </div>
 
       <PixiStage create={create} className="pixi-stage">
-        {staff && (
+        {staff && kind === 'bird' && (
           <svg className="clef-overlay" aria-hidden>
             <text
               x={staff.gap * 0.3}

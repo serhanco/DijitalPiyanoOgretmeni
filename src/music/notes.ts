@@ -2,6 +2,23 @@
 
 export type Clef = 'treble' | 'bass'
 
+/** Middle C, the border between the two staves of the grand staff. */
+export const MIDDLE_C = 60
+
+/** The staff a note is normally written on in a grand staff: middle C and up on treble. */
+export function naturalClef(midi: number): Clef {
+  return midi >= MIDDLE_C ? 'treble' : 'bass'
+}
+
+/** Which hand plays a staff: right hand reads treble, left hand reads bass. */
+export type Hand = 'right' | 'left'
+export const handOf = (clef: Clef): Hand => (clef === 'treble' ? 'right' : 'left')
+export const HAND_LABELS: Record<Hand, string> = {
+  right: 'Sağ el (sol anahtarı)',
+  left: 'Sol el (fa anahtarı)',
+}
+export const CLEF_NAMES: Record<Clef, string> = { treble: 'sol anahtarı', bass: 'fa anahtarı' }
+
 const LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'] as const
 export type Letter = (typeof LETTERS)[number]
 

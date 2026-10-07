@@ -1382,3 +1382,26 @@ button.chip {
   margin: 6px 0 2px;
   min-height: 1.4em;
 }
+
+/* Phase 6: hands report, melody staff, grand staff */
+.hands-card .topic-row {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 3em 3.6em;
+}
+.hand-speed {
+  text-align: right;
+}
+.sync {
+  margin-top: 12px;
+  border-top: 2px solid var(--border);
+  padding-top: 8px;
+}
+.sync h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+.sync p {
+  margin: 4px 0;
+}
+.melody-wrap .staff {
+  max-width: 640px;
+}

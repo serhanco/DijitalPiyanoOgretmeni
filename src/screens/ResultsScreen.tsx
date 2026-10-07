@@ -1,5 +1,5 @@
 import type { NoteLesson } from '../games/noteHunter/lessons'
-import type { SessionSummary, TimingSummary } from '../games/noteHunter/summary'
+import type { HandStat, SessionSummary, SyncSummary, TimingSummary } from '../games/noteHunter/summary'
 import { describeOffset, JUDGEMENT_LABELS, JUDGEMENTS } from '../rhythm/timing'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
@@ -8,7 +8,7 @@ import { CountUp } from '../components/Celebration'
 import { burstConfetti } from '../components/confetti'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { GoalRing } from '../components/TopBar'
-import { solfegeName } from '../music/notes'
+import { type Clef, CLEF_NAMES, solfegeName } from '../music/notes'
 import type { Reward } from '../state/profile'
 
 interface Props {
@@ -17,8 +17,8 @@ interface Props {
   reward: Reward
   onRetry: () => void
   onHome: () => void
-  /** Start a short drill on these notes. */
-  onPractice: (notes: number[]) => void
+  /** Start a short drill on these notes, on their staff (or both staves). */
+  onPractice: (notes: number[], clef: Clef | 'grand') => void
 }
 
 const pct = (x: number) => `%${Math.round(x * 100)}`
@@ -91,6 +91,52 @@ function TimingCard({ timing }: { timing: TimingSummary }) {
   )
 }
 
+/** Accuracy and speed of each hand, and how well they played together. */
+function HandsCard({ hands, sync }: { hands?: HandStat[]; sync?: SyncSummary }) {
+  const shown = hands?.filter((h) => h.shown > 0) ?? []
+  return (
+    <section className="card hands-card">
+      <h2>Ellere göre</h2>
+      {shown.map((h) => (
+        <div key={h.hand} className="topic-row">
+          <span>
+            {h.hand === 'right' ? '🫱' : '🫲'} {h.label}
+          </span>
+          <Bar value={h.accuracy} />
+          <span className="topic-pct">{pct(h.accuracy)}</span>
+          <span className="small muted hand-speed">{secs(h.avgReactionMs)}</span>
+        </div>
+      ))}
+      {shown.length === 2 && <p className="small muted">{handAdvice(shown[0], shown[1])}</p>}
+      {sync && (
+        <div className="sync">
+          <h3>İki el uyumu</h3>
+          <p>
+            İki tuşa birlikte basılan {sync.pairs} yerin <b>{sync.together}</b> tanesinde eller aynı anda indi (
+            {pct(sync.together / sync.pairs)}).
+          </p>
+          {sync.meanGapMs !== null && sync.meanLeadMs !== null && (
+            <p className="small muted">
+              Eller arasında ortalama {Math.round(sync.meanGapMs)} ms fark var
+              {Math.abs(sync.meanLeadMs) >= 30
+                ? `; genelde ${sync.meanLeadMs < 0 ? 'sol' : 'sağ'} el önce basıyor.`
+                : '; iki el de dengeli.'}
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function handAdvice(right: HandStat, left: HandStat): string {
+  const diff = right.accuracy - left.accuracy
+  if (Math.abs(diff) < 0.1) return 'İki elin de benzer gidiyor, güzel denge!'
+  return diff > 0
+    ? 'Sol elin biraz geride: fa anahtarı derslerini tekrar etmek iyi gelir.'
+    : 'Sağ elin biraz geride: sol anahtarı derslerini tekrar etmek iyi gelir.'
+}
+
 function Comparison({ before, now }: { before: number | null; now: number }) {
   if (before === null) return null
   const diff = Math.round((now - before) * 100)
@@ -104,7 +150,12 @@ function Comparison({ before, now }: { before: number | null; now: number }) {
 }
 
 export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPractice }: Props) {
-  const practiceNotes = summary.weakest.map((n) => n.midi)
+  const practiceNotes = [...new Set(summary.weakest.map((n) => n.midi))]
+  const practiceClefs = new Set(summary.weakest.map((n) => n.clef))
+  const practiceClef: Clef | 'grand' = practiceClefs.size === 1 ? [...practiceClefs][0] : 'grand'
+  // On the grand staff a note name alone does not say which staff it was read on.
+  const noteLabel = (n: { midi: number; clef: Clef }) =>
+    summary.hands ? `${solfegeName(n.midi)} (${CLEF_NAMES[n.clef]})` : solfegeName(n.midi)
   const leveledUp = reward.levelAfter > reward.levelBefore
   const [showLevelUp, setShowLevelUp] = useState(leveledUp)
   const mood: MascotMood = summary.failed || summary.stars === 0 ? 'sad' : summary.stars >= 2 ? 'cheer' : 'happy'
@@ -248,19 +299,21 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
         ))}
       </section>
 
+      {(summary.hands || summary.sync) && <HandsCard hands={summary.hands} sync={summary.sync} />}
+
       {summary.weakest.length > 0 && (
         <section className="card">
           <h2>Biraz daha çalışalım</h2>
           <ul className="weak-list">
             {summary.weakest.map((n) => (
-              <li key={n.midi}>
-                <b>{solfegeName(n.midi)}</b>: {n.shown} kez çıktı, {n.firstTry} kez ilk denemede bildin
+              <li key={`${n.clef}${n.midi}`}>
+                <b>{noteLabel(n)}</b>: {n.shown} kez çıktı, {n.firstTry} kez ilk denemede bildin
                 {n.confusedWith[0] && <> · genelde {solfegeName(n.confusedWith[0].midi)} ile karıştırdın</>}
               </li>
             ))}
           </ul>
           {practiceNotes.length >= 2 && (
-            <button className="btn btn-small practice-btn" onClick={() => onPractice(practiceNotes)}>
+            <button className="btn btn-small practice-btn" onClick={() => onPractice(practiceNotes, practiceClef)}>
               Bu notaları çalış
             </button>
           )}
@@ -272,8 +325,8 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
           <h2>Nota nota sonuçlar</h2>
           <div className="note-grid">
             {summary.perNote.map((n) => (
-              <div key={n.midi} className="note-cell">
-                <span className="note-name">{solfegeName(n.midi)}</span>
+              <div key={`${n.clef}${n.midi}`} className="note-cell">
+                <span className="note-name">{noteLabel(n)}</span>
                 <Bar value={n.accuracy} />
                 <span className="small muted">
                   {pct(n.accuracy)} · {secs(n.avgReactionMs)}
