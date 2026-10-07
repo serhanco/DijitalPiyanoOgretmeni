@@ -6,6 +6,7 @@ import { NoteHunterSession } from '../games/noteHunter/session'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
+import { HEARTS_PER_LESSON } from '../progress/gamification'
 import { useSettings } from '../state/settings'
 
 const CORRECT_PAUSE_MS = 450
@@ -22,10 +23,16 @@ interface Props {
 }
 
 export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
-  const { ignoreOctave, showKeyLabels } = useSettings()
+  const { ignoreOctave, showKeyLabels, relaxedMode } = useSettings()
   const session = useMemo(
-    () => new NoteHunterSession({ notes: lesson.notes, length: lesson.length, ignoreOctave }),
-    [lesson, ignoreOctave],
+    () =>
+      new NoteHunterSession({
+        notes: lesson.notes,
+        length: lesson.length,
+        ignoreOctave,
+        hearts: relaxedMode ? undefined : HEARTS_PER_LESSON,
+      }),
+    [lesson, ignoreOctave, relaxedMode],
   )
   const [position, setPosition] = useState(0)
   const [solved, setSolved] = useState<number | null>(null)
@@ -58,7 +65,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
         later(() => {
           setSolved(null)
           setWrongCount(0)
-          if (session.done) onFinishRef.current(summarize(session.records, lesson.clef))
+          if (session.done) onFinishRef.current(summarize(session.attempted, lesson.clef))
           else setPosition(session.position)
         }, CORRECT_PAUSE_MS)
       } else if (result === 'wrong') {
@@ -66,6 +73,9 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
         setWrongCount(cur.wrongPresses.length)
         setShake((n) => n + 1)
         later(() => setWrongKey((k) => (k === e.midi ? null : k)), WRONG_FLASH_MS)
+        if (session.failed) {
+          later(() => onFinishRef.current(summarize(session.attempted, lesson.clef, true)), WRONG_FLASH_MS + 300)
+        }
       }
     })
     const pending = timers.current
@@ -91,9 +101,15 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
         <div className="progress" role="progressbar" aria-valuenow={Math.round(progress * 100)}>
           <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
         </div>
-        <span className="counter">
-          {Math.min(position + 1, session.records.length)}/{session.records.length}
-        </span>
+        {session.hearts !== null ? (
+          <span className={`hearts ${shake ? 'hit' : ''}`} key={`h${shake}`} aria-label={`${session.heartsLeft} can`}>
+            ❤️ {session.heartsLeft}
+          </span>
+        ) : (
+          <span className="counter">
+            {Math.min(position + 1, session.records.length)}/{session.records.length}
+          </span>
+        )}
       </header>
 
       <p className="prompt">Bu nota hangisi? Klavyede bas!</p>

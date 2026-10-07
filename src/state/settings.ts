@@ -10,6 +10,8 @@ interface SettingsState {
   showKeyLabels: boolean
   /** Accept the right note in any octave. Helps with small keyboards. */
   ignoreOctave: boolean
+  /** Practice without hearts: mistakes never end a lesson. */
+  relaxedMode: boolean
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void
 }
 
@@ -20,6 +22,7 @@ export const useSettings = create<SettingsState>()(
       soundForScreen: true,
       showKeyLabels: true,
       ignoreOctave: false,
+      relaxedMode: false,
       set: (patch) => set(patch),
     }),
     {

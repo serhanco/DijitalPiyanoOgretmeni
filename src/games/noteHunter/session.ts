@@ -17,6 +17,8 @@ export interface SessionOptions {
   notes: number[]
   length: number
   ignoreOctave?: boolean
+  /** Lives: the session fails after this many wrong presses. Unlimited when omitted. */
+  hearts?: number
   random?: () => number
 }
 
@@ -43,9 +45,12 @@ export class NoteHunterSession {
   readonly records: PromptRecord[]
   private index = 0
   private readonly ignoreOctave: boolean
+  private mistakes = 0
+  readonly hearts: number | null
 
   constructor(opts: SessionOptions) {
     this.ignoreOctave = opts.ignoreOctave ?? false
+    this.hearts = opts.hearts ?? null
     this.records = buildSequence(opts.notes, opts.length, opts.random).map((target) => ({
       target,
       shownAt: null,
@@ -55,7 +60,21 @@ export class NoteHunterSession {
   }
 
   get done(): boolean {
-    return this.index >= this.records.length
+    return this.failed || this.index >= this.records.length
+  }
+
+  /** True when the hearts ran out before the end. */
+  get failed(): boolean {
+    return this.hearts !== null && this.mistakes >= this.hearts
+  }
+
+  get heartsLeft(): number | null {
+    return this.hearts === null ? null : Math.max(0, this.hearts - this.mistakes)
+  }
+
+  /** Prompts the player has seen so far: the basis of the report. */
+  get attempted(): PromptRecord[] {
+    return this.records.filter((r) => r.shownAt !== null)
   }
 
   get position(): number {
@@ -85,6 +104,7 @@ export class NoteHunterSession {
       return 'correct'
     }
     cur.wrongPresses.push(midi)
+    this.mistakes++
     return 'wrong'
   }
 }
