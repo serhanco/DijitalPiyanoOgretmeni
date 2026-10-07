@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { useSoundRouting } from './audio/useSoundRouting'
 import type { NoteLesson } from './games/noteHunter/lessons'
 import type { SessionSummary } from './games/noteHunter/summary'
-import { attachComputerKeyboard } from './input/computerKeyboard'
+import { attachComputerKeyboard, setComputerKeyboardBase } from './input/computerKeyboard'
 import { useMidi } from './midi/midiStore'
 import { buildReviewLesson } from './progress/curriculum'
 import { recordSession } from './progress/history'
@@ -15,6 +15,8 @@ import { type Reward, useProfile } from './state/profile'
 const loadGame = () => import('./screens/NoteHunterScreen')
 const NoteHunterScreen = lazy(() => loadGame().then((m) => ({ default: m.NoteHunterScreen })))
 // Arcade games bring PixiJS: their own chunk, loaded on demand.
+// Melodies read from the staff (VexFlow, like the drill).
+const MelodyScreen = lazy(() => import('./screens/MelodyScreen').then((m) => ({ default: m.MelodyScreen })))
 const ArcadeScreen = lazy(() => import('./screens/ArcadeScreen').then((m) => ({ default: m.ArcadeScreen })))
 // Rhythm activities: the notation drill (VexFlow) and the beat arcade games (PixiJS).
 const RhythmScreen = lazy(() => import('./screens/RhythmScreen').then((m) => ({ default: m.RhythmScreen })))
@@ -52,6 +54,7 @@ export default function App() {
 
   const start = useCallback((lesson: NoteLesson) => {
     if (useMidi.getState().status === 'idle') void useMidi.getState().connect()
+    setComputerKeyboardBase(lesson.keyboard.low)
     setScreen({ name: 'play', lesson, run: Date.now() })
   }, [])
 
@@ -75,7 +78,6 @@ export default function App() {
     // Rhythm results say how well notes were timed, not read: keep them out of the note statistics.
     void recordSession(
       { ...outcome, at: Date.now(), xp: reward.xpGained, timing },
-      lesson.clef,
       summary.timing ? [] : summary.perNote,
     ).catch((err) => console.error('Could not save the session', err))
     setScreen({ name: 'results', lesson, summary, reward })
@@ -100,8 +102,10 @@ export default function App() {
       )}
       {screen.name === 'play' && (
         <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-          {screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' ? (
+          {screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' || screen.lesson.kind === 'bar' ? (
             <ArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          ) : screen.lesson.kind === 'melody' ? (
+            <MelodyScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : screen.lesson.kind === 'rhythm' ? (
             <RhythmScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : screen.lesson.kind === 'dino' || screen.lesson.kind === 'drum' ? (
@@ -118,7 +122,7 @@ export default function App() {
           reward={screen.reward}
           onRetry={() => start(screen.lesson)}
           onHome={home}
-          onPractice={(notes) => start(buildReviewLesson(screen.lesson.clef, notes))}
+          onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
         />
       )}
     </main>

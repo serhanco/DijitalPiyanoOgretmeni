@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { db } from '../progress/db'
 import { TREBLE_LESSONS } from '../games/noteHunter/lessons'
+import { BASS_LESSONS } from '../games/noteHunter/bassLessons'
 import {
   type Badge,
   DEFAULT_DAILY_GOAL,
@@ -107,6 +108,7 @@ export const useProfile = create<ProfileState>()(
               .filter(([, l]) => l.bestStars >= 3)
               .map(([id]) => id),
             allTrebleLessonIds: TREBLE_LESSONS.map((l) => l.id),
+            allBassLessonIds: BASS_LESSONS.map((l) => l.id),
           },
           Object.keys(s.badges),
         )

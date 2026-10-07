@@ -31,12 +31,19 @@ export function keyCodeToMidi(code: string, baseMidi: number): number | null {
   return offset === undefined ? null : baseMidi + offset
 }
 
+let base = 60
+
+/** The C the A key plays: each lesson starts at its keyboard's lowest C (Z and X still shift it). */
+export function setComputerKeyboardBase(lowestKey: number): void {
+  base = Math.max(24, Math.min(96, lowestKey - (lowestKey % 12)))
+}
+
 /**
  * Listen to the computer keyboard. Z and X shift the octave down and up.
  * Returns a cleanup function.
  */
 export function attachComputerKeyboard(initialBase = 60): () => void {
-  let base = initialBase
+  base = initialBase
   const down = new Map<string, number>()
 
   const onDown = (e: KeyboardEvent) => {

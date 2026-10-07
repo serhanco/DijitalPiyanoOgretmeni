@@ -92,6 +92,7 @@ describe('badges', () => {
     outcome: outcome(),
     threeStarLessons: ['a'],
     allTrebleLessonIds: ['a', 'b'],
+    allBassLessonIds: ['c'],
   }
 
   it('awards new badges only once', () => {
@@ -104,5 +105,14 @@ describe('badges', () => {
   it('awards the treble master badge when every lesson has 3 stars', () => {
     const ids = newlyEarnedBadges({ ...ctx, threeStarLessons: ['a', 'b'] }, []).map((b) => b.id)
     expect(ids).toContain('treble-master')
+    expect(ids).not.toContain('bass-master')
+  })
+
+  it('awards the two-hand and bartender badges for their lessons', () => {
+    const two = newlyEarnedBadges({ ...ctx, outcome: outcome({ lessonId: 'grand-hands-1', stars: 2 }) }, [])
+    expect(two.map((b) => b.id)).toContain('two-hands')
+    const bar = newlyEarnedBadges({ ...ctx, outcome: outcome({ lessonId: 'grand-bar-1', accuracy: 0.95 }) }, [])
+    expect(bar.map((b) => b.id)).toContain('bartender')
+    expect(newlyEarnedBadges(ctx, []).map((b) => b.id)).not.toContain('two-hands')
   })
 })

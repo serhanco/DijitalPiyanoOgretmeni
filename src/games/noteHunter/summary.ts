@@ -1,11 +1,21 @@
 // Turns a finished session into the report shown on the results screen.
 
-import { type Clef, PLACEMENT_LABELS, type StaffPlacement, staffPlacement } from '../../music/notes'
+import {
+  type Clef,
+  HAND_LABELS,
+  type Hand,
+  handOf,
+  PLACEMENT_LABELS,
+  type StaffPlacement,
+  staffPlacement,
+} from '../../music/notes'
 import type { Judgement } from '../../rhythm/timing'
 import { firstTryOk, type PromptRecord } from './session'
 
 export interface NoteStat {
   midi: number
+  /** The staff it was read on (the same key on the other staff is a separate entry). */
+  clef: Clef
   shown: number
   firstTry: number
   accuracy: number
@@ -40,6 +50,30 @@ export interface SessionSummary {
   message: string
   /** Rhythm lessons: how well the presses fell on the beat. */
   timing?: TimingSummary
+  /** Lessons with both staves: accuracy and speed per hand. */
+  hands?: HandStat[]
+  /** Two-hand lessons: how close together the two hands pressed. */
+  sync?: SyncSummary
+}
+
+export interface HandStat {
+  hand: Hand
+  label: string
+  shown: number
+  firstTry: number
+  accuracy: number
+  avgReactionMs: number | null
+}
+
+export interface SyncSummary {
+  /** Steps where both hands play at once. */
+  pairs: number
+  /** Of those, pressed within TOGETHER_MS of each other. */
+  together: number
+  /** Mean gap between the two hands' presses. */
+  meanGapMs: number | null
+  /** Mean signed gap: negative = left hand first. */
+  meanLeadMs: number | null
 }
 
 export interface TimingSummary {
@@ -80,11 +114,13 @@ function messageFor(accuracy: number, avgReactionMs: number | null): string {
 }
 
 export function summarize(records: PromptRecord[], clef: Clef, failed = false): SessionSummary {
-  const byNote = new Map<number, PromptRecord[]>()
+  const clefOf = (r: PromptRecord) => r.clef ?? clef
+  const byNote = new Map<string, PromptRecord[]>()
   for (const r of records) {
-    const list = byNote.get(r.target) ?? []
+    const key = `${clefOf(r)}:${r.target}`
+    const list = byNote.get(key) ?? []
     list.push(r)
-    byNote.set(r.target, list)
+    byNote.set(key, list)
   }
 
   const reaction = (r: PromptRecord) => (r.shownAt !== null && r.answeredAt !== null ? r.answeredAt - r.shownAt : null)
@@ -95,13 +131,14 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
       .map(reaction)
       .filter((x): x is number => x !== null)
 
-  const perNote: NoteStat[] = [...byNote.entries()]
-    .map(([midi, rs]) => {
+  const perNote: NoteStat[] = [...byNote.values()]
+    .map((rs) => {
       const confusions = new Map<number, number>()
       for (const r of rs) for (const w of r.wrongPresses) confusions.set(w, (confusions.get(w) ?? 0) + 1)
       const firstTry = rs.filter(firstTryOk).length
       return {
-        midi,
+        midi: rs[0].target,
+        clef: clefOf(rs[0]),
         shown: rs.length,
         firstTry,
         accuracy: firstTry / rs.length,
@@ -111,11 +148,11 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
           .sort((a, b) => b.count - a.count),
       }
     })
-    .sort((a, b) => a.midi - b.midi)
+    .sort((a, b) => a.midi - b.midi || (a.clef === 'bass' ? -1 : 1))
 
   const categories = new Map<StaffPlacement, { shown: number; firstTry: number }>()
   for (const r of records) {
-    const p = staffPlacement(r.target, clef)
+    const p = staffPlacement(r.target, clefOf(r))
     const c = categories.get(p) ?? { shown: 0, firstTry: 0 }
     c.shown++
     if (firstTryOk(r)) c.firstTry++
@@ -139,6 +176,23 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     .sort((a, b) => a.accuracy - b.accuracy || (b.avgReactionMs ?? 0) - (a.avgReactionMs ?? 0))
     .slice(0, 3)
 
+  const clefs = new Set(records.map(clefOf))
+  const hands: HandStat[] | undefined =
+    clefs.size > 1
+      ? (['right', 'left'] as Hand[]).map((hand) => {
+          const rs = records.filter((r) => handOf(clefOf(r)) === hand)
+          const ok = rs.filter(firstTryOk).length
+          return {
+            hand,
+            label: HAND_LABELS[hand],
+            shown: rs.length,
+            firstTry: ok,
+            accuracy: rs.length ? ok / rs.length : 0,
+            avgReactionMs: avg(cleanReactions(rs)),
+          }
+        })
+      : undefined
+
   return {
     failed,
     total,
@@ -150,6 +204,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     perNote,
     perCategory,
     weakest,
+    ...(hands && { hands }),
     message: failed
       ? 'Sorun değil, hata yapa yapa öğreniyoruz. Notaları acele etmeden bulmaya odaklanıp tekrar dene.'
       : messageFor(accuracy, avgReactionMs),

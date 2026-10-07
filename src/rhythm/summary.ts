@@ -78,6 +78,7 @@ export function summarizeRhythm(
         const ok = rs.filter(clean).length
         return {
           midi,
+          clef: 'treble' as const,
           shown: rs.length,
           firstTry: ok,
           accuracy: rs.reduce((n, r) => n + scoreOf(r), 0) / rs.length,

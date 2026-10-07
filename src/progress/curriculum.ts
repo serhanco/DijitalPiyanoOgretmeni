@@ -1,3 +1,5 @@
+import { BASS_KEYBOARD, BASS_LESSONS } from '../games/noteHunter/bassLessons'
+import { GRAND_KEYBOARD, HANDS_LESSONS } from '../games/noteHunter/handsLessons'
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import type { Clef } from '../music/notes'
 import { RHYTHM_LESSONS } from '../rhythm/lessons'
@@ -35,12 +37,27 @@ export const UNITS: Unit[] = [
     title: 'Ünite 3: Fa Anahtarı',
     subtitle: 'Sol elin notaları',
     color: '#1cb0f6',
+    lessons: BASS_LESSONS,
+    review: true,
+  },
+  {
+    id: 'hands',
+    title: 'Ünite 4: İki El',
+    subtitle: 'Büyük porte, Orta Do ve iki el birlikte',
+    color: '#ff4b8b',
+    lessons: HANDS_LESSONS,
+  },
+  {
+    id: 'scales',
+    title: 'Ünite 5: Gamlar',
+    subtitle: 'Sağ el, sol el, iki el eş zamanlı',
+    color: '#2bc4a8',
     lessons: [],
     comingSoon: true,
   },
   {
     id: 'chords',
-    title: 'Ünite 4: Akorlar',
+    title: 'Ünite 6: Akorlar',
     subtitle: 'Üçlüler, çevrimler, arpejler',
     color: '#ff9600',
     lessons: [],
@@ -88,16 +105,22 @@ export function weakestNotes(stats: NoteScore[], count: number): number[] {
 
 export const REVIEW_LESSON_ID = 'review'
 
-/** A practice lesson built from the player's weakest notes. */
-export function buildReviewLesson(clef: Clef, notes: number[]): NoteLesson {
-  const base = TREBLE_LESSONS[TREBLE_LESSONS.length - 1]
+/** A practice lesson built from the player's weakest notes, on their staff (or both staves). */
+export function buildReviewLesson(clef: Clef | 'grand', notes: number[]): NoteLesson {
+  const keyboard =
+    clef === 'treble'
+      ? TREBLE_LESSONS[TREBLE_LESSONS.length - 1].keyboard
+      : clef === 'bass'
+        ? BASS_KEYBOARD
+        : { low: Math.min(GRAND_KEYBOARD.low, ...notes), high: Math.max(GRAND_KEYBOARD.high, ...notes) }
   return {
     id: REVIEW_LESSON_ID,
     title: 'Zayıf Notalar',
     description: 'En çok zorlandığın notalarla kısa bir tekrar',
-    clef,
+    clef: clef === 'grand' ? 'treble' : clef,
+    ...(clef === 'grand' && { grand: true }),
     notes,
     length: 15,
-    keyboard: base.keyboard,
+    keyboard,
   }
 }

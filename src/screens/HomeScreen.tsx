@@ -3,6 +3,7 @@ import { Greeting } from '../components/Greeting'
 import { MidiPanel } from '../components/MidiPanel'
 import { TopBar } from '../components/TopBar'
 import type { LessonKind, NoteLesson } from '../games/noteHunter/lessons'
+import { type Clef, CLEF_NAMES } from '../music/notes'
 import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from '../progress/curriculum'
 import { noteScores } from '../progress/history'
 import { useProfile } from '../state/profile'
@@ -19,7 +20,9 @@ const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
 const KIND_ICON: Record<LessonKind, string> = {
   drill: '♪',
+  melody: '🎶',
   bird: '🐦',
+  bar: '🍹',
   balloon: '🎈',
   rhythm: '🎵',
   dino: '🦖',
@@ -98,15 +101,15 @@ function Settings({ onCalibrate }: { onCalibrate: () => void }) {
 export function HomeScreen({ onStart, onProfile, onCalibrate }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
-  const [weak, setWeak] = useState<number[]>([])
+  const [weak, setWeak] = useState<Record<Clef, number[]>>({ treble: [], bass: [] })
   const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
-    noteScores('treble')
-      .then(
-        (scores) => alive && setWeak(scores.length >= REVIEW_NOTE_COUNT ? weakestNotes(scores, REVIEW_NOTE_COUNT) : []),
-      )
+    const weakOf = (scores: Awaited<ReturnType<typeof noteScores>>) =>
+      scores.length >= REVIEW_NOTE_COUNT ? weakestNotes(scores, REVIEW_NOTE_COUNT) : []
+    Promise.all([noteScores('treble'), noteScores('bass')])
+      .then(([treble, bass]) => alive && setWeak({ treble: weakOf(treble), bass: weakOf(bass) }))
       .catch(() => undefined)
     return () => {
       alive = false
@@ -178,25 +181,30 @@ export function HomeScreen({ onStart, onProfile, onCalibrate }: Props) {
                 )
               })}
 
-              {unit.review && (
-                <div
-                  className="path-step"
-                  style={{ transform: `translateX(${ZIGZAG[unit.lessons.length % ZIGZAG.length]}px)` }}
-                >
-                  <button
-                    className={`node review ${weak.length ? 'open' : 'locked'}`}
-                    onClick={() =>
-                      weak.length
-                        ? onStart(buildReviewLesson(unit.lessons[0].clef, weak))
-                        : setToast('Birkaç ders bitirince zayıf notalarını burada çalışabilirsin.')
-                    }
-                    aria-label="Zayıf notalar tekrarı"
-                  >
-                    🏋️
-                  </button>
-                  <span className="node-title">Zayıf Notalar</span>
-                </div>
-              )}
+              {unit.review &&
+                (() => {
+                  const clef = unit.lessons[0].clef
+                  const notes = weak[clef]
+                  return (
+                    <div
+                      className="path-step"
+                      style={{ transform: `translateX(${ZIGZAG[unit.lessons.length % ZIGZAG.length]}px)` }}
+                    >
+                      <button
+                        className={`node review ${notes.length ? 'open' : 'locked'}`}
+                        onClick={() =>
+                          notes.length
+                            ? onStart(buildReviewLesson(clef, notes))
+                            : setToast('Birkaç ders bitirince zayıf notalarını burada çalışabilirsin.')
+                        }
+                        aria-label={`Zayıf notalar tekrarı (${CLEF_NAMES[clef]})`}
+                      >
+                        🏋️
+                      </button>
+                      <span className="node-title">Zayıf Notalar</span>
+                    </div>
+                  )
+                })()}
             </div>
           )}
         </section>

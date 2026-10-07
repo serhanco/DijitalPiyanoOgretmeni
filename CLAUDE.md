@@ -56,7 +56,8 @@ src/
   audio/piano.ts          Lazy Tone.js Sampler with Salamander samples (cached by the service worker)
   audio/useSoundRouting   Plays sound per settings (MIDI input silent by default: the piano makes its own sound)
   components/             Staff (VexFlow, scaled via viewBox), PianoKeyboard (multi-touch, slide), MidiPanel
-  games/noteHunter/       lessons.ts, session.ts (pure engine), summary.ts (pure report)
+  games/noteHunter/       lessons.ts (+ bassLessons, handsLessons), session.ts (pure engine), summary.ts (pure report)
+  games/melody/           (phase 6) MelodySession: melodies with one or two keys per step
   screens/                Home, NoteHunter, Results (simple state machine in App.tsx, no router)
   state/settings.ts       Zustand + localStorage settings
   progress/               (phase 2) gamification rules, Dexie DB, history, curriculum
@@ -75,10 +76,11 @@ Principles:
 
 ## Current state and next steps
 
-| Branch                    | State                                                                        |
-| ------------------------- | ---------------------------------------------------------------------------- |
-| `main`                    | Phases 0–5 (PRs #1–#5 merged on 2026-10-07), live on GitHub Pages            |
-| `claude/cila-turu-rbkf3d` | Polish round after phase 5 + help for the owner's two keyboards, base `main` |
+| Branch                            | State                                                                        |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| `main`                            | Phases 0–5 (PRs #1–#5 merged on 2026-10-07), live on GitHub Pages            |
+| `claude/cila-turu-rbkf3d`         | Polish round after phase 5 + help for the owner's two keyboards, base `main` |
+| `claude/faz-6-fa-anahtari-qh59m2` | PR #7: phase 6 (bass clef, two hands), base `claude/cila-turu-rbkf3d` (#6)   |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -154,13 +156,34 @@ Polish round (after phase 5, `claude/cila-turu-rbkf3d`):
   keyboard (wins over `latency.midi`); the MIDI panel shows a tip per keyboard and an octave hint for 25-key controllers.
 - The smoke test fakes Web MIDI with an "MPK mini 3" input (`window.__fakeMidi([status, note, velocity])`).
 
-Next: **phase 6, bass clef and two hands** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+Phase 6 (bass clef and two hands, `claude/faz-6-fa-anahtari-qh59m2`):
+
+- Units 3 (`bassLessons.ts`, 10 lessons: drills, Nota Kuşu, Balon, left-hand melodies) and 4 (`handsLessons.ts`, 7
+  lessons: grand staff drills, Nota Barmeni, melodies for both hands). Gamlar and Akorlar are "coming soon" units 5–6.
+- `NoteLesson.grand` draws the grand staff; `bothStaves` lists notes around middle C written on either staff
+  (`grandClefPicker`). `PromptRecord.clef` / `SkillTarget.clef` carry the staff of each prompt; `naturalClef` puts
+  middle C and up on treble. The staff decides the hand (`handOf`: treble = right).
+- `summarize` groups per (clef, midi): `NoteStat.clef`; `recordSession(row, perNote)` keys stats per staff, so middle C
+  on bass is its own entry. With both staves it adds `hands` (accuracy, reaction per hand); melody lessons add `sync`.
+- `games/melody/session.ts` (**`MelodySession`**): steps of one or two keys (`"C3+E4"`, `C4L` forces the bass staff);
+  a two-key step waits for both hands; a wrong key is blamed on the hand that played it; `syncSummary` (together = within
+  `TOGETHER_MS` 100 ms, mean gap, which hand leads). `MelodyScreen` + `components/MelodyStaff.tsx` (VexFlow quarter
+  notes, one or two staves aligned by one Formatter, pages of 8 steps, a new page per melody). `window.__dpoMelody`.
+- `games/arcade/bar/` (**Nota Barmeni**): four counters, upper two treble, lower two bass; customers walk to the
+  bartender, play their note to slide a drink; a customer reaching the bar costs a heart, a wrong key does not. Played
+  through `ArcadeScreen` (`kind: 'bar'`). The cards draw the clef with a Pixi `Text` in Bravura.
+- `Staff` takes `grand` and `noteClef` (brace and connectors); the drill exposes `.staff-wrap[data-clef]`.
+- Results: "Ellere göre" card with advice and the two-hand sync; weak notes say which staff. Home: a weak-notes node per
+  clef unit; profile: a bass heat map. Badges: Fa Anahtarı Ustası, İki El Bir Arada, Usta Barmen.
+- `setComputerKeyboardBase`: each lesson moves the computer keyboard's A key to its keyboard's lowest C.
+
+Next: **phase 7, scales** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
 
 `scripts/smoke.mjs` plays real lessons in Chromium: the treble unit (drills, Nota Kuşu, Balon Patlatma, a lesson that
-runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo),
+runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
 a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
 `.staff-wrap[data-note]`, and keys are `.key[data-midi]`.
 

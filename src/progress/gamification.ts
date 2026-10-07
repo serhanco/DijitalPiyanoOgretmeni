@@ -98,6 +98,7 @@ export interface BadgeContext {
   /** Lesson ids with 3 stars, after this lesson. */
   threeStarLessons: string[]
   allTrebleLessonIds: string[]
+  allBassLessonIds: string[]
 }
 
 export interface Badge {
@@ -154,6 +155,27 @@ export const BADGES: Badge[] = [
     description: 'Sol anahtarındaki tüm dersleri 3 yıldızla bitir',
     icon: '🎼',
     earned: (c) => c.allTrebleLessonIds.every((id) => c.threeStarLessons.includes(id)),
+  },
+  {
+    id: 'bass-master',
+    title: 'Fa Anahtarı Ustası',
+    description: 'Fa anahtarındaki tüm dersleri 3 yıldızla bitir',
+    icon: '🎹',
+    earned: (c) => c.allBassLessonIds.length > 0 && c.allBassLessonIds.every((id) => c.threeStarLessons.includes(id)),
+  },
+  {
+    id: 'two-hands',
+    title: 'İki El Bir Arada',
+    description: 'İki elle çalınan bir dersi 2 yıldızla bitir',
+    icon: '🙌',
+    earned: (c) => c.outcome.lessonId.startsWith('grand-hands') && !c.outcome.failed && c.outcome.stars >= 2,
+  },
+  {
+    id: 'bartender',
+    title: 'Usta Barmen',
+    description: 'Nota Barmeni oyununu %90 üstü doğrulukla bitir',
+    icon: '🍹',
+    earned: (c) => c.outcome.lessonId.startsWith('grand-bar') && !c.outcome.failed && c.outcome.accuracy >= 0.9,
   },
 ]
 

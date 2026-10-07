@@ -3,11 +3,12 @@ import type { Clef } from '../music/notes'
 import type { NoteScore } from './curriculum'
 import { db, noteStatKey, type NoteStatRow, type SessionRow } from './db'
 
-/** Store a finished session and add its per-note results to the running totals. */
-export async function recordSession(row: Omit<SessionRow, 'id'>, clef: Clef, perNote: NoteStat[]): Promise<void> {
+/** Store a finished session and add its per-note results (per staff) to the running totals. */
+export async function recordSession(row: Omit<SessionRow, 'id'>, perNote: NoteStat[]): Promise<void> {
   await db.transaction('rw', db.sessions, db.noteStats, async () => {
     await db.sessions.add({ ...row }) // copy: Dexie writes the new id onto the object
     for (const n of perNote) {
+      const { clef } = n
       const key = noteStatKey(clef, n.midi)
       const prev = await db.noteStats.get(key)
       const reactions = n.avgReactionMs !== null ? n.firstTry : 0
