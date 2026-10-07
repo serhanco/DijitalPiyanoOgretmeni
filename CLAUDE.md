@@ -75,14 +75,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch               | State                                                               |
-| -------------------- | ------------------------------------------------------------------- |
-| `main`               | README, docs, CLAUDE.md only                                        |
-| `faz-1-cekirdek`     | PR #1: phases 0 + 1                                                 |
-| `faz-2-oyunlastirma` | PR #2: phase 2, stacked on `faz-1-cekirdek` (base branch of the PR) |
-| `faz-3-karakterler`  | PR #3: phase 3, stacked on `faz-2-oyunlastirma`                     |
-| `faz-4-mini-oyunlar` | PR #4: phase 4, stacked on `faz-3-karakterler`                      |
-| `faz-5-ritim-5xfbrn` | phase 5 PR, stacked on `faz-4-mini-oyunlar`                         |
+| Branch               | State                                                |
+| -------------------- | ---------------------------------------------------- |
+| `main`               | Phases 0–4 (PRs #1–#4 merged on 2026-10-07)          |
+| `faz-5-ritim-5xfbrn` | PR #5: phase 5 (rhythm), base `main` after #4 merged |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 

@@ -10,12 +10,12 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 
 | Faz                                           | Durum                        |
 | --------------------------------------------- | ---------------------------- |
-| 0 Altyapı                                     | PR #1 (`faz-1-cekirdek`)     |
-| 1 Çekirdek ve Nota Avcısı                     | PR #1 (`faz-1-cekirdek`)     |
-| 2 Oyunlaştırma ve ilerleme                    | PR #2 (`faz-2-oyunlastirma`) |
-| 3 Karakterler ve animasyon                    | PR #3 (`faz-3-karakterler`)  |
-| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | PR #4 (`faz-4-mini-oyunlar`) |
-| 5 Ritim, tempo, zamanlama                     | PR (`faz-5-ritim-5xfbrn`)    |
+| 0 Altyapı                                     | Birleşti (PR #1)             |
+| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1)             |
+| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2)             |
+| 3 Karakterler ve animasyon                    | Birleşti (PR #3)             |
+| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4)             |
+| 5 Ritim, tempo, zamanlama                     | PR #5 (`faz-5-ritim-5xfbrn`) |
 | 6 ve sonrası                                  | Başlanmadı                   |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).

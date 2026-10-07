@@ -61,13 +61,14 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Faz 2: XP, seri, kalpler, günlük hedef, rozetler, ders haritası, profil, zayıf notalar                                              | PR #2, dal `faz-2-oyunlastirma` |
 | 2026-10-07 | Faz 3: maskot Notiş, ders içi tepkiler ve seri, ses efektleri, konfeti, seviye atlama ekranı                                        | PR #3, dal `faz-3-karakterler`  |
 | 2026-10-07 | Faz 4: PixiJS mini oyun motoru, beceri sağlayıcısı, Nota Kuşu ve Balon Patlatma                                                     | PR #4, dal `faz-4-mini-oyunlar` |
-| 2026-10-07 | Faz 5: metronom, zamanlama değerlendirmesi, gecikme kalibrasyonu, 5 ritim egzersizi, Dino Koşusu, Ritim Davulcusu, zamanlama raporu | PR, dal `faz-5-ritim-5xfbrn`    |
+| 2026-10-07 | Faz 5: metronom, zamanlama değerlendirmesi, gecikme kalibrasyonu, 5 ritim egzersizi, Dino Koşusu, Ritim Davulcusu, zamanlama raporu | PR #5, dal `faz-5-ritim-5xfbrn` |
+| 2026-10-07 | PR #1–#4 sırayla `main`'e birleştirildi (doküman çakışmaları `main` sürümüyle çözüldü)                                              | `main`                          |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                       | `main`                          |
 
 ## Açık konular
 
-- **GitHub Pages:** Repo ayarlarında Settings → Pages → Source: "GitHub Actions" seçilmeli; yoksa yayın iş akışı başarısız
-  olur.
+- **GitHub Pages:** Repo ayarlarında Settings → Pages → Source: "GitHub Actions" seçilmeli; 2026-10-07'de `main`'e ilk
+  birleştirmede yayın bu yüzden başarısız oldu (404, Pages kapalı).
 - **Gerçek MIDI testi yapılmadı.** Uygulama tarayıcıda ekran klavyesiyle uçtan uca denendi; gerçek bir Bluetooth/USB
   klavyeyle ilk deneme sahibinde.
 - **Piyano modeli** henüz bilinmiyor (Bluetooth MIDI destekliyor mu, kaç tuş?). Öğrenilince bağlantı yardımı ona göre
