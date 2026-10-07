@@ -1,6 +1,7 @@
 import { type Application, Container, Graphics, Text } from 'pixi.js'
 import type { RefObject } from 'react'
 import { solfegeName } from '../../../music/notes'
+import { VALUE_BEATS } from '../../../rhythm/rhythm'
 import type { BeatTrack } from '../../../rhythm/track'
 import type { Scene } from '../PixiStage'
 import { BEATS_AHEAD, HIT_Y, laneOf, noteY } from './engine'
@@ -121,10 +122,11 @@ export function createDrumScene(
         const x = laneX(lane, w)
         const color = LANE_COLORS[lane % LANE_COLORS.length]
         if (r.judgement === null) {
-          const rr = padR * (r.value === 'h' ? 0.62 : r.value === 'e' ? 0.4 : 0.5)
-          // A half note leaves a tail as long as it lasts.
-          if (r.value === 'h') {
-            const tail = (2 / BEATS_AHEAD) * HIT_Y * h
+          const beats = VALUE_BEATS[r.value]
+          const rr = padR * (beats >= 2 ? 0.62 : r.value === 'e' ? 0.4 : 0.5)
+          // Long notes (halves, dotted ones) leave a tail as long as they last.
+          if (beats > 1) {
+            const tail = (beats / BEATS_AHEAD) * HIT_Y * h
             notes.roundRect(x - rr * 0.35, y - tail, rr * 0.7, tail, rr * 0.35).fill({ color, alpha: 0.35 })
           }
           notes.circle(x, y, rr).fill(color).stroke({ width: 3, color: 0xffffff })

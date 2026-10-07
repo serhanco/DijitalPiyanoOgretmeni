@@ -10,6 +10,13 @@ mkdirSync(out, { recursive: true })
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+// A fake Akai MPK Mini MK3 behind Web MIDI, driven with window.__fakeMidi([status, note, velocity]).
+await page.addInitScript(() => {
+  const input = { id: 'akai', name: 'MPK mini 3', manufacturer: 'AKAI', state: 'connected', onmidimessage: null }
+  const access = { inputs: new Map([['akai', input]]), outputs: new Map(), onstatechange: null }
+  Object.defineProperty(navigator, 'requestMIDIAccess', { value: async () => access })
+  window.__fakeMidi = (bytes) => input.onmidimessage?.({ data: new Uint8Array(bytes), timeStamp: performance.now() })
+})
 page.setDefaultTimeout(10000)
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
@@ -78,9 +85,10 @@ async function playArcade(lessonTitle, shotName) {
  * note's key on its beat (setTimeout in the page is far more precise than
  * round trips from here). `offsetMs` shifts every press.
  */
-async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5 } = {}) {
+async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5, slower = 0 } = {}) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
   await page.waitForSelector('.beat-start')
+  for (let i = 0; i < slower; i++) await page.getByLabel('Yavaşlat').click()
   if (shotName) await page.screenshot({ path: `${out}/${shotName}-ready.png` })
   await page.click('.beat-start')
   await page.waitForFunction(() => window.__dpoBeat && window.__dpoBeat !== window.__dpoPrevBeat)
@@ -178,6 +186,38 @@ await page.getByText('Derslere dön').click()
 await playBeat('Ritim Davulcusu', 'game-drum')
 await dismissOverlay()
 await page.screenshot({ path: `${out}/results-drum.png`, fullPage: true })
+if (!(await page.getByText('Vuruşunda çalınan notalar').count())) errors.push('Rhythm XP line has the drill label')
+await page.getByText('Derslere dön').click()
+await playBeat('Dino Koşusu: Notalı')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playBeat('Karışık Ritim')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playBeat('Davulcu: Sekizlikler')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+
+// Polish round: 3/4 and dotted notes; the chosen tempo is remembered.
+await playBeat('Üç Dörtlük', 'rhythm-waltz', { slower: 1 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-waltz.png`, fullPage: true })
+await page.getByText('Derslere dön').click()
+await page.getByRole('button', { name: 'Üç Dörtlük', exact: true }).click()
+const tempo = (await page.textContent('.tempo-value'))?.trim()
+if (tempo !== '79 BPM') errors.push(`Tempo was not remembered: ${tempo}`)
+await page.getByLabel('Dersten çık').click()
+await playBeat('Dino Valsi', 'game-dino-waltz')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playBeat('Noktalı Dörtlük', 'rhythm-dotted', { shotAt: 0.3 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-dotted.png`, fullPage: true })
+const dottedScore = (await page.textContent('.stat-value'))?.trim()
+if (dottedScore !== '%100') errors.push(`Perfectly timed dotted lesson scored ${dottedScore}`)
+await page.getByText('Derslere dön').click()
+await playBeat('Davulcu: Noktalılar', 'game-drum-dotted')
+await dismissOverlay()
 await page.getByText('Derslere dön').click()
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.
@@ -207,6 +247,21 @@ await page.waitForTimeout(400)
 await page.getByLabel('Profil').click()
 await page.waitForTimeout(500)
 await page.screenshot({ path: `${out}/profile.png`, fullPage: true })
+const bars = await page.locator('.rhythm-chart .bar').count()
+if (bars < 10) errors.push(`Rhythm chart shows ${bars} sessions`)
+await page.getByLabel('Geri').click()
+await page.waitForTimeout(400)
+
+// The Akai is recognised and the octave hint answers its leftmost key.
+const panel = await page.textContent('.midi-panel')
+if (!panel?.includes('Akai MPK Mini MK3')) errors.push(`MIDI panel did not recognise the Akai: ${panel}`)
+await page.evaluate(() => window.__fakeMidi([0x90, 48, 100]))
+await page.waitForTimeout(200)
+const hint = await page.textContent('.octave-check')
+if (!hint?.includes('OCTAVE + düğmesine 1 kez')) errors.push(`Octave hint: ${hint}`)
+await page.evaluate(() => window.__fakeMidi([0x80, 48, 0]))
+await page.getByText('Klavyemi nasıl bağlarım?').click()
+await page.locator('.midi-panel').screenshot({ path: `${out}/midi-panel.png` })
 
 await page.reload()
 await page.waitForTimeout(1000)

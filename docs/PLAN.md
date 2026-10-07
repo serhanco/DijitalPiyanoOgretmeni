@@ -8,15 +8,16 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 
 ## Durum
 
-| Faz                                           | Durum                        |
-| --------------------------------------------- | ---------------------------- |
-| 0 Altyapı                                     | Birleşti (PR #1)             |
-| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1)             |
-| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2)             |
-| 3 Karakterler ve animasyon                    | Birleşti (PR #3)             |
-| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4)             |
-| 5 Ritim, tempo, zamanlama                     | PR #5 (`faz-5-ritim-5xfbrn`) |
-| 6 ve sonrası                                  | Başlanmadı                   |
+| Faz                                           | Durum                          |
+| --------------------------------------------- | ------------------------------ |
+| 0 Altyapı                                     | Birleşti (PR #1)               |
+| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1)               |
+| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2)               |
+| 3 Karakterler ve animasyon                    | Birleşti (PR #3)               |
+| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4)               |
+| 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5)               |
+| Cila turu (Faz 5 sonrası)                     | PR (`claude/cila-turu-rbkf3d`) |
+| 6 ve sonrası                                  | Başlanmadı                     |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -108,7 +109,7 @@ Her faz ayrı bir PR olarak gelir ve sonunda denenebilir bir uygulama bırakır.
 - **Nota Kuşu** ve **Balon Patlatma** (sol anahtar notalarıyla)
 - Ders haritasında ders türü çeşitliliği: alıştırma, mini oyun, boss
 
-### Faz 5 — Ritim, tempo, zamanlama (PR, `faz-5-ritim-5xfbrn`)
+### Faz 5 — Ritim, tempo, zamanlama (PR #5)
 
 - Metronom (Tone.Transport), tempo ayarı, ölçü göstergesi
 - Zamanlama değerlendirmesi: Mükemmel (±40 ms), İyi (±90 ms), Erken/Geç, Kaçırıldı
@@ -116,6 +117,8 @@ Her faz ayrı bir PR olarak gelir ve sonunda denenebilir bir uygulama bırakır.
 - Ritim egzersizleri: dörtlük, ikilik, sekizlik, es
 - **Dino Koşusu** ve **Ritim Davulcusu**
 - Sonuç ekranı: zamanlama dağılımı grafiği, ortalama erken/geç sapma
+- Cila turu: 3/4 ölçü, noktalı dörtlük ve noktalı ikilik, ders başına hatırlanan tempo, profilde ritim gelişim grafiği,
+  sahibin iki klavyesine (Yamaha CLP-845, Akai MPK Mini MK3) göre bağlantı yardımı ve klavye başına gecikme ayarı
 
 ### Faz 6 — Fa anahtarı ve iki el
 

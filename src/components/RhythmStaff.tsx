@@ -2,7 +2,16 @@
 // notes coloured by how they were played, and a playhead on the beat.
 
 import { useEffect, useRef, useState } from 'react'
-import { Beam, Formatter, Renderer, Stave, type StaveNote as StaveNoteType, StaveNote, Voice } from 'vexflow/bravura'
+import {
+  Beam,
+  Dot,
+  Formatter,
+  Renderer,
+  Stave,
+  type StaveNote as StaveNoteType,
+  StaveNote,
+  Voice,
+} from 'vexflow/bravura'
 import { VALUE_BEATS, type RhythmValue } from '../rhythm/rhythm'
 import type { Judgement } from '../rhythm/timing'
 
@@ -34,7 +43,7 @@ const JUDGEMENT_COLORS: Record<Judgement, string> = {
   miss: '#ff4b4b',
 }
 
-const DURATION: Record<RhythmValue, string> = { h: 'h', q: 'q', e: '8', qr: 'qr' }
+const DURATION: Record<RhythmValue, string> = { h: 'h', q: 'q', e: '8', qr: 'qr', qd: 'qd', hd: 'hd' }
 
 let fontsReady: Promise<unknown> | null = null
 function waitForFonts() {
@@ -88,6 +97,7 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
       if (inBar.length === 0) continue
       const notes: StaveNoteType[] = inBar.map((e) => {
         const n = new StaveNote({ keys: ['b/4'], duration: DURATION[e.value], stemDirection: 1 })
+        if (e.value === 'qd' || e.value === 'hd') Dot.buildAndAttach([n], { all: true })
         if (e.judgement) {
           const color = JUDGEMENT_COLORS[e.judgement]
           n.setStyle({ fillStyle: color, strokeStyle: color })
@@ -95,7 +105,8 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
         return n
       })
       const voice = new Voice({ numBeats: beatsPerBar, beatValue: 4 }).setStrict(false).addTickables(notes)
-      const beams = Beam.generateBeams(notes.filter((_, i) => inBar[i].value === 'e'))
+      // Beams follow the beat: paired eighths share one, the eighth after a dotted quarter stays alone.
+      const beams = Beam.generateBeams(notes)
       new Formatter().joinVoices([voice]).format([voice], stave.getNoteEndX() - stave.getNoteStartX() - 10)
       voice.draw(ctx, stave)
       beams.forEach((beam) => beam.setContext(ctx).draw())

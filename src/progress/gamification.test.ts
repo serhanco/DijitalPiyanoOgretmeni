@@ -40,6 +40,10 @@ describe('xpFor', () => {
   it('skips the speed bonus for slow answers', () => {
     expect(xpFor(outcome({ avgReactionMs: 2500 })).map((l) => l.label)).not.toContain('Hız bonusu')
   })
+
+  it('names the per-note XP after timing in rhythm lessons', () => {
+    expect(xpFor(outcome({ rhythm: true }))[0].label).toBe('Vuruşunda çalınan notalar')
+  })
 })
 
 describe('levelFromXp', () => {

@@ -3,6 +3,7 @@ import { type Metronome, prepareMetronome, startMetronome } from '../audio/metro
 import { Mascot } from '../components/Mascot'
 import { PianoKeyboard } from '../components/PianoKeyboard'
 import { type InputSource, subscribe } from '../input/inputBus'
+import { keyboardOf } from '../midi/midiStore'
 import { parseNote } from '../music/notes'
 import {
   CALIBRATION_BEATS,
@@ -28,12 +29,16 @@ interface Tap {
   beat: number
   offsetMs: number
   source: InputSource
+  /** MIDI only: the keyboard's port name. */
+  device?: string
 }
+
+const deviceLabel = (device: string) => keyboardOf(device)?.name ?? device
 
 type Phase = { name: 'ready' } | { name: 'running'; startAt: number } | { name: 'result'; taps: Tap[] }
 
 export function CalibrationScreen({ onBack }: { onBack: () => void }) {
-  const { latency, set } = useSettings()
+  const { latency, deviceLatency, set } = useSettings()
   const [phase, setPhase] = useState<Phase>({ name: 'ready' })
   const [now, setNow] = useState(0)
   const [saved, setSaved] = useState(false)
@@ -67,7 +72,7 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
       if (e.type !== 'on') return
       const { beat, offsetMs } = offsetFromBeat(e.time, phase.startAt, BEAT_MS)
       if (beat < 0 || beat >= CALIBRATION_BEATS || taps.current.some((t) => t.beat === beat)) return
-      taps.current.push({ beat, offsetMs, source: e.source })
+      taps.current.push({ beat, offsetMs, source: e.source, device: e.device })
     })
   }, [phase])
 
@@ -112,6 +117,8 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
     const counts = new Map<InputSource, number>()
     for (const t of phase.taps) counts.set(t.source, (counts.get(t.source) ?? 0) + 1)
     const source = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'screen'
+    // A MIDI measurement also belongs to the keyboard it was made with.
+    const device = source === 'midi' ? phase.taps.find((t) => t.source === 'midi')?.device : undefined
     body = (
       <div className="calib-result">
         {result ? (
@@ -120,8 +127,8 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
               {result.latencyMs} ms
             </p>
             <p>
-              {SOURCE_LABELS[source]} için ölçülen gecikme ({result.used} vuruş, ±{Math.round(result.spreadMs)} ms
-              sapma).
+              {device ? deviceLabel(device) : SOURCE_LABELS[source]} için ölçülen gecikme ({result.used} vuruş, ±
+              {Math.round(result.spreadMs)} ms sapma).
             </p>
             <div className="offset-strip" aria-hidden>
               <span className="offset-zero" />
@@ -143,7 +150,10 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
                 className="btn"
                 disabled={saved}
                 onClick={() => {
-                  set({ latency: { ...latency, [source]: result.latencyMs } })
+                  set({
+                    latency: { ...latency, [source]: result.latencyMs },
+                    ...(device && { deviceLatency: { ...deviceLatency, [device]: result.latencyMs } }),
+                  })
                   setSaved(true)
                 }}
               >
@@ -168,7 +178,8 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
       <div className="calib-ready">
         <p>
           Bluetooth MIDI ve bazı ekranlar basışları birkaç milisaniye geç iletir. Bunu bir kez ölçelim: metronom 4 kez
-          sayacak, sonra {CALIBRATION_BEATS} vuruş boyunca her tıkta piyanonda bir tuşa bas.
+          sayacak, sonra {CALIBRATION_BEATS} vuruş boyunca her tıkta piyanonda bir tuşa bas. Her klavye (ve aynı
+          piyanonun USB ve Bluetooth bağlantısı) ayrı kaydedilir.
         </p>
         <button className="btn" onClick={() => void start()}>
           Ölçmeye başla
@@ -198,10 +209,15 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
               {SOURCE_LABELS[s]}: <b>{latency[s] ?? 0} ms</b>
             </li>
           ))}
+          {Object.entries(deviceLatency).map(([d, ms]) => (
+            <li key={d}>
+              {deviceLabel(d)}: <b>{ms} ms</b>
+            </li>
+          ))}
         </ul>
         <button
           className="btn btn-small btn-secondary"
-          onClick={() => set({ latency: { midi: 0, screen: 0, computer: 0 } })}
+          onClick={() => set({ latency: { midi: 0, screen: 0, computer: 0 }, deviceLatency: {} })}
         >
           Sıfırla
         </button>

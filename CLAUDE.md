@@ -75,10 +75,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch               | State                                                |
-| -------------------- | ---------------------------------------------------- |
-| `main`               | Phases 0–4 (PRs #1–#4 merged on 2026-10-07)          |
-| `faz-5-ritim-5xfbrn` | PR #5: phase 5 (rhythm), base `main` after #4 merged |
+| Branch                    | State                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| `main`                    | Phases 0–5 (PRs #1–#5 merged on 2026-10-07), live on GitHub Pages            |
+| `claude/cila-turu-rbkf3d` | Polish round after phase 5 + help for the owner's two keyboards, base `main` |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -140,14 +140,28 @@ Phase 5 (done on `faz-5-ritim-5xfbrn`):
 - The first lesson of every unit is open (`isUnlocked` is per unit); `Unit.review` marks units with a weak-note node.
 - `PixiStage` resizes with a `ResizeObserver`; `window.__dpoBeat` / `__dpoCalibration` expose state for the smoke test.
 
+Polish round (after phase 5, `claude/cila-turu-rbkf3d`):
+
+- Rhythm values `qd` (dotted quarter, always followed by its eighth) and `hd` (dotted half); 3/4 bars (`beatsPerBar: 3`,
+  halves only on beat 1). Report topic "Noktalı notalar". Four new lessons: Üç Dörtlük, Dino Valsi, Noktalı Dörtlük,
+  Davulcu: Noktalılar.
+- `settings.tempo[lessonId]` remembers the tempo chosen in each rhythm lesson ("önerilen N" resets it).
+- `LessonOutcome.rhythm` makes the XP line read "Vuruşunda çalınan notalar".
+- Profile "Ritim gelişimi": `progress/rhythmTrend.ts` (on-beat share per session, later vs earlier half) and
+  `components/RhythmChart.tsx`.
+- `src/midi/keyboards.ts`: the owner's keyboards recognised by MIDI port name. `NoteEvent.device` carries the port name;
+  a controller without sound (Akai) always gets the app piano; `settings.deviceLatency` stores a calibration per
+  keyboard (wins over `latency.midi`); the MIDI panel shows a tip per keyboard and an octave hint for 25-key controllers.
+- The smoke test fakes Web MIDI with an "MPK mini 3" input (`window.__fakeMidi([status, note, velocity])`).
+
 Next: **phase 6, bass clef and two hands** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
 
 `scripts/smoke.mjs` plays real lessons in Chromium: the treble unit (drills, Nota Kuşu, Balon Patlatma, a lesson that
-runs out of hearts), then six rhythm lessons (the page presses keys on each beat with `setTimeout`, one run 60 ms late),
-a latency calibration that must measure 30 ms, the profile, and that progress survives a reload. The staff exposes the current note as
+runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo),
+a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
 `.staff-wrap[data-note]`, and keys are `.key[data-midi]`.
 
 ```bash
@@ -161,7 +175,11 @@ that error.
 ## Known gaps
 
 - Rhythm timing is only tested with simulated presses; real MIDI and touch latency still need the owner's calibration.
-- Not yet tested with a real MIDI keyboard. Bluetooth MIDI on Android needs pairing through a helper app; on macOS via
-  Audio MIDI Setup; on Windows USB is most reliable. iOS has no Web MIDI.
-- The owner's piano model is unknown.
+- Not yet tested with a real MIDI keyboard. Bluetooth MIDI on Android needs pairing through a helper app (pairing in the
+  OS Bluetooth settings only connects audio); on macOS via Audio MIDI Setup; on Windows USB is most reliable. iOS has
+  no Web MIDI.
+- The owner's keyboards (verified from spec sheets on 2026-10-07): at home a **Yamaha Clavinova CLP-845** (88 keys, USB
+  TO HOST and Bluetooth audio + MIDI; Yamaha notes some regions ship without Bluetooth); at the office an **Akai MPK Mini
+  MK3** (25 keys, USB only, class compliant, no sound of its own). Port names in `keyboards.ts` are educated guesses
+  until the owner connects them.
 - Font bundle includes all Nunito subsets; could be trimmed to latin + latin-ext.

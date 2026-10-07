@@ -32,6 +32,8 @@ Sohbet boyunca eklenen istekler (2026-10-07):
     hale getirilmeli (bu belge ve `CLAUDE.md` bunun için var).
 11. (Faz 5 sırasında) Her faz bitince **durulacak**: plan ile uygulama karşılaştırılıp test edilecek, durum ve
     öneriler paylaşılacak, sahibin komutuyla bir sonraki faza geçilecek.
+12. (Faz 5 sonrası) Klavyeler: **evde Yamaha CLP-845, ofiste Akai MPK Mini MK3**. Bekleyen cila işleri tamamlanıp Faz 6
+    için iş planı üzerinden devam edilecek.
 
 ## Verilen kararlar
 
@@ -48,6 +50,10 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   anahtarı, gam, akor) oynanabilecek. Ayrıntı: PLAN.md → "Oyun ve beceri matrisi".
 - **İş akışı:** Her faz ayrı PR. Önceki PR birleştirilmediyse yeni dal onun üzerine kurulur. Faz sonunda durulur,
   rapor verilir, onayla devam edilir.
+- **Klavyeler:** CLP-845'te USB TO HOST ve Bluetooth ses + MIDI var (Yamaha'ya göre bazı ülkelerde Bluetooth yok); en
+  sağlam yol USB. Android'de Bluetooth ayarlarından eşleştirmek yalnızca ses bağlar, MIDI için ayrı uygulama gerekir.
+  Akai MPK Mini MK3 yalnızca USB, sürücüsüz, kendi sesi yok: uygulama ona her zaman piyano sesi çalar. Gecikme her
+  klavye için ayrı ölçülür.
 - **Ritim (Faz 5):** Oyunların saati `performance.now()`; metronom yalnızca ses ve Tone.Transport ile aynı vuruşlara
   hizalanır. Gecikme giriş kaynağına göre (MIDI, ekran, bilgisayar klavyesi) ayrı ölçülüp çıkarılır. Ritim ünitesinin
   ilk dersi baştan açık (nota okuma gerektirmiyor). Yanlış tuş can götürmez, kaçırılan vuruş götürür.
@@ -63,13 +69,12 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Faz 4: PixiJS mini oyun motoru, beceri sağlayıcısı, Nota Kuşu ve Balon Patlatma                                                     | PR #4, dal `faz-4-mini-oyunlar` |
 | 2026-10-07 | Faz 5: metronom, zamanlama değerlendirmesi, gecikme kalibrasyonu, 5 ritim egzersizi, Dino Koşusu, Ritim Davulcusu, zamanlama raporu | PR #5, dal `faz-5-ritim-5xfbrn` |
 | 2026-10-07 | PR #1–#4 sırayla `main`'e birleştirildi (doküman çakışmaları `main` sürümüyle çözüldü)                                              | `main`                          |
+| 2026-10-07 | PR #5 birleşti, GitHub Pages yayını açıldı                                                                                          | `main`                          |
+| 2026-10-07 | Cila turu: 3/4, noktalı notalar (4 yeni ders), tempo hafızası, ritim XP etiketi, profilde ritim grafiği, iki klavyeye göre yardım   | dal `claude/cila-turu-rbkf3d`   |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                       | `main`                          |
 
 ## Açık konular
 
-- **GitHub Pages:** Repo ayarlarında Settings → Pages → Source: "GitHub Actions" seçilmeli; 2026-10-07'de `main`'e ilk
-  birleştirmede yayın bu yüzden başarısız oldu (404, Pages kapalı).
 - **Gerçek MIDI testi yapılmadı.** Uygulama tarayıcıda ekran klavyesiyle uçtan uca denendi; gerçek bir Bluetooth/USB
   klavyeyle ilk deneme sahibinde.
-- **Piyano modeli** henüz bilinmiyor (Bluetooth MIDI destekliyor mu, kaç tuş?). Öğrenilince bağlantı yardımı ona göre
-  özelleştirilebilir.
+- **Klavye port adları** (`src/midi/keyboards.ts`) tahmin; sahip klavyeleri bağlayınca görünen adlarla doğrulanmalı.
