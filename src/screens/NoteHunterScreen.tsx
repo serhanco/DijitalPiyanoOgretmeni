@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { sfx } from '../audio/sfx'
+import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { Staff } from '../components/Staff'
 import type { NoteLesson } from '../games/noteHunter/lessons'
@@ -15,6 +17,8 @@ const WRONG_FLASH_MS = 500
 const HINT_AFTER = 2
 
 const GREEN = '#22a559'
+/** Celebrate every this many first-try answers in a row. */
+const COMBO_STEP = 5
 
 interface Props {
   lesson: NoteLesson
@@ -39,6 +43,9 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
   const [wrongKey, setWrongKey] = useState<number | null>(null)
   const [wrongCount, setWrongCount] = useState(0)
   const [shake, setShake] = useState(0)
+  const [combo, setCombo] = useState(0)
+  const comboRef = useRef(0)
+  const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
   const timers = useRef<number[]>([])
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
@@ -46,6 +53,13 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
   })
 
   const target = session.records[position]?.target ?? null
+
+  // Settle back to idle after each reaction.
+  useEffect(() => {
+    if (mood.mood === 'idle') return
+    const t = window.setTimeout(() => setMood((m) => ({ ...m, mood: 'idle' })), mood.mood === 'cheer' ? 1800 : 900)
+    return () => clearTimeout(t)
+  }, [mood.mood, mood.pulse])
 
   // Start the reaction clock once the note is on screen.
   useEffect(() => {
@@ -62,6 +76,14 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
       if (result === 'correct') {
         setSolved(cur.target)
         setWrongKey(null)
+        const firstTry = cur.wrongPresses.length === 0
+        const next = firstTry ? comboRef.current + 1 : 0
+        comboRef.current = next
+        setCombo(next)
+        const milestone = next > 0 && next % COMBO_STEP === 0
+        if (milestone) sfx.combo()
+        else sfx.correct()
+        setMood((m) => ({ mood: milestone ? 'cheer' : 'happy', pulse: m.pulse + 1 }))
         later(() => {
           setSolved(null)
           setWrongCount(0)
@@ -72,8 +94,13 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
         setWrongKey(e.midi)
         setWrongCount(cur.wrongPresses.length)
         setShake((n) => n + 1)
+        comboRef.current = 0
+        setCombo(0)
+        sfx.wrong()
+        setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
         later(() => setWrongKey((k) => (k === e.midi ? null : k)), WRONG_FLASH_MS)
         if (session.failed) {
+          sfx.fail()
           later(() => onFinishRef.current(summarize(session.attempted, lesson.clef, true)), WRONG_FLASH_MS + 300)
         }
       }
@@ -112,7 +139,17 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
         )}
       </header>
 
-      <p className="prompt">Bu nota hangisi? Klavyede bas!</p>
+      <div className="prompt-row">
+        <Mascot mood={mood.mood} pulse={mood.pulse} size={76} />
+        <div>
+          <p className="prompt">Bu nota hangisi? Klavyede bas!</p>
+          {combo >= 3 && (
+            <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={combo}>
+              🔥 {combo} doğru üst üste{combo % COMBO_STEP === 0 ? '!' : ''}
+            </p>
+          )}
+        </div>
+      </div>
 
       <div
         key={shake}

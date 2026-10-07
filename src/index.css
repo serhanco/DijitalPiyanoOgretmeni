@@ -881,3 +881,114 @@ button.chip {
 .history .bad {
   color: var(--danger);
 }
+
+/* Mascot */
+.mascot {
+  position: relative;
+  flex-shrink: 0;
+}
+.mascot svg {
+  display: block;
+  overflow: visible;
+}
+.mascot-say {
+  position: absolute;
+  bottom: 92%;
+  left: 50%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 6px 10px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  z-index: 2;
+}
+.greeting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.greeting-say {
+  position: relative;
+  flex: 1;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-weight: 800;
+}
+.greeting-say::before {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: var(--surface);
+  border-left: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  transform: translateY(-50%) rotate(45deg);
+}
+.prompt-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.prompt-row .prompt {
+  margin-top: 0;
+  text-align: left;
+}
+.combo {
+  font-weight: 900;
+  color: #ff9600;
+  animation: pop 0.35s both;
+}
+.results-mascot {
+  align-self: center;
+  margin-top: 56px;
+}
+.results-mascot .mascot-say {
+  white-space: normal;
+  width: min(300px, 80vw);
+  text-align: center;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  padding: 16px;
+}
+.overlay-card {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  max-width: 340px;
+}
+.overlay-card h2 {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--primary-dark);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+.combo.big {
+  font-size: 1.2rem;
+}

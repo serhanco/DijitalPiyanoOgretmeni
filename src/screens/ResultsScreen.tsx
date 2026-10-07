@@ -1,5 +1,11 @@
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import type { SessionSummary } from '../games/noteHunter/summary'
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useState } from 'react'
+import { sfx } from '../audio/sfx'
+import { CountUp } from '../components/Celebration'
+import { burstConfetti } from '../components/confetti'
+import { Mascot, type MascotMood } from '../components/Mascot'
 import { GoalRing } from '../components/TopBar'
 import { solfegeName } from '../music/notes'
 import type { Reward } from '../state/profile'
@@ -40,8 +46,48 @@ function Comparison({ before, now }: { before: number | null; now: number }) {
 
 export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPractice }: Props) {
   const practiceNotes = summary.weakest.map((n) => n.midi)
+  const leveledUp = reward.levelAfter > reward.levelBefore
+  const [showLevelUp, setShowLevelUp] = useState(leveledUp)
+  const mood: MascotMood = summary.failed || summary.stars === 0 ? 'sad' : summary.stars >= 2 ? 'cheer' : 'happy'
+
+  useEffect(() => {
+    const celebrate = !summary.failed && (summary.stars >= 2 || reward.goalJustReached || leveledUp)
+    if (celebrate) {
+      sfx.fanfare()
+      burstConfetti()
+    } else if (summary.failed) {
+      sfx.fail()
+    }
+  }, [summary, reward, leveledUp])
+
   return (
     <div className="results">
+      <AnimatePresence>
+        {showLevelUp && (
+          <motion.div
+            className="overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowLevelUp(false)}
+          >
+            <motion.div
+              className="overlay-card"
+              initial={{ scale: 0.6, y: 40 }}
+              animate={{ scale: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            >
+              <Mascot mood="cheer" size={140} />
+              <h2>Seviye {reward.levelAfter}!</h2>
+              <p className="muted">Notiş seninle gurur duyuyor. Böyle devam!</p>
+              <button className="btn" onClick={() => setShowLevelUp(false)}>
+                Devam
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <Mascot mood={mood} size={110} say={summary.message} className="results-mascot" />
       <div className="stars" aria-label={`${summary.stars} yıldız`}>
         {[1, 2, 3].map((i) => (
           <span key={i} className={`star ${i <= summary.stars ? 'on' : ''}`} style={{ animationDelay: `${i * 0.15}s` }}>
@@ -50,12 +96,13 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
         ))}
       </div>
       <h1>{summary.failed ? 'Kalplerin bitti' : `${lesson.title} tamamlandı!`}</h1>
-      <p className="lead">{summary.message}</p>
       {!summary.failed && <Comparison before={reward.previousBestAccuracy} now={summary.accuracy} />}
 
       <section className="card rewards">
         <div className="reward-xp">
-          <span className="xp-big">+{reward.xpGained} XP</span>
+          <span className="xp-big">
+            <CountUp value={reward.xpGained} prefix="+" /> XP
+          </span>
           <ul>
             {reward.xpLines
               .filter((l) => l.xp > 0)

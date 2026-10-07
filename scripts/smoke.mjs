@@ -16,7 +16,7 @@ page.on('pageerror', (e) => errors.push(e.message))
 page.on('console', (m) => m.type() === 'error' && !m.text().includes('ERR_FAILED') && errors.push(m.text()))
 
 /** Play a lesson to the end. `wrongFirst` presses keys from the top until the right one. */
-async function play(lessonTitle, { wrongFirst = false } = {}) {
+async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName = '' } = {}) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
   await page.waitForSelector('.staff svg')
   const keys = await page.$$eval('.key.white', (els) => els.map((e) => e.dataset.midi))
@@ -32,21 +32,37 @@ async function play(lessonTitle, { wrongFirst = false } = {}) {
       const target = await page.getAttribute('.staff-wrap', 'data-note')
       await page.click(`.key[data-midi="${target}"]`)
     }
+    if (shotAfter && i + 1 === shotAfter) {
+      await page.waitForTimeout(250)
+      await page.screenshot({ path: `${out}/${shotName}.png` })
+    }
     await page.waitForTimeout(520)
   }
   await page.waitForSelector('.results', { timeout: 3000 })
   await page.waitForTimeout(800)
 }
 
+/** Close the level-up overlay if it is showing. */
+async function dismissOverlay() {
+  const btn = page.locator('.overlay .btn')
+  if (await btn.count()) {
+    await page.screenshot({ path: `${out}/level-up.png` })
+    await btn.click()
+    await page.waitForTimeout(400)
+  }
+}
+
 await page.goto(url)
 await page.waitForTimeout(800)
 await page.screenshot({ path: `${out}/map-empty.png` })
 
-await play('İlk Adımlar')
+await play('İlk Adımlar', { shotAfter: 5, shotName: 'game-combo' })
+await dismissOverlay()
 await page.screenshot({ path: `${out}/results.png`, fullPage: true })
 await page.getByText('Derslere dön').click()
 
 await play('Bir Oktav', { wrongFirst: true }) // runs out of hearts
+await dismissOverlay()
 await page.screenshot({ path: `${out}/results-failed.png`, fullPage: true })
 await page.getByText('Derslere dön').click()
 await page.waitForTimeout(500)

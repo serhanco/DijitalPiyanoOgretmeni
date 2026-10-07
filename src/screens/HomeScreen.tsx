@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Greeting } from '../components/Greeting'
 import { MidiPanel } from '../components/MidiPanel'
 import { TopBar } from '../components/TopBar'
 import type { NoteLesson } from '../games/noteHunter/lessons'
@@ -44,6 +45,16 @@ function Settings() {
         label="Rahat mod: hata yapınca can gitmesin"
         checked={settings.relaxedMode}
         onChange={(v) => settings.set({ relaxedMode: v })}
+      />
+      <Toggle
+        label="Ses efektleri"
+        checked={settings.soundEffects}
+        onChange={(v) => settings.set({ soundEffects: v })}
+      />
+      <Toggle
+        label="Titreşim (Android)"
+        checked={settings.vibration}
+        onChange={(v) => settings.set({ vibration: v })}
       />
       <Toggle
         label="Ekran klavyesinde nota adlarını göster"
@@ -99,6 +110,7 @@ export function HomeScreen({ onStart, onProfile }: Props) {
   return (
     <div className="home">
       <TopBar onProfile={onProfile} />
+      <Greeting />
       <MidiPanel />
 
       {UNITS.map((unit) => (
