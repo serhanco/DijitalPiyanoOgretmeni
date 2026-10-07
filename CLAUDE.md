@@ -81,7 +81,7 @@ Principles:
 | `faz-1-cekirdek`     | PR #1: phases 0 + 1                                                 |
 | `faz-2-oyunlastirma` | PR #2: phase 2, stacked on `faz-1-cekirdek` (base branch of the PR) |
 
-If PR #1 is merged first, retarget PR #2 to `main`. Check live PR state with `gh pr list` before branching.
+When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
 Phase 2 (done on `faz-2-oyunlastirma`):
 
@@ -93,12 +93,21 @@ Phase 2 (done on `faz-2-oyunlastirma`):
 - Hearts in `NoteHunterSession`, `relaxedMode` setting, `summarize(records, clef, failed)`
 - Screens: lesson map (`HomeScreen` + `TopBar`), rewards on `ResultsScreen`, `ProfileScreen`
 
-Next: **phase 3, characters and animation** (see `docs/PLAN.md`). Suggested shape: a `Mascot` SVG component with
-named moods (`idle | happy | sad | cheer | sleep`) animated with Motion (`motion` package), reacting to `inputBus`
-results in lessons and celebrating on the results screen (confetti, counting XP, level-up and badge reveals). Then
-phase 4: mini-game engine (PixiJS, lazy chunk) with a `SkillProvider` interface
-(`next(): Target`, `check(pressed: number[]): 'correct' | 'wrong' | 'partial'`), first games Nota Kuşu and Balon
-Patlatma, reusing the summary/report and `completeLesson` flow.
+Phase 3 (done on `faz-3-karakterler`):
+
+- `src/components/Mascot.tsx`: Notiş, an SVG eighth-note character with moods
+  `idle | happy | sad | cheer | sleep | think`, animated with Motion (`motion/react`); `pulse` replays a reaction
+- `Greeting` on the map (context-aware line: first lesson, streak at risk, goal reached, night-time sleep)
+- In lessons: mascot reacts to every answer, combo counter (celebration every 5 first-try answers in a row)
+- `src/audio/sfx.ts`: synthesized WebAudio sound effects (correct, wrong, combo, fanfare, fail) and vibration, both
+  toggleable in settings
+- Results: mascot with the message, confetti (`canvas-confetti`), counting XP, level-up overlay
+
+Next: **phase 4, mini-game engine** (see `docs/PLAN.md`). Suggested shape: PixiJS 8 in a lazy chunk; a `SkillProvider`
+interface (`next(): Target` with the keys that count as correct and how to draw the target, plus a per-target result
+record) so every game reuses `summarize`-style reports and `completeLesson`; first games **Nota Kuşu** (Flappy-like:
+the gap sits at a staff position, playing that note flies the bird there) and **Balon Patlatma**. Add a lesson `kind`
+(`drill | game | boss`) to the curriculum so the map mixes lesson types.
 
 ## Testing in a real browser
 

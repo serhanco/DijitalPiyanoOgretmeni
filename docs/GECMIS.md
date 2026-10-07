@@ -48,12 +48,13 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 
 ## Yapılanlar
 
-| Tarih      | Ne                                                                                     | Nerede                          |
-| ---------- | -------------------------------------------------------------------------------------- | ------------------------------- |
-| 2026-10-07 | Repo boştu; README ve yol haritası eklendi                                             | `main`                          |
-| 2026-10-07 | Faz 0 + 1: iskelet, CI, Pages yayını, MIDI, ses, porte, Nota Avcısı, sonuç ekranı      | PR #1, dal `faz-1-cekirdek`     |
-| 2026-10-07 | Faz 2: XP, seri, kalpler, günlük hedef, rozetler, ders haritası, profil, zayıf notalar | PR #2, dal `faz-2-oyunlastirma` |
-| 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı          | `main`                          |
+| Tarih      | Ne                                                                                           | Nerede                          |
+| ---------- | -------------------------------------------------------------------------------------------- | ------------------------------- |
+| 2026-10-07 | Repo boştu; README ve yol haritası eklendi                                                   | `main`                          |
+| 2026-10-07 | Faz 0 + 1: iskelet, CI, Pages yayını, MIDI, ses, porte, Nota Avcısı, sonuç ekranı            | PR #1, dal `faz-1-cekirdek`     |
+| 2026-10-07 | Faz 2: XP, seri, kalpler, günlük hedef, rozetler, ders haritası, profil, zayıf notalar       | PR #2, dal `faz-2-oyunlastirma` |
+| 2026-10-07 | Faz 3: maskot Notiş, ders içi tepkiler ve seri, ses efektleri, konfeti, seviye atlama ekranı | PR #3, dal `faz-3-karakterler`  |
+| 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                | `main`                          |
 
 ## Açık konular
 
