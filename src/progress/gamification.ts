@@ -99,6 +99,7 @@ export interface BadgeContext {
   threeStarLessons: string[]
   allTrebleLessonIds: string[]
   allBassLessonIds: string[]
+  allScaleLessonIds?: string[]
 }
 
 export interface Badge {
@@ -176,6 +177,27 @@ export const BADGES: Badge[] = [
     description: 'Nota Barmeni oyununu %90 üstü doğrulukla bitir',
     icon: '🍹',
     earned: (c) => c.outcome.lessonId.startsWith('grand-bar') && !c.outcome.failed && c.outcome.accuracy >= 0.9,
+  },
+  {
+    id: 'scale-climber',
+    title: 'Merdiven Tırmanıcısı',
+    description: 'Bir Gam Merdiveni dersini %90 üstü zamanlamayla bitir',
+    icon: '🪜',
+    earned: (c) => c.outcome.lessonId.startsWith('scale-ladder') && !c.outcome.failed && c.outcome.accuracy >= 0.9,
+  },
+  {
+    id: 'memory',
+    title: 'Fil Hafızası',
+    description: 'Bir Melodi Hafızası dersini 3 yıldızla bitir',
+    icon: '🐘',
+    earned: (c) => c.outcome.lessonId.startsWith('scale-memory') && !c.outcome.failed && c.outcome.stars >= 3,
+  },
+  {
+    id: 'scale-master',
+    title: 'Gam Ustası',
+    description: 'Gamlar ünitesindeki tüm dersleri 3 yıldızla bitir',
+    icon: '🏆',
+    earned: (c) => !!c.allScaleLessonIds?.length && c.allScaleLessonIds.every((id) => c.threeStarLessons.includes(id)),
   },
 ]
 

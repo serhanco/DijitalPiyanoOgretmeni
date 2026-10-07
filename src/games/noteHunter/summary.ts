@@ -10,6 +10,8 @@ import {
   staffPlacement,
 } from '../../music/notes'
 import type { Judgement } from '../../rhythm/timing'
+import type { MemorySummary } from '../memory/engine'
+import type { ScaleSummary } from '../scales/steps'
 import { firstTryOk, type PromptRecord } from './session'
 
 export interface NoteStat {
@@ -54,6 +56,12 @@ export interface SessionSummary {
   hands?: HandStat[]
   /** Two-hand lessons: how close together the two hands pressed. */
   sync?: SyncSummary
+  /** Scale lessons: evenness and thumb crossings. */
+  scale?: ScaleSummary
+  /** Melodi Hafızası: the longest runs remembered. */
+  memory?: MemorySummary
+  /** Written names of black keys when they differ from the sharp name (Si♭, not La#). */
+  noteNames?: Record<number, string>
 }
 
 export interface HandStat {

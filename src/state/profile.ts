@@ -3,6 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import { db } from '../progress/db'
 import { TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import { BASS_LESSONS } from '../games/noteHunter/bassLessons'
+import { SCALE_LESSONS } from '../games/scales/lessons'
 import {
   type Badge,
   DEFAULT_DAILY_GOAL,
@@ -109,6 +110,7 @@ export const useProfile = create<ProfileState>()(
               .map(([id]) => id),
             allTrebleLessonIds: TREBLE_LESSONS.map((l) => l.id),
             allBassLessonIds: BASS_LESSONS.map((l) => l.id),
+            allScaleLessonIds: SCALE_LESSONS.map((l) => l.id),
           },
           Object.keys(s.badges),
         )

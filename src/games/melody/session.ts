@@ -2,7 +2,8 @@
 // it step by step. A step may ask for two keys at once (one per hand).
 // No React and no timers: time is passed in, like every other engine.
 
-import { type Clef, handOf, type Hand, MIDDLE_C, naturalClef, parseNote } from '../../music/notes'
+import { type Clef, handOf, type Hand, type Letter, MIDDLE_C, naturalClef, parseNote } from '../../music/notes'
+import type { Accidental, Crossing, SpelledNote } from '../../music/scales'
 import type { PromptRecord } from '../noteHunter/session'
 import type { SyncSummary } from '../noteHunter/summary'
 import type { Melody } from '../noteHunter/lessons'
@@ -13,12 +14,22 @@ export const TOGETHER_MS = 100
 export interface StepNote {
   midi: number
   clef: Clef
+  /** Scales: the written name (B♭ rather than A#). */
+  spelled?: SpelledNote
+  /** Scales: the finger to play it with (1 = thumb). */
+  finger?: number
+  /** Scales: the thumb crossing that leads to this note. */
+  cross?: Crossing | null
 }
 
 export interface Step {
   notes: StepNote[]
-  /** Index of the melody the step belongs to. */
+  /** Index of the melody (or scale) the step belongs to. */
   melody: number
+  /** Scales: the VexFlow key signature ("Bb", "Am"). */
+  keySig?: string
+  /** Scales: the accidental the key signature gives each letter. */
+  keyAcc?: Record<Letter, Accidental>
 }
 
 /**

@@ -16,13 +16,13 @@ export interface RhythmSummaryOptions {
 }
 
 /** Score of one settled target, 0..1. A wrong key first costs half. */
-function scoreOf(r: TimingRecord): number {
+export function scoreOf(r: TimingRecord): number {
   const s = r.judgement ? JUDGEMENT_SCORE[r.judgement] : 0
   return r.wrongPresses.length && !r.rest ? s / 2 : s
 }
 
 /** On the beat with the right key at once (or a rest kept). */
-const clean = (r: TimingRecord) => onTime(r.judgement) && r.wrongPresses.length === 0
+export const clean = (r: TimingRecord) => onTime(r.judgement) && r.wrongPresses.length === 0
 
 function messageFor(accuracy: number, meanOffset: number | null, counts: Record<Judgement, number>): string {
   const played = counts.perfect + counts.good + counts.early + counts.late

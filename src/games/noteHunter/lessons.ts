@@ -1,14 +1,19 @@
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 import type { RhythmValue } from '../../rhythm/rhythm'
+import type { ScalePart } from '../scales/steps'
 
 /**
  * How a lesson is played: the staff drill, a melody read note by note, a
  * rhythm exercise or one of the arcade games.
  */
-export type LessonKind = 'drill' | 'melody' | 'bird' | 'balloon' | 'bar' | 'rhythm' | 'dino' | 'drum'
+export type LessonKind =
+  'drill' | 'melody' | 'bird' | 'balloon' | 'bar' | 'rhythm' | 'dino' | 'drum' | 'scale' | 'ladder' | 'memory'
 
 /** Kinds played against a metronome. */
-export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum']
+export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder']
+
+/** Kinds whose notes are known in advance (scales, memory runs): kept out of the note-reading statistics. */
+export const PATTERN_KINDS: LessonKind[] = ['scale', 'ladder', 'memory']
 
 export interface RhythmSpec {
   bpm: number
@@ -39,6 +44,10 @@ export interface NoteLesson {
   bothStaves?: number[]
   /** Melody lessons: the pieces, played in order. `notes` and `length` are unused. */
   melodies?: Melody[]
+  /** Scale and Gam Merdiveni lessons: the scales, played in order. */
+  scales?: ScalePart[]
+  /** Melodi Hafızası: run lengths; `notes` is the scale the runs are made of. */
+  memory?: { startLength: number; maxLength: number }
 }
 
 export interface Melody {

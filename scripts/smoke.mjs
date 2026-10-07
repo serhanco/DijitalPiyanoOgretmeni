@@ -19,7 +19,10 @@ await page.addInitScript(() => {
 })
 page.setDefaultTimeout(10000)
 const errors = []
-page.on('pageerror', (e) => errors.push(e.message))
+page.on('pageerror', (e) => {
+  console.error('Page error:', e.message)
+  errors.push(e.message)
+})
 // Piano samples cannot load without network; ignore those.
 page.on('console', (m) => m.type() === 'error' && !m.text().includes('ERR_FAILED') && errors.push(m.text()))
 
@@ -33,7 +36,8 @@ async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName =
   for (let i = 0; i < 80 && !(await page.$('.results')); i++) {
     if (wrongFirst) {
       for (const midi of [...keys].reverse()) {
-        await page.click(`.key[data-midi="${midi}"]`)
+        // The results may replace the keyboard mid-loop when the hearts run out.
+        await page.click(`.key[data-midi="${midi}"]`, { timeout: 1500 }).catch(() => undefined)
         await page.waitForTimeout(40)
         if ((await page.$('.feedback.good')) || (await page.$('.results'))) break
       }
@@ -62,7 +66,12 @@ async function playMelody(lessonTitle, shotName, { gapMs = 20, shotAfter = 6 } =
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
   await page.waitForSelector('.melody-wrap .staff svg')
   for (let i = 0; i < 200 && !(await page.$('.results')); i++) {
-    const pending = await page.getAttribute('.melody-wrap', 'data-pending')
+    const wrap = await page.$('.melody-wrap')
+    if (!wrap) {
+      await page.waitForTimeout(200)
+      continue
+    }
+    const pending = await wrap.getAttribute('data-pending')
     if (pending) {
       await page.evaluate(
         ({ keys, gap }) => {
@@ -128,10 +137,11 @@ async function playArcade(lessonTitle, shotName) {
  * note's key on its beat (setTimeout in the page is far more precise than
  * round trips from here). `offsetMs` shifts every press.
  */
-async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5, slower = 0 } = {}) {
+async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5, slower = 0, faster = 0 } = {}) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
   await page.waitForSelector('.beat-start')
   for (let i = 0; i < slower; i++) await page.getByLabel('Yavaşlat').click()
+  for (let i = 0; i < faster; i++) await page.getByLabel('Hızlandır').click()
   if (shotName) await page.screenshot({ path: `${out}/${shotName}-ready.png` })
   await page.click('.beat-start')
   await page.waitForFunction(() => window.__dpoBeat && window.__dpoBeat !== window.__dpoPrevBeat)
@@ -140,11 +150,13 @@ async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5, slo
     window.__dpoPrevBeat = t
     for (const r of t.records) {
       if (r.rest) continue
+      // One pointer per key, so two hands can press at once.
+      const pointerId = 100 + r.target
       window.setTimeout(
         () => {
           const el = document.querySelector(`.key[data-midi="${r.target}"]`)
-          el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7, isPrimary: true }))
-          window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7 })), 40)
+          el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId, isPrimary: true }))
+          window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId })), 40)
         },
         r.dueAt + offset - performance.now(),
       )
@@ -156,6 +168,44 @@ async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5, slo
     await page.screenshot({ path: `${out}/${shotName}.png` })
   }
   await page.waitForSelector('.results', { timeout: lengthMs + 10000 })
+  await page.waitForTimeout(800)
+}
+
+/**
+ * Play Melodi Hafızası: wait for each run to be played, then repeat it from
+ * the game object. `wrongInRound` presses one wrong key in that round first.
+ */
+async function playMemory(lessonTitle, shotName, { wrongInRound = -1 } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.click('.memory-start')
+  let round = 0
+  let shot = false
+  for (let i = 0; i < 400 && !(await page.$('.results')); i++) {
+    const state = await page.evaluate(() => {
+      const g = window.__dpoMemory
+      return g ? { phase: g.phase, expected: g.expected, length: g.length, played: g.played } : null
+    })
+    if (state?.phase === 'listen' && shotName && !shot && state.length >= 5) {
+      await page.waitForTimeout(700)
+      await page.screenshot({ path: `${out}/${shotName}-listen.png` })
+      shot = true
+    }
+    if (state?.phase === 'play' && state.expected !== null) {
+      if (state.played === 0) round++
+      if (round === wrongInRound + 1 && state.played === 1) {
+        const wrong = state.expected === 60 ? 62 : 60
+        await page.click(`.key[data-midi="${wrong}"]`)
+        wrongInRound = -1
+        await page.waitForTimeout(150)
+        if (shotName) await page.screenshot({ path: `${out}/${shotName}-wrong.png` })
+      }
+      await page.click(`.key[data-midi="${state.expected}"]`)
+      await page.waitForTimeout(150)
+    } else {
+      await page.waitForTimeout(120)
+    }
+  }
+  await page.waitForSelector('.results', { timeout: 5000 })
   await page.waitForTimeout(800)
 }
 
@@ -312,6 +362,83 @@ await page.screenshot({ path: `${out}/results-hands.png`, fullPage: true })
 const sync = await page.textContent('.sync')
 if (!sync?.includes('18 tanesinde')) errors.push(`Two-hand sync report: ${sync}`)
 await page.getByText('Derslere dön').click()
+
+// Unit 5: scales, ladders and memory, in order (each lesson opens the next).
+const back = () => page.getByText('Derslere dön').click()
+await playMelody('Do Majör', 'scale-c', { shotAfter: 3 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-scale.png`, fullPage: true })
+const scaleCard = await page.textContent('.scale-card')
+if (!scaleCard?.includes('2 geçişin 2 tanesinde')) errors.push(`Scale card: ${scaleCard}`)
+await back()
+await playMelody('Sol Majör', 'scale-g', { shotAfter: 6 })
+await dismissOverlay()
+await back()
+await playBeat('Gam Merdiveni', 'game-ladder', { faster: 8, shotAt: 0.3 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-ladder.png`, fullPage: true })
+const ladderTopics = await page.textContent('.results')
+if (!ladderTopics?.includes('Sol Majör · sağ el')) errors.push('Ladder report has no per-scale topics')
+await back()
+await playMelody('Sol Elle Gam', 'scale-left', { shotAfter: 10 })
+await dismissOverlay()
+await back()
+await playMemory('Melodi Hafızası', 'game-memory', { wrongInRound: 1 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-memory.png`, fullPage: true })
+const memoryCard = await page.textContent('.memory-card')
+if (!memoryCard?.includes('En uzun hatasız dizi: 7')) errors.push(`Memory card: ${memoryCard}`)
+await back()
+await playMelody('Fa Majör', 'scale-f', { shotAfter: 4 })
+await dismissOverlay()
+await back()
+await playMelody('Re ve La Majör', 'scale-d-a', { shotAfter: 20 })
+await dismissOverlay()
+await back()
+await playBeat('Merdiven: Sol El', '', { faster: 8 })
+await dismissOverlay()
+await back()
+await playMelody('İki El Eş Zamanlı', 'scale-parallel', { gapMs: 30, shotAfter: 4 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-scale-hands.png`, fullPage: true })
+const scaleSync = await page.textContent('.sync')
+if (!scaleSync?.includes('15 tanesinde')) errors.push(`Scale sync report: ${scaleSync}`)
+await back()
+await playMelody('Zıt Hareket', 'scale-contrary', { gapMs: 30, shotAfter: 11 })
+await dismissOverlay()
+await back()
+await playBeat('Merdiven: İki El', 'game-ladder-hands', { faster: 8, shotAt: 0.6 })
+await dismissOverlay()
+const ladderSync = await page.textContent('.sync')
+if (!ladderSync?.includes('15 tanesinde')) errors.push(`Ladder sync report: ${ladderSync}`)
+await back()
+await playMelody('Mi ve Si♭ Majör', 'scale-bb', { shotAfter: 18 })
+await dismissOverlay()
+await back()
+await playMelody('La Minör', '', {})
+await dismissOverlay()
+await back()
+await playMelody('Armonik ve Melodik', 'scale-melodic', { shotAfter: 24 })
+await dismissOverlay()
+await back()
+await playMemory('Hafıza: La Minör', '')
+await dismissOverlay()
+await back()
+await playMelody('Mi ve Re Minör', '', {})
+await dismissOverlay()
+await back()
+await playMelody('İki El: La Minör', 'scale-minor-contrary', { gapMs: 30, shotAfter: 18 })
+await dismissOverlay()
+await back()
+await playBeat('Merdiven: Minörler', '', { faster: 8 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-ladder-minor.png`, fullPage: true })
+await back()
+await page.waitForTimeout(400)
+await page
+  .locator('.unit')
+  .nth(4)
+  .screenshot({ path: `${out}/map-scales.png` })
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.
 await page.locator('.calib-tip').click()

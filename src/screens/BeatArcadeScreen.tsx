@@ -3,13 +3,19 @@ import { useCallback, useMemo } from 'react'
 import { createDinoScene } from '../games/arcade/dino/scene'
 import { lanesFor } from '../games/arcade/drum/engine'
 import { createDrumScene } from '../games/arcade/drum/scene'
+import { createLadderScene } from '../games/arcade/ladder/scene'
 import { PixiStage } from '../games/arcade/PixiStage'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import type { SessionSummary } from '../games/noteHunter/summary'
+import { ladderPlan, ladderReport, type LadderPlan, spelledNames } from '../games/scales/steps'
+import { solfegeName } from '../music/notes'
 import { BeatTrack } from '../rhythm/track'
+import { useSettings } from '../state/settings'
 import { BeatFrame, type FieldProps } from './beat/BeatFrame'
 
 const ARCADE_HEARTS = 3
+/** A two-hand beat costs two hearts when missed: the ladder is more forgiving. */
+const LADDER_HEARTS = 5
 
 interface Props {
   lesson: NoteLesson
@@ -37,7 +43,52 @@ function DrumField({ trackRef, spec, skill }: FieldProps) {
   return <PixiStage create={create} className="pixi-stage" />
 }
 
+function LadderField({ trackRef, plan, lesson }: FieldProps & { plan: LadderPlan; lesson: NoteLesson }) {
+  const preview = useMemo(() => new BeatTrack(plan.skill, { bpm: 60, startAt: 0 }), [plan])
+  const create = useCallback(
+    (app: Application) => createLadderScene(app, trackRef, { parts: lesson.scales!, meta: plan.meta, preview }),
+    [trackRef, lesson.scales, plan, preview],
+  )
+  return <PixiStage create={create} className="pixi-stage" />
+}
+
+/** Gam Merdiveni: a scale on the metronome, one stair per beat. */
+function LadderScreen({ lesson, onFinish, onExit }: Props) {
+  const ignoreOctave = useSettings((s) => s.ignoreOctave)
+  const plan = useMemo(() => ladderPlan(lesson.scales!, ignoreOctave), [lesson, ignoreOctave])
+  const names = useMemo(() => spelledNames(plan.steps), [plan])
+  const nameOf = useCallback((m: number) => names.get(m) ?? solfegeName(m), [names])
+  const twoHands = plan.steps.some((s) => s.notes.length > 1)
+  const report = useCallback(
+    (track: BeatTrack, summary: SessionSummary): SessionSummary => ({
+      ...summary,
+      ...ladderReport(track.records, plan.meta, lesson.scales!),
+      noteNames: Object.fromEntries(names),
+    }),
+    [plan, lesson.scales, names],
+  )
+  return (
+    <BeatFrame
+      lesson={lesson}
+      hearts={LADDER_HEARTS}
+      howTo={
+        twoHands
+          ? 'İki eli aynı vuruşta indir: her vuruşta bir basamak! Mavi rozet sağ el, pembe rozet sol el parmağı.'
+          : 'Her vuruşta gamın sıradaki notasını çal, basamağı tırman! Rozetteki sayı parmak numarası.'
+      }
+      className="arcade"
+      onFinish={onFinish}
+      onExit={onExit}
+      plan={plan}
+      report={report}
+      nameOf={nameOf}
+      renderField={(p) => <LadderField {...p} plan={plan} lesson={lesson} />}
+    />
+  )
+}
+
 export function BeatArcadeScreen({ lesson, onFinish, onExit }: Props) {
+  if (lesson.kind === 'ladder') return <LadderScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
   const dino = lesson.kind === 'dino'
   const pitched = !lesson.rhythm?.anyKey
   const howTo = dino
