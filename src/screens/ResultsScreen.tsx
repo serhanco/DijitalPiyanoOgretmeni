@@ -1,12 +1,17 @@
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import type { SessionSummary } from '../games/noteHunter/summary'
+import { GoalRing } from '../components/TopBar'
 import { solfegeName } from '../music/notes'
+import type { Reward } from '../state/profile'
 
 interface Props {
   lesson: NoteLesson
   summary: SessionSummary
+  reward: Reward
   onRetry: () => void
   onHome: () => void
+  /** Start a short drill on these notes. */
+  onPractice: (notes: number[]) => void
 }
 
 const pct = (x: number) => `%${Math.round(x * 100)}`
@@ -21,7 +26,20 @@ function Bar({ value }: { value: number }) {
   )
 }
 
-export function ResultsScreen({ lesson, summary, onRetry, onHome }: Props) {
+function Comparison({ before, now }: { before: number | null; now: number }) {
+  if (before === null) return null
+  const diff = Math.round((now - before) * 100)
+  const text =
+    diff > 0
+      ? `Önceki en iyin %${Math.round(before * 100)} idi, bu sefer ${diff} puan daha iyi!`
+      : diff === 0
+        ? `Önceki en iyinle aynı: %${Math.round(before * 100)}.`
+        : `Önceki en iyin %${Math.round(before * 100)}. Bu sefer biraz geride kaldın, olur böyle.`
+  return <p className={`compare ${diff > 0 ? 'up' : ''}`}>{text}</p>
+}
+
+export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPractice }: Props) {
+  const practiceNotes = summary.weakest.map((n) => n.midi)
   return (
     <div className="results">
       <div className="stars" aria-label={`${summary.stars} yıldız`}>
@@ -31,8 +49,51 @@ export function ResultsScreen({ lesson, summary, onRetry, onHome }: Props) {
           </span>
         ))}
       </div>
-      <h1>{lesson.title} tamamlandı!</h1>
+      <h1>{summary.failed ? 'Kalplerin bitti' : `${lesson.title} tamamlandı!`}</h1>
       <p className="lead">{summary.message}</p>
+      {!summary.failed && <Comparison before={reward.previousBestAccuracy} now={summary.accuracy} />}
+
+      <section className="card rewards">
+        <div className="reward-xp">
+          <span className="xp-big">+{reward.xpGained} XP</span>
+          <ul>
+            {reward.xpLines
+              .filter((l) => l.xp > 0)
+              .map((l) => (
+                <li key={l.label}>
+                  {l.label} <b>+{l.xp}</b>
+                </li>
+              ))}
+          </ul>
+        </div>
+        <div className="reward-side">
+          <div className={`reward-chip ${reward.streakExtended ? 'pop' : ''}`}>
+            🔥 <b>{reward.streak}</b> günlük seri
+          </div>
+          <div className="reward-chip">
+            <GoalRing value={reward.dailyXp} goal={reward.dailyGoal} size={28} />
+            {reward.goalJustReached ? 'Günlük hedef tamam!' : `Bugün ${reward.dailyXp}/${reward.dailyGoal} XP`}
+          </div>
+          {reward.levelAfter > reward.levelBefore && (
+            <div className="reward-chip pop">🎉 Seviye {reward.levelAfter}!</div>
+          )}
+        </div>
+      </section>
+
+      {reward.newBadges.length > 0 && (
+        <section className="card badges-new">
+          <h2>Yeni rozet{reward.newBadges.length > 1 ? 'ler' : ''}!</h2>
+          <div className="badge-row">
+            {reward.newBadges.map((b) => (
+              <div key={b.id} className="badge earned pop">
+                <span className="badge-icon">{b.icon}</span>
+                <b>{b.title}</b>
+                <span className="small muted">{b.description}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="stat-row">
         <div className="stat">
@@ -71,6 +132,11 @@ export function ResultsScreen({ lesson, summary, onRetry, onHome }: Props) {
               </li>
             ))}
           </ul>
+          {practiceNotes.length >= 2 && (
+            <button className="btn btn-small practice-btn" onClick={() => onPractice(practiceNotes)}>
+              Bu notaları çalış
+            </button>
+          )}
         </section>
       )}
 

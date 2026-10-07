@@ -22,6 +22,8 @@ export interface CategoryStat {
 }
 
 export interface SessionSummary {
+  /** True when the hearts ran out before the end. */
+  failed: boolean
   total: number
   firstTry: number
   accuracy: number // 0..1
@@ -56,7 +58,7 @@ function messageFor(accuracy: number, avgReactionMs: number | null): string {
   return 'Her tekrar seni güçlendirir. Acele etme, önce doğru notayı bulmaya odaklan.'
 }
 
-export function summarize(records: PromptRecord[], clef: Clef): SessionSummary {
+export function summarize(records: PromptRecord[], clef: Clef, failed = false): SessionSummary {
   const byNote = new Map<number, PromptRecord[]>()
   for (const r of records) {
     const list = byNote.get(r.target) ?? []
@@ -117,15 +119,18 @@ export function summarize(records: PromptRecord[], clef: Clef): SessionSummary {
     .slice(0, 3)
 
   return {
+    failed,
     total,
     firstTry,
     accuracy,
     avgReactionMs,
     totalMistakes: records.reduce((n, r) => n + r.wrongPresses.length, 0),
-    stars: starsFor(accuracy),
+    stars: failed ? 0 : starsFor(accuracy),
     perNote,
     perCategory,
     weakest,
-    message: messageFor(accuracy, avgReactionMs),
+    message: failed
+      ? 'Sorun değil, hata yapa yapa öğreniyoruz. Notaları acele etmeden bulmaya odaklanıp tekrar dene.'
+      : messageFor(accuracy, avgReactionMs),
   }
 }

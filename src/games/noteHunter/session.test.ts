@@ -75,3 +75,19 @@ describe('summarize', () => {
     expect(s.weakest).not.toContainEqual(expect.objectContaining({ midi: 64 }))
   })
 })
+
+describe('hearts', () => {
+  it('fails the session when the hearts run out', () => {
+    const s = new NoteHunterSession({ notes: [60, 62], length: 5, hearts: 2, random: seeded() })
+    s.markShown(0)
+    const wrong = s.current!.target === 60 ? 62 : 60
+    expect(s.press(wrong, 1)).toBe('wrong')
+    expect(s.heartsLeft).toBe(1)
+    expect(s.done).toBe(false)
+    s.press(wrong, 2)
+    expect(s.failed).toBe(true)
+    expect(s.done).toBe(true)
+    expect(s.attempted).toHaveLength(1)
+    expect(s.press(s.records[0].target, 3)).toBe('ignored')
+  })
+})
