@@ -16,10 +16,17 @@ const loadGame = () => import('./screens/NoteHunterScreen')
 const NoteHunterScreen = lazy(() => loadGame().then((m) => ({ default: m.NoteHunterScreen })))
 // Arcade games bring PixiJS: their own chunk, loaded on demand.
 const ArcadeScreen = lazy(() => import('./screens/ArcadeScreen').then((m) => ({ default: m.ArcadeScreen })))
+// Rhythm activities: the notation drill (VexFlow) and the beat arcade games (PixiJS).
+const RhythmScreen = lazy(() => import('./screens/RhythmScreen').then((m) => ({ default: m.RhythmScreen })))
+const BeatArcadeScreen = lazy(() => import('./screens/BeatArcadeScreen').then((m) => ({ default: m.BeatArcadeScreen })))
+const CalibrationScreen = lazy(() =>
+  import('./screens/CalibrationScreen').then((m) => ({ default: m.CalibrationScreen })),
+)
 
 type Screen =
   | { name: 'home' }
   | { name: 'profile' }
+  | { name: 'calibrate' }
   | { name: 'play'; lesson: NoteLesson; run: number }
   | { name: 'results'; lesson: NoteLesson; summary: SessionSummary; reward: Reward }
 
@@ -59,9 +66,17 @@ export default function App() {
       failed: summary.failed,
     }
     const reward = useProfile.getState().completeLesson(outcome)
-    void recordSession({ ...outcome, at: Date.now(), xp: reward.xpGained }, lesson.clef, summary.perNote).catch((err) =>
-      console.error('Could not save the session', err),
-    )
+    const timing = summary.timing && {
+      counts: summary.timing.counts,
+      meanOffsetMs: summary.timing.meanOffsetMs,
+      bpm: summary.timing.bpm,
+    }
+    // Rhythm results say how well notes were timed, not read: keep them out of the note statistics.
+    void recordSession(
+      { ...outcome, at: Date.now(), xp: reward.xpGained, timing },
+      lesson.clef,
+      summary.timing ? [] : summary.perNote,
+    ).catch((err) => console.error('Could not save the session', err))
     setScreen({ name: 'results', lesson, summary, reward })
   }
 
@@ -69,12 +84,27 @@ export default function App() {
 
   return (
     <main className="app">
-      {screen.name === 'home' && <HomeScreen onStart={start} onProfile={() => setScreen({ name: 'profile' })} />}
+      {screen.name === 'home' && (
+        <HomeScreen
+          onStart={start}
+          onProfile={() => setScreen({ name: 'profile' })}
+          onCalibrate={() => setScreen({ name: 'calibrate' })}
+        />
+      )}
       {screen.name === 'profile' && <ProfileScreen onBack={home} />}
+      {screen.name === 'calibrate' && (
+        <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+          <CalibrationScreen onBack={home} />
+        </Suspense>
+      )}
       {screen.name === 'play' && (
         <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
           {screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' ? (
             <ArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          ) : screen.lesson.kind === 'rhythm' ? (
+            <RhythmScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          ) : screen.lesson.kind === 'dino' || screen.lesson.kind === 'drum' ? (
+            <BeatArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : (
             <NoteHunterScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           )}

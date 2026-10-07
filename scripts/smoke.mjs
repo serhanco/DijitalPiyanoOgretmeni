@@ -73,6 +73,41 @@ async function playArcade(lessonTitle, shotName) {
   await page.waitForTimeout(800)
 }
 
+/**
+ * Play a rhythm lesson: press Başla, then let the page itself press every
+ * note's key on its beat (setTimeout in the page is far more precise than
+ * round trips from here). `offsetMs` shifts every press.
+ */
+async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5 } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.waitForSelector('.beat-start')
+  if (shotName) await page.screenshot({ path: `${out}/${shotName}-ready.png` })
+  await page.click('.beat-start')
+  await page.waitForFunction(() => window.__dpoBeat && window.__dpoBeat !== window.__dpoPrevBeat)
+  const lengthMs = await page.evaluate((offset) => {
+    const t = window.__dpoBeat
+    window.__dpoPrevBeat = t
+    for (const r of t.records) {
+      if (r.rest) continue
+      window.setTimeout(
+        () => {
+          const el = document.querySelector(`.key[data-midi="${r.target}"]`)
+          el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7, isPrimary: true }))
+          window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7 })), 40)
+        },
+        r.dueAt + offset - performance.now(),
+      )
+    }
+    return t.endAt - performance.now()
+  }, offsetMs)
+  if (shotName) {
+    await page.waitForTimeout(lengthMs * shotAt)
+    await page.screenshot({ path: `${out}/${shotName}.png` })
+  }
+  await page.waitForSelector('.results', { timeout: lengthMs + 10000 })
+  await page.waitForTimeout(800)
+}
+
 /** Close the level-up overlay if it is showing. */
 async function dismissOverlay() {
   const btn = page.locator('.overlay .btn')
@@ -119,6 +154,55 @@ await page.screenshot({ path: `${out}/results-failed.png`, fullPage: true })
 await page.getByText('Derslere dön').click()
 await page.waitForTimeout(500)
 await page.screenshot({ path: `${out}/map-after.png`, fullPage: true })
+
+// Unit 2: rhythm. Its first lesson is open from the start.
+await playBeat('Dörtlükler', 'rhythm-quarters')
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-rhythm.png`, fullPage: true })
+const rhythmScore = (await page.textContent('.stat-value'))?.trim()
+if (rhythmScore !== '%100') errors.push(`Perfectly timed rhythm lesson scored ${rhythmScore}`)
+await page.getByText('Derslere dön').click()
+await playBeat('İkilikler')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playBeat('Dino Koşusu', 'game-dino', { offsetMs: 60 }) // "İyi" timing, a little late
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-dino.png`, fullPage: true })
+await page.getByText('Derslere dön').click()
+await playBeat('Sekizlikler', 'rhythm-eighths')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playBeat('Esler', 'rhythm-rests')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+await playBeat('Ritim Davulcusu', 'game-drum')
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-drum.png`, fullPage: true })
+await page.getByText('Derslere dön').click()
+
+// Latency calibration: taps 30 ms after every click should measure 30 ms.
+await page.locator('.calib-tip').click()
+await page.getByText('Ölçmeye başla').click()
+await page.waitForFunction(() => window.__dpoCalibration)
+await page.evaluate(() => {
+  const { startAt, beatMs } = window.__dpoCalibration
+  for (let b = 0; b < 16; b++) {
+    window.setTimeout(
+      () => {
+        const el = document.querySelector('.key[data-midi="60"]')
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 8, isPrimary: true }))
+        window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 8 })), 40)
+      },
+      startAt + b * beatMs + 30 - performance.now(),
+    )
+  }
+})
+await page.waitForSelector('.calib-big', { timeout: 20000 })
+const latency = Number(await page.getAttribute('.calib-big', 'data-latency'))
+if (Math.abs(latency - 30) > 8) errors.push(`Calibration measured ${latency} ms instead of about 30 ms`)
+await page.screenshot({ path: `${out}/calibration.png`, fullPage: true })
+await page.getByLabel('Geri').click()
+await page.waitForTimeout(400)
 
 await page.getByLabel('Profil').click()
 await page.waitForTimeout(500)

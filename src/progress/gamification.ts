@@ -127,6 +127,13 @@ export const BADGES: Badge[] = [
     icon: '⚡',
     earned: (c) => !c.outcome.failed && c.outcome.accuracy >= 0.9 && (c.outcome.avgReactionMs ?? Infinity) < 1000,
   },
+  {
+    id: 'metronome',
+    title: 'Metronom Gibi',
+    description: 'Bir ritim dersini %90 üstü zamanlamayla bitir',
+    icon: '🥁',
+    earned: (c) => c.outcome.lessonId.startsWith('rhythm') && !c.outcome.failed && c.outcome.accuracy >= 0.9,
+  },
   { id: 'streak-3', title: 'Isınıyoruz', description: '3 günlük seri yap', icon: '🔥', earned: (c) => c.streak >= 3 },
   { id: 'streak-7', title: 'Bir Hafta', description: '7 günlük seri yap', icon: '🏅', earned: (c) => c.streak >= 7 },
   { id: 'xp-100', title: 'Yüzlük', description: '100 XP topla', icon: '⭐', earned: (c) => c.totalXp >= 100 },

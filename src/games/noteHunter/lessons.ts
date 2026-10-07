@@ -1,7 +1,21 @@
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
+import type { RhythmValue } from '../../rhythm/rhythm'
 
-/** How a lesson is played: the staff drill or one of the arcade games. */
-export type LessonKind = 'drill' | 'bird' | 'balloon'
+/** How a lesson is played: the staff drill, a rhythm exercise or one of the arcade games. */
+export type LessonKind = 'drill' | 'bird' | 'balloon' | 'rhythm' | 'dino' | 'drum'
+
+/** Kinds played against a metronome. */
+export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum']
+
+export interface RhythmSpec {
+  bpm: number
+  beatsPerBar: number
+  bars: number
+  /** Values the random bars are made of. */
+  values: RhythmValue[]
+  /** Any key counts; only the timing is judged. */
+  anyKey?: boolean
+}
 
 export interface NoteLesson {
   id: string
@@ -14,6 +28,8 @@ export interface NoteLesson {
   length: number
   /** Range of the on-screen keyboard shown under the staff. */
   keyboard: { low: number; high: number }
+  /** Rhythm lessons: tempo and the note values to practise. `length` is unused. */
+  rhythm?: RhythmSpec
 }
 
 const TREBLE_KEYBOARD = { low: parseNote('C4'), high: parseNote('G5') }

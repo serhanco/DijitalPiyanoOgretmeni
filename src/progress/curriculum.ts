@@ -1,5 +1,6 @@
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import type { Clef } from '../music/notes'
+import { RHYTHM_LESSONS } from '../rhythm/lessons'
 
 export interface Unit {
   id: string
@@ -9,6 +10,8 @@ export interface Unit {
   lessons: NoteLesson[]
   /** Planned units are shown locked on the map. */
   comingSoon?: boolean
+  /** Ends with a "weak notes" review built from the note statistics. */
+  review?: boolean
 }
 
 export const UNITS: Unit[] = [
@@ -18,14 +21,14 @@ export const UNITS: Unit[] = [
     subtitle: 'Sağ elin notalarını tanı',
     color: '#58cc02',
     lessons: TREBLE_LESSONS,
+    review: true,
   },
   {
     id: 'rhythm',
     title: 'Ünite 2: Ritim ve Tempo',
     subtitle: 'Zamanında çal',
     color: '#ce82ff',
-    lessons: [],
-    comingSoon: true,
+    lessons: RHYTHM_LESSONS,
   },
   {
     id: 'bass',
@@ -51,11 +54,17 @@ export function findLesson(id: string): NoteLesson | undefined {
   return ALL_LESSONS.find((l) => l.id === id)
 }
 
-/** A lesson opens once the one before it (in the whole path) has at least one star. */
+/**
+ * The first lesson of every unit is open (rhythm does not need note reading),
+ * and each next one opens once the one before it in the unit has a star.
+ */
 export function isUnlocked(lessonId: string, bestStars: (id: string) => number): boolean {
-  const i = ALL_LESSONS.findIndex((l) => l.id === lessonId)
-  if (i <= 0) return i === 0
-  return bestStars(ALL_LESSONS[i - 1].id) >= 1
+  for (const unit of UNITS) {
+    const i = unit.lessons.findIndex((l) => l.id === lessonId)
+    if (i === 0) return true
+    if (i > 0) return bestStars(unit.lessons[i - 1].id) >= 1
+  }
+  return false
 }
 
 export interface NoteScore {

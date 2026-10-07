@@ -12,6 +12,8 @@ export interface SessionRow {
   stars: number
   xp: number
   failed: boolean
+  /** Rhythm lessons: the timing distribution. */
+  timing?: { counts: Record<string, number>; meanOffsetMs: number | null; bpm: number }
 }
 
 /** Running totals per note, across all sessions. */

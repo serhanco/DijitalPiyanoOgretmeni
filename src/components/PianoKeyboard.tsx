@@ -55,7 +55,9 @@ export function PianoKeyboard({ low, high, marks = {}, showLabels = true }: Pian
     role: 'button',
     onPointerDown: (e: React.PointerEvent) => {
       e.preventDefault()
-      ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
+      // Let a finger slide to the next key (touch captures the pointer by default).
+      const el = e.currentTarget as HTMLElement
+      if (el.hasPointerCapture?.(e.pointerId)) el.releasePointerCapture(e.pointerId)
       press(midi, e.pointerId)
     },
     onPointerEnter: (e: React.PointerEvent) => {
