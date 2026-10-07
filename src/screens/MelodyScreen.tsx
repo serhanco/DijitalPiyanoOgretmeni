@@ -3,7 +3,7 @@ import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { MelodyStaff, type StepState } from '../components/MelodyStaff'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
-import { MelodySession, parseMelodies, type Step, syncSummary } from '../games/melody/session'
+import { MelodySession, paginate, parseMelodies, type Step, syncSummary } from '../games/melody/session'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
 import { partTitle, scaleKeyboard, scaleReport, scaleSteps, spelledNames } from '../games/scales/steps'
@@ -14,8 +14,6 @@ import { CROSSING_TIPS } from '../music/scales'
 import { HEARTS_PER_LESSON } from '../progress/gamification'
 import { useSettings } from '../state/settings'
 
-/** Steps shown at once. */
-const PAGE = 8
 const WRONG_FLASH_MS = 500
 const HINT_AFTER = 2
 const COMBO_STEP = 5
@@ -25,17 +23,6 @@ interface Props {
   lesson: NoteLesson
   onFinish: (summary: SessionSummary) => void
   onExit: () => void
-}
-
-/** Pages of at most PAGE steps; every melody starts on a new page. */
-function paginate(steps: Step[]): { start: number; steps: Step[] }[] {
-  const pages: { start: number; steps: Step[] }[] = []
-  steps.forEach((step, i) => {
-    const last = pages[pages.length - 1]
-    if (!last || last.steps.length === PAGE || last.steps[0].melody !== step.melody) pages.push({ start: i, steps: [] })
-    pages[pages.length - 1].steps.push(step)
-  })
-  return pages
 }
 
 /** The current step's fingers, and the crossing to make if there is one. */

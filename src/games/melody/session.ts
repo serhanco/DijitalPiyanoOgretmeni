@@ -30,6 +30,23 @@ export interface Step {
   keySig?: string
   /** Scales: the accidental the key signature gives each letter. */
   keyAcc?: Record<Letter, Accidental>
+  /** Starts a new page of the staff (a scale's way down). */
+  newPage?: boolean
+}
+
+/** Steps shown on the staff at once. */
+export const MELODY_PAGE = 8
+
+/** Pages of at most MELODY_PAGE steps; every melody and every `newPage` step starts a new page. */
+export function paginate(steps: Step[]): { start: number; steps: Step[] }[] {
+  const pages: { start: number; steps: Step[] }[] = []
+  steps.forEach((step, i) => {
+    const last = pages[pages.length - 1]
+    if (!last || last.steps.length === MELODY_PAGE || last.steps[0].melody !== step.melody || step.newPage)
+      pages.push({ start: i, steps: [] })
+    pages[pages.length - 1].steps.push(step)
+  })
+  return pages
 }
 
 /**

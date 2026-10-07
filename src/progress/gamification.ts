@@ -20,6 +20,8 @@ export interface LessonOutcome {
   failed: boolean
   /** Rhythm lessons: `firstTry` counts notes played on the beat (and rests kept). */
   rhythm?: boolean
+  /** Tempo merdiveni: every round passed, so the starting tempo went up. */
+  tempoRaised?: boolean
 }
 
 export interface XpLine {
@@ -191,6 +193,13 @@ export const BADGES: Badge[] = [
     description: 'Bir Melodi Hafızası dersini 3 yıldızla bitir',
     icon: '🐘',
     earned: (c) => c.outcome.lessonId.startsWith('scale-memory') && !c.outcome.failed && c.outcome.stars >= 3,
+  },
+  {
+    id: 'tempo-up',
+    title: 'Hız Treni',
+    description: 'Bir Tempo Merdiveni’nin bütün turlarını geç ve tempoyu yükselt',
+    icon: '🚄',
+    earned: (c) => !!c.outcome.tempoRaised,
   },
   {
     id: 'scale-master',

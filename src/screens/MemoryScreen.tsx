@@ -1,8 +1,9 @@
 // "Melodi Hafızası": the app plays a run of scale notes (sound and lit keys),
-// the player repeats it. The run grows by one note every round.
+// the player repeats it. The run grows by one note every round. In ear mode
+// (`listenOnly`) only the first note lights up: the rest is heard.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { initPiano, pianoAttack, pianoRelease } from '../audio/piano'
+import { initPiano, isPianoReady, pianoAttack, pianoRelease } from '../audio/piano'
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
@@ -42,8 +43,10 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
         maxLength: spec.maxLength,
         hearts: relaxedMode ? null : HEARTS_PER_LESSON,
         ignoreOctave,
+        // By ear, every run starts on the tonic, the one note that is shown.
+        firstPosition: spec.listenOnly ? 0 : undefined,
       }),
-    [lesson.notes, spec.startLength, spec.maxLength, relaxedMode, ignoreOctave],
+    [lesson.notes, spec.startLength, spec.maxLength, spec.listenOnly, relaxedMode, ignoreOctave],
   )
   const [, setTick] = useState(0)
   const rerender = useCallback(() => setTick((n) => n + 1), [])
@@ -52,6 +55,9 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
   const [flash, setFlash] = useState<{ midi: number; mark: KeyMark; expected?: number } | null>(null)
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
   const [started, setStarted] = useState(false)
+  /** Ear mode, unless the piano sound could not load: then the keys light up after all. */
+  const [byEar, setByEar] = useState(!!spec.listenOnly)
+  const byEarRef = useRef(byEar)
   const timers = useRef<number[]>([])
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
@@ -86,9 +92,10 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
   const playRound = useCallback(() => {
     const schedule = game.startRound(performance.now())
     rerender()
+    const hidden = byEarRef.current
     schedule.forEach((n, i) => {
       later(() => {
-        setLit(n.midi)
+        if (!hidden || i === 0) setLit(n.midi)
         setLitIndex(i)
         pianoAttack(n.midi, 0.7)
       }, n.at - performance.now())
@@ -115,7 +122,13 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
     setStarted(true)
     // Start once the samples are in, but never wait long (offline the run still lights up).
     const wait = new Promise((resolve) => window.setTimeout(resolve, 1500))
-    void Promise.race([initPiano().catch(() => undefined), wait]).then(() => playRound())
+    void Promise.race([initPiano().catch(() => undefined), wait]).then(() => {
+      if (byEarRef.current && !isPianoReady()) {
+        byEarRef.current = false
+        setByEar(false)
+      }
+      playRound()
+    })
   }, [started, playRound])
 
   useEffect(() => {
@@ -172,9 +185,15 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
   const roundIndex = game.rounds.length - (game.phase === 'ready' && game.rounds.length ? 0 : 1)
   const progress = Math.max(0, roundIndex) / rounds
   const prompt = !started
-    ? 'Notiş bir dizi çalacak. Dinle, izle, sonra aynısını çal!'
+    ? byEar
+      ? 'Notiş bir dizi çalacak; yalnızca ilk nota yanar. Kulağınla dinle, sonra aynısını çal!'
+      : 'Notiş bir dizi çalacak. Dinle, izle, sonra aynısını çal!'
     : game.phase === 'listen'
-      ? '👂 Dinle ve izle…'
+      ? byEar
+        ? `👂 Yalnızca dinle… İlk nota ${solfegeName(game.sequence[0], false)}.`
+        : spec.listenOnly
+          ? '👂 Piyano sesi yüklenemedi, bu kez tuşlar da yanıyor. Dinle ve izle…'
+          : '👂 Dinle ve izle…'
       : game.phase === 'play'
         ? 'Sıra sende! Aynı notaları aynı sırayla çal.'
         : game.done
@@ -209,7 +228,7 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
         </div>
       </div>
 
-      <div className="memory-board" data-phase={game.phase} data-length={game.length}>
+      <div className="memory-board" data-phase={game.phase} data-length={game.length} data-ear={byEar}>
         <p className="memory-round">Dizi: {game.length} nota</p>
         <div className="memory-dots">
           {game.sequence.map((midi, i) => {

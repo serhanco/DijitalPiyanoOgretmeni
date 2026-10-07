@@ -19,6 +19,7 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Cila turu (Faz 5 sonrası)                     | Birleşti (PR #6) |
 | 6 Fa anahtarı ve iki el                       | Birleşti (PR #7) |
 | 7 Gamlar                                      | Birleşti (PR #9) |
+| Faz 7 iyileştirmeleri                         | PR #10           |
 | 8 ve sonrası                                  | Başlanmadı       |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
@@ -144,6 +145,18 @@ geçişleri, eşit tempo, el başına başarı ve iki el uyumu (ms). Plan:
 - Parmak numarası ipuçları ve başparmak geçişi uyarıları
 - Değerlendirme: doğru nota sırası, tempoya uyum, iki el arasındaki senkron farkı (ms)
 - **Gam Merdiveni** ve **Melodi Hafızası** (gam parçalarıyla)
+
+İyileştirmeler (PR #10, Ünite 5'e 6 ders daha, toplam 24):
+
+- **Tempo Merdiveni**: aynı gam üç turda giderek hızlanır (60 → 72 → 84 BPM, iki elle 54 → 66 → 78). Bir tur
+  zamanlama puanı %80 ile geçilir; geçilmezse ders orada biter. Üç tur da geçilince başlangıç temposu kalıcı olarak 12
+  BPM artar. Raporda her tempo ayrı bir konu ve "Tempo merdiveni" kartı var; yeni rozet "Hız Treni".
+- **İki oktavlık gamlar** (29 nota): parmak düzeni bir döngü olarak tutulur, ortadaki tonikte de geçiş olur. İniş yeni
+  bir sayfada başlar (melodik minörün tiz notaları inişe taşmaz).
+- **Yeni parmak düzenleri**: Si majör (sol el 4321 4321), Mi♭ ve La♭ majör (sağ el 3. parmakla başlar, sol el 3214321
+  3). Si ve Mi♭ Majör dersi.
+- **Kulaktan Hafıza**: Melodi Hafızası'nda tuşlar yanmaz, yalnızca ilk nota (tonik) gösterilir; her dizi toniğe başlar.
+  Piyano sesi yüklenemezse tuşlar yine yanar.
 
 ### Faz 8 — Akorlar, çevrimler, arpejler
 

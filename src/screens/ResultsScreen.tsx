@@ -3,6 +3,7 @@ import { type NoteLesson, PATTERN_KINDS } from '../games/noteHunter/lessons'
 import type { ScaleSummary } from '../games/scales/steps'
 import type { HandStat, SessionSummary, SyncSummary, TimingSummary } from '../games/noteHunter/summary'
 import { describeOffset, JUDGEMENT_LABELS, JUDGEMENTS } from '../rhythm/timing'
+import { ROUND_PASS, type TempoLadderSummary } from '../rhythm/tempoLadder'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { sfx } from '../audio/sfx'
@@ -158,6 +159,35 @@ function ScaleCard({ scale }: { scale: ScaleSummary }) {
         )}
       </p>
       <p className="small">{advice}</p>
+    </section>
+  )
+}
+
+/** The rounds of a tempo ladder: which tempos were passed, and the new starting tempo. */
+function TempoLadderCard({ ladder }: { ladder: TempoLadderSummary }) {
+  const failedAt = ladder.rounds.find((r) => !r.passed)
+  return (
+    <section className="card tempo-card">
+      <h2>Tempo merdiveni</h2>
+      <ol className="tempo-steps">
+        {ladder.tempos.map((bpm, i) => {
+          const r = ladder.rounds[i]
+          const state = !r ? 'todo' : r.passed ? 'passed' : 'failed'
+          return (
+            <li key={bpm} className={`tempo-step ${state}`}>
+              <b>{bpm}</b> BPM
+              <span className="small">{r ? `${r.passed ? '✓' : '✗'} %${Math.round(r.score * 100)}` : 'oynanmadı'}</span>
+            </li>
+          )
+        })}
+      </ol>
+      <p className="small">
+        {ladder.raisedTo !== null
+          ? `Bütün turları geçtin! Tempo kalıcı olarak yükseldi: bir dahaki sefere ${ladder.raisedTo} BPM’den başlıyorsun.`
+          : failedAt
+            ? `${failedAt.bpm} BPM’de zamanlaman %${Math.round(failedAt.score * 100)} kaldı; turu geçmek için %${Math.round(ROUND_PASS * 100)} gerekiyor. Tempo şimdilik aynı kalıyor.`
+            : 'Tempo en üst basamakta.'}
+      </p>
     </section>
   )
 }
@@ -358,6 +388,7 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
 
       {summary.scale && <ScaleCard scale={summary.scale} />}
       {summary.memory && <MemoryCard memory={summary.memory} />}
+      {summary.tempoLadder && <TempoLadderCard ladder={summary.tempoLadder} />}
 
       {(summary.hands || summary.sync) && <HandsCard hands={summary.hands} sync={summary.sync} />}
 

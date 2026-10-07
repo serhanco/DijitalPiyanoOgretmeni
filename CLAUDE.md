@@ -79,9 +79,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| `main` | Phases 0–7 and the polish round (PRs #1–#9 merged on 2026-10-07), live on GitHub Pages |
+| Branch | State                                                                                    |
+| ------ | ---------------------------------------------------------------------------------------- |
+| `main` | Phases 0–7 and the polish round (PRs #1–#9 merged on 2026-10-07), live on GitHub Pages   |
+| PR #10 | Phase 7 improvements: tempo ladder, two-octave scales, B/E♭/A♭ fingerings, memory by ear |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -204,6 +205,19 @@ Phase 7 (scales, `claude/faz-7-gamlar-c3g8bj`):
   (spelled names for the report). Results: "Gam tekniği" and "Hafıza" cards. Badges: Merdiven Tırmanıcısı, Fil
   Hafızası, Gam Ustası. `window.__dpoMemory` for the smoke test.
 
+Phase 7 improvements (`claude/faz-7-iyilestirme-655r1z`, unit 5 now 24 lessons):
+
+- `rhythm/tempoLadder.ts`: `RhythmSpec.tempoLadder { rounds, stepBpm }` makes `BeatFrame` play the same plan in rounds
+  at rising tempos (`ladderTempos`). A round passes with a timing score ≥ `ROUND_PASS` (0.8); hearts carry over; all
+  rounds passed raises `settings.tempo[lessonId]` by `stepBpm` (`raisedBase`). `BeatFrame.report` now takes every
+  round's track; `ladderReport(rounds, meta, parts)` pairs hands per round. `SessionSummary.tempoLadder`, per-tempo
+  topics, "Tempo merdiveni" card, badge Hız Treni (`LessonOutcome.tempoRaised`).
+- `scaleFingering(tonic, hand, octaves)`: fingerings are cycles (`cycle` per degree, `first`/`last` for the end
+  tonics); B, E♭, A♭ added. `ScalePart.octaves: 2` gives 29-note runs; `Step.newPage` starts the way down on a new
+  page (`paginate` moved to `games/melody/session.ts`, also used by the evenness). Gam Merdiveni stays one octave.
+- `MemorySpec.listenOnly` (Kulaktan Hafıza): only the first note lights up, every run starts on the tonic
+  (`firstPosition`), falls back to lit keys when the piano samples did not load (`.memory-board[data-ear]`).
+
 Next: **phase 8, chords, inversions, arpeggios** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
@@ -211,8 +225,9 @@ the plan against the code, test, report with suggestions, and wait for the go be
 
 `scripts/smoke.mjs` plays real lessons in Chromium: the treble unit (drills, Nota Kuşu, Balon Patlatma, a lesson that
 runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
-all eighteen scale lessons (scale drills with one and two hands, four Gam Merdiveni runs at a faster tempo, two
-Melodi Hafızası games, one with a wrong key), a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
+all twenty-four scale lessons (scale drills with one and two hands and two octaves, four Gam Merdiveni runs at a faster
+tempo, two tempo ladders: one passed in three rounds whose raised tempo is checked on reopening, one with a late second
+round that stops the ladder; three Melodi Hafızası games, one with a wrong key, one by ear), a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
 `.staff-wrap[data-note]`, and keys are `.key[data-midi]`.
 
 ```bash

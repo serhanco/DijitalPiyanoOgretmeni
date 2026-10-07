@@ -69,6 +69,7 @@ export default function App() {
       stars: summary.stars,
       failed: summary.failed,
       rhythm: summary.timing !== undefined,
+      tempoRaised: !!summary.tempoLadder?.raisedTo,
     }
     const reward = useProfile.getState().completeLesson(outcome)
     const timing = summary.timing && {

@@ -73,6 +73,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Cila turu: 3/4, noktalı notalar (4 yeni ders), tempo hafızası, ritim XP etiketi, profilde ritim grafiği, iki klavyeye göre yardım                                                                | PR #6                           |
 | 2026-10-07 | Faz 6: fa anahtarı ünitesi (10 ders), iki el ünitesi (7 ders), büyük porte, Orta Do köprüsü, melodi dersleri, Nota Barmeni, ellere göre rapor ve iki el uyumu, 3 yeni rozet                      | PR #7                           |
 | 2026-10-07 | Faz 7: gamlar ünitesi (18 ders), doğru yazım ve donanım imi, parmak numaraları ve geçiş uyarıları, Gam Merdiveni, Melodi Hafızası, gam raporu (eşit tempo, geçişler, iki el uyumu), 3 yeni rozet | PR #9                           |
+| 2026-10-07 | Faz 7 iyileştirmeleri: Tempo Merdiveni (kalıcı tempo artışı), iki oktavlık gamlar, Si, Mi♭, La♭ parmak düzenleri, Kulaktan Hafıza, 6 yeni ders, "Hız Treni" rozeti                               | PR #10                          |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                          |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -87,6 +88,13 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   hafıza dersleri nota okuma istatistiğine girmez (notalar önceden bilinir). Serbest tempolu gam derslerinde "eşit
   tempo" notalar arası sürenin ne kadar sabit olduğudur; Gam Merdiveni'nde zamanlama metronoma göre ölçülür. Melodi
   Hafızası'nda yanlış tuş can götürür, doğru tuş gösterilir ve dizi kaldığı yerden sürer.
+
+- **Faz 7 iyileştirmeleri:** Serhan Faz 7'den sonra raporun önerilerini istedi ("faz 7 ve 8'i sırayla ayrı
+  thread'lerde çöz"). Tempo merdiveninde tur geçme eşiği zamanlama puanı %80 (Mükemmel 1, İyi 0,85, Erken/Geç 0,4);
+  kalpler turlar boyunca taşınır. Kalıcı artış yalnızca bütün turlar geçilince olur, böylece bir şanslı tur tempoyu
+  yükseltmez. Gam Merdiveni (merdiven oyunu) bir oktavda kaldı: iki oktav serbest tempolu gam derslerinde. Kulaktan
+  Hafıza'da diziler toniğe başlar ve ilk nota gösterilir, çünkü mutlak kulak olmadan ilk notayı duyarak bulmak
+  beklenemez.
 
 ## Açık konular
 

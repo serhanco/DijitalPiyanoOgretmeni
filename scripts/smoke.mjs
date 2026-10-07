@@ -135,40 +135,59 @@ async function playArcade(lessonTitle, shotName) {
 /**
  * Play a rhythm lesson: press Başla, then let the page itself press every
  * note's key on its beat (setTimeout in the page is far more precise than
- * round trips from here). `offsetMs` shifts every press.
+ * round trips from here). `offsetMs` shifts every press; `lateRound` plays
+ * that round of a tempo ladder 150 ms late. Returns the rounds played.
  */
-async function playBeat(lessonTitle, shotName, { offsetMs = 0, shotAt = 0.5, slower = 0, faster = 0 } = {}) {
+async function playBeat(
+  lessonTitle,
+  shotName,
+  { offsetMs = 0, shotAt = 0.5, slower = 0, faster = 0, lateRound = 0 } = {},
+) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
   await page.waitForSelector('.beat-start')
   for (let i = 0; i < slower; i++) await page.getByLabel('Yavaşlat').click()
   for (let i = 0; i < faster; i++) await page.getByLabel('Hızlandır').click()
   if (shotName) await page.screenshot({ path: `${out}/${shotName}-ready.png` })
   await page.click('.beat-start')
-  await page.waitForFunction(() => window.__dpoBeat && window.__dpoBeat !== window.__dpoPrevBeat)
-  const lengthMs = await page.evaluate((offset) => {
-    const t = window.__dpoBeat
-    window.__dpoPrevBeat = t
-    for (const r of t.records) {
-      if (r.rest) continue
-      // One pointer per key, so two hands can press at once.
-      const pointerId = 100 + r.target
-      window.setTimeout(
-        () => {
-          const el = document.querySelector(`.key[data-midi="${r.target}"]`)
-          el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId, isPrimary: true }))
-          window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId })), 40)
-        },
-        r.dueAt + offset - performance.now(),
-      )
+  let rounds = 0
+  for (;;) {
+    await page.waitForFunction(() => window.__dpoBeat && window.__dpoBeat !== window.__dpoPrevBeat)
+    rounds++
+    const lengthMs = await page.evaluate(
+      (offset) => {
+        const t = window.__dpoBeat
+        window.__dpoPrevBeat = t
+        for (const r of t.records) {
+          if (r.rest) continue
+          // One pointer per key, so two hands can press at once.
+          const pointerId = 100 + r.target
+          window.setTimeout(
+            () => {
+              const el = document.querySelector(`.key[data-midi="${r.target}"]`)
+              el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId, isPrimary: true }))
+              window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId })), 40)
+            },
+            r.dueAt + offset - performance.now(),
+          )
+        }
+        return t.endAt - performance.now()
+      },
+      offsetMs + (rounds === lateRound ? 150 : 0),
+    )
+    if (shotName && rounds === 1) {
+      await page.waitForTimeout(lengthMs * shotAt)
+      await page.screenshot({ path: `${out}/${shotName}.png` })
     }
-    return t.endAt - performance.now()
-  }, offsetMs)
-  if (shotName) {
-    await page.waitForTimeout(lengthMs * shotAt)
-    await page.screenshot({ path: `${out}/${shotName}.png` })
+    // A tempo ladder goes on with a new, faster track; anything else ends with the results.
+    const next = await page.waitForFunction(
+      () => (document.querySelector('.results') ? 'done' : window.__dpoBeat !== window.__dpoPrevBeat ? 'next' : null),
+      null,
+      { timeout: lengthMs + 10000 },
+    )
+    if ((await next.jsonValue()) === 'done') break
   }
-  await page.waitForSelector('.results', { timeout: lengthMs + 10000 })
   await page.waitForTimeout(800)
+  return rounds
 }
 
 /**
@@ -433,6 +452,49 @@ await back()
 await playBeat('Merdiven: Minörler', '', { faster: 8 })
 await dismissOverlay()
 await page.screenshot({ path: `${out}/results-ladder-minor.png`, fullPage: true })
+await back()
+
+// Beyond phase 7: tempo ladders, B and E♭ fingerings, two octaves, memory by ear.
+const tempoRounds = await playBeat('Tempo Merdiveni', 'game-tempo', { faster: 4, shotAt: 0.4 })
+if (tempoRounds !== 3) errors.push(`Tempo ladder played ${tempoRounds} rounds instead of 3`)
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-tempo.png`, fullPage: true })
+const tempoCard = await page.textContent('.tempo-card')
+if (!tempoCard?.includes('92 BPM’den başlıyorsun')) errors.push(`Tempo card: ${tempoCard}`)
+const tempoTopics = await page.textContent('.results')
+if (!tempoTopics?.includes('104 BPM')) errors.push('Tempo ladder report has no per-tempo topics')
+await back()
+// The raised tempo is remembered.
+await page.getByRole('button', { name: 'Tempo Merdiveni', exact: true }).click()
+const ladderLine = await page.textContent('.tempo-ladder')
+if (!ladderLine?.includes('92 → 104 → 116')) errors.push(`Raised tempo ladder: ${ladderLine}`)
+await page.getByLabel('Dersten çık').click()
+await page.waitForTimeout(400)
+await playMelody('Si ve Mi♭ Majör', 'scale-b-left', { shotAfter: 18 })
+await dismissOverlay()
+await back()
+await playMelody('İki Oktav', 'scale-two-octaves', { shotAfter: 10 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-two-octaves.png`, fullPage: true })
+const twoOctaves = await page.textContent('.results')
+if (!twoOctaves?.includes('Do Majör · sol el · 2 oktav')) errors.push('Two-octave report has no per-scale topics')
+await back()
+await playMemory('Kulaktan Hafıza', 'game-memory-ear')
+const firstNotes = await page.evaluate(() => window.__dpoMemory.rounds.map((r) => r[0].target))
+if (firstNotes.some((m) => m !== 60)) errors.push(`Ear memory runs start on ${firstNotes}`)
+await dismissOverlay()
+await back()
+await playMelody('İki Oktav: İki El', 'scale-two-octaves-hands', { gapMs: 30, shotAfter: 20 })
+await dismissOverlay()
+const twoOctaveSync = await page.textContent('.sync')
+if (!twoOctaveSync?.includes('58 tanesinde')) errors.push(`Two-octave sync report: ${twoOctaveSync}`)
+await back()
+const failedRounds = await playBeat('Tempo Merdiveni: İki El', 'game-tempo-hands', { faster: 4, lateRound: 2 })
+if (failedRounds !== 2) errors.push(`Tempo ladder with a late round played ${failedRounds} rounds instead of 2`)
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-tempo-failed.png`, fullPage: true })
+const failedCard = await page.textContent('.tempo-card')
+if (!failedCard?.includes('Tempo şimdilik aynı kalıyor')) errors.push(`Failed tempo card: ${failedCard}`)
 await back()
 await page.waitForTimeout(400)
 await page

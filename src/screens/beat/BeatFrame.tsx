@@ -1,6 +1,7 @@
 // Everything rhythm activities share: tempo picker, count-in, metronome,
 // beat indicator, input with latency correction, judgement pop-ups, the
-// mascot and the report at the end. Each activity only draws its playfield.
+// mascot and the report at the end. A tempo ladder plays the same plan in
+// rounds of rising tempo. Each activity only draws its playfield.
 
 import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type Metronome, prepareMetronome, startMetronome } from '../../audio/metronome'
@@ -15,6 +16,14 @@ import { solfegeName } from '../../music/notes'
 import { correctedTime } from '../../rhythm/calibration'
 import { generateBars, rhythmBeats, type RhythmValue } from '../../rhythm/rhythm'
 import { summarizeRhythm } from '../../rhythm/summary'
+import {
+  ladderTempos,
+  nextRound,
+  ROUND_PASS,
+  scoreRound,
+  tempoLadderSummary,
+  tempoTopics,
+} from '../../rhythm/tempoLadder'
 import { beatMs, clampBpm, JUDGEMENT_LABELS, type Judgement, MAX_BPM, MIN_BPM, onTime } from '../../rhythm/timing'
 import { BeatTrack, type TrackEvent } from '../../rhythm/track'
 import { useSettings } from '../../state/settings'
@@ -24,6 +33,8 @@ const COUNT_IN_BARS = 1
 const FINISH_DELAY_MS = 900
 /** Cheer every this many on-time notes in a row. */
 const COMBO_STEP = 8
+/** Pause between the rounds of a tempo ladder. */
+const ROUND_PAUSE_MS = 1800
 
 export interface FieldProps {
   spec: RhythmSpec
@@ -46,8 +57,8 @@ interface Props {
   renderField: (props: FieldProps) => ReactNode
   /** Fixed targets (a scale) instead of random bars from the lesson's rhythm spec. */
   plan?: { bars: RhythmValue[][]; skill: SkillProvider }
-  /** Adds activity-specific parts to the rhythm report. */
-  report?: (track: BeatTrack, summary: SessionSummary) => SessionSummary
+  /** Adds activity-specific parts to the rhythm report; one track per round played. */
+  report?: (tracks: BeatTrack[], summary: SessionSummary) => SessionSummary
   /** Note names for messages (a scale says Si♭, not La#). */
   nameOf?: (midi: number) => string
 }
@@ -58,7 +69,17 @@ interface Popup {
   text: string
 }
 
-function BeatHud({ track, now, spec }: { track: BeatTrack | null; now: number; spec: RhythmSpec }) {
+function BeatHud({
+  track,
+  now,
+  spec,
+  round,
+}: {
+  track: BeatTrack | null
+  now: number
+  spec: RhythmSpec
+  round: string | null
+}) {
   const beat = track ? track.beatAt(now) : null
   const whole = beat === null ? null : Math.floor(beat)
   const inBar = whole === null ? -1 : ((whole % spec.beatsPerBar) + spec.beatsPerBar) % spec.beatsPerBar
@@ -66,7 +87,10 @@ function BeatHud({ track, now, spec }: { track: BeatTrack | null; now: number; s
   const bar = whole !== null && whole >= 0 ? Math.min(spec.bars, Math.floor(whole / spec.beatsPerBar) + 1) : 0
   return (
     <div className="beat-hud" aria-live="off">
-      <span className="beat-tempo">Tempo {track?.bpm ?? spec.bpm}</span>
+      <span className="beat-tempo">
+        Tempo {track?.bpm ?? spec.bpm}
+        {round && <span className="beat-round"> · {round}</span>}
+      </span>
       <div className="beat-dots" data-beat={inBar}>
         {Array.from({ length: spec.beatsPerBar }, (_, i) => (
           <span key={i} className={`beat-dot ${i === 0 ? 'down' : ''} ${i === inBar ? 'on' : ''}`} />
@@ -127,6 +151,12 @@ export function BeatFrame({
   const [popup, setPopup] = useState<Popup | null>(null)
   const [flash, setFlash] = useState<{ midi: number; mark: KeyMark } | null>(null)
   const [starting, setStarting] = useState(false)
+  const [roundIndex, setRoundIndex] = useState(0)
+  const ladder = spec.tempoLadder
+  const tempos = useMemo(() => (ladder ? ladderTempos(bpm, ladder) : [bpm]), [ladder, bpm])
+  /** Finished rounds of a tempo ladder (just one otherwise). */
+  const tracksRef = useRef<BeatTrack[]>([])
+  const roundTimer = useRef(0)
   const metronomeRef = useRef<Metronome | null>(null)
   const finished = useRef(false)
   const onFinishRef = useRef(onFinish)
@@ -139,34 +169,71 @@ export function BeatFrame({
   // Warm up Tone.js while the player reads the instructions.
   useEffect(() => void import('tone').catch(() => undefined), [])
 
+  /** Count in and play round `index` of `tempos`; hearts carry over from the round before. */
+  const playRound = useCallback(
+    async (index: number, heartsLeft: number | null) => {
+      const roundBpm = tempos[index]
+      await prepareMetronome()
+      if (finished.current) return
+      setRoundIndex(index)
+      const b = beatMs(roundBpm)
+      const countIn = spec.beatsPerBar * COUNT_IN_BARS
+      const startAt = performance.now() + LEAD_MS + countIn * b
+      const t = new BeatTrack(skill, { bpm: roundBpm, startAt, hearts: heartsLeft })
+      trackRef.current = t
+      ;(window as unknown as { __dpoBeat?: BeatTrack }).__dpoBeat = t
+      setTrack(t)
+      setMessage(howTo)
+      metronomeRef.current = await startMetronome({
+        bpm: roundBpm,
+        beatsPerBar: spec.beatsPerBar,
+        firstClickAt: startAt - countIn * b,
+        fromBeat: -countIn,
+        toBeat: Math.ceil(rhythmBeats(bars)) - 1,
+      })
+      // The game may have ended (or been left) while the metronome was loading.
+      if (finished.current || trackRef.current !== t) metronomeRef.current.stop()
+    },
+    [spec, skill, bars, howTo, tempos],
+  )
+
   const start = useCallback(async () => {
     if (trackRef.current || starting) return
     setStarting(true)
     set({ tempo: { ...useSettings.getState().tempo, [lesson.id]: bpm } })
-    await prepareMetronome()
-    const b = beatMs(bpm)
-    const countIn = spec.beatsPerBar * COUNT_IN_BARS
-    const startAt = performance.now() + LEAD_MS + countIn * b
-    const t = new BeatTrack(skill, { bpm, startAt, hearts })
-    trackRef.current = t
-    ;(window as unknown as { __dpoBeat?: BeatTrack }).__dpoBeat = t
-    setTrack(t)
-    setMessage(howTo)
-    metronomeRef.current = await startMetronome({
-      bpm,
-      beatsPerBar: spec.beatsPerBar,
-      firstClickAt: startAt - countIn * b,
-      fromBeat: -countIn,
-      toBeat: Math.ceil(rhythmBeats(bars)) - 1,
-    })
-    // The game may have ended (or been left) while the metronome was loading.
-    if (finished.current || trackRef.current !== t) metronomeRef.current.stop()
-  }, [bpm, spec, skill, hearts, bars, howTo, starting, set, lesson.id])
+    await playRound(0, hearts)
+  }, [bpm, hearts, starting, set, lesson.id, playRound])
+
+  /** The report of every round played. */
+  const finish = useCallback(() => {
+    const tracks = tracksRef.current
+    const last = tracks[tracks.length - 1]
+    const summary = summarizeRhythm(
+      tracks.flatMap((t) => t.attempted),
+      {
+        failed: last.failed,
+        pitched: !spec.anyKey && !reportRef.current,
+        stray: tracks.reduce((n, t) => n + t.stray, 0),
+        bestCombo: Math.max(...tracks.map((t) => t.bestCombo)),
+        bpm: last.bpm,
+      },
+    )
+    let out = reportRef.current ? reportRef.current(tracks, summary) : summary
+    if (ladder) {
+      const tempoLadder = tempoLadderSummary(tracks, tempos, ladder)
+      out = { ...out, tempoLadder, perCategory: [...tempoTopics(tracks), ...out.perCategory] }
+      // Every round passed: next time the ladder starts one step higher.
+      if (tempoLadder.raisedTo !== null)
+        set({ tempo: { ...useSettings.getState().tempo, [lesson.id]: tempoLadder.raisedTo } })
+    }
+    onFinishRef.current(out)
+  }, [spec.anyKey, ladder, tempos, set, lesson.id])
 
   useEffect(
     () => () => {
       finished.current = true
       metronomeRef.current?.stop()
+      clearTimeout(roundTimer.current)
     },
     [],
   )
@@ -215,33 +282,37 @@ export function BeatFrame({
     [react],
   )
 
-  // The clock: settle passed notes and redraw every frame.
+  // The clock: settle passed notes and redraw every frame. A finished round
+  // either leads to the next, faster one or ends the lesson.
   useEffect(() => {
     if (!track) return
     let raf = 0
+    let over = false
     const loop = () => {
       const t = performance.now()
       react(track.update(t))
       setNow(t)
-      if (track.done && !finished.current) {
-        finished.current = true
+      if (track.done && !over) {
+        over = true
         metronomeRef.current?.stop()
-        window.setTimeout(() => {
-          const summary = summarizeRhythm(track.attempted, {
-            failed: track.failed,
-            pitched: !spec.anyKey && !reportRef.current,
-            stray: track.stray,
-            bestCombo: track.bestCombo,
-            bpm: track.bpm,
-          })
-          onFinishRef.current(reportRef.current ? reportRef.current(track, summary) : summary)
-        }, FINISH_DELAY_MS)
+        tracksRef.current = [...tracksRef.current, track]
+        const rounds = tracksRef.current.map(scoreRound)
+        const next = nextRound(rounds, tempos)
+        if (next !== null) {
+          setMessage(`✓ ${track.bpm} BPM geçildi! Şimdi ${next} BPM, biraz daha hızlı.`)
+          setMood((m) => ({ mood: 'cheer', pulse: m.pulse + 1 }))
+          const index = rounds.length
+          roundTimer.current = window.setTimeout(() => void playRound(index, track.hearts), ROUND_PAUSE_MS)
+        } else {
+          finished.current = true
+          window.setTimeout(finish, FINISH_DELAY_MS)
+        }
       }
-      if (!finished.current) raf = requestAnimationFrame(loop)
+      if (!over) raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [track, react, spec.anyKey])
+  }, [track, react, tempos, playRound, finish])
 
   useEffect(() => {
     if (mood.mood === 'idle') return
@@ -256,6 +327,8 @@ export function BeatFrame({
   }, [flash])
 
   const marks: Partial<Record<number, KeyMark>> = flash ? { [flash.midi]: flash.mark } : {}
+  const roundLabel = ladder ? `Tur ${roundIndex + 1}/${tempos.length}` : null
+  const progress = (roundIndex + (track?.progress ?? 0)) / tempos.length
   const noLatency = Object.values(latency).every((v) => v === 0) && Object.keys(deviceLatency).length === 0
 
   return (
@@ -264,8 +337,8 @@ export function BeatFrame({
         <button className="icon-btn" onClick={onExit} aria-label="Dersten çık">
           ✕
         </button>
-        <div className="progress" role="progressbar" aria-valuenow={Math.round((track?.progress ?? 0) * 100)}>
-          <div className="progress-fill" style={{ width: `${(track?.progress ?? 0) * 100}%` }} />
+        <div className="progress" role="progressbar" aria-valuenow={Math.round(progress * 100)}>
+          <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
         </div>
         {hearts !== null ? (
           <span className="hearts" aria-label={`${track?.hearts ?? hearts} can`}>
@@ -283,7 +356,7 @@ export function BeatFrame({
       </div>
 
       {track ? (
-        <BeatHud track={track} now={now} spec={spec} />
+        <BeatHud track={track} now={now} spec={spec} round={roundLabel} />
       ) : (
         <div className="card beat-ready">
           <div className="tempo-row">
@@ -322,6 +395,12 @@ export function BeatFrame({
             <span className="toggle-track" aria-hidden />
             <span>Metronom sesi</span>
           </label>
+          {ladder && (
+            <p className="tempo-ladder small">
+              🚀 Tempo merdiveni: <b>{tempos.join(' → ')} BPM</b>. Her turu %{Math.round(ROUND_PASS * 100)} ile geçersen
+              tempo artar; hepsini geçersen bir dahaki sefere {tempos[0] + ladder.stepBpm} BPM’den başlarsın.
+            </p>
+          )}
           <p className="small muted">
             Önce {spec.beatsPerBar} vuruş sayılır, sonra başla.
             {noLatency && ' Bluetooth piyanoyla çalıyorsan ana ekrandaki gecikme ayarını bir kez yap.'}
