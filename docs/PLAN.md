@@ -18,7 +18,7 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5) |
 | Cila turu (Faz 5 sonrası)                     | Birleşti (PR #6) |
 | 6 Fa anahtarı ve iki el                       | Birleşti (PR #7) |
-| 7 Gamlar                                      | PR #9 açık       |
+| 7 Gamlar                                      | Birleşti (PR #9) |
 | 8 ve sonrası                                  | Başlanmadı       |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).

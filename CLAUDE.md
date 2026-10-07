@@ -79,10 +79,9 @@ Principles:
 
 ## Current state and next steps
 
-| Branch                       | State                                                                                  |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| `main`                       | Phases 0–6 and the polish round (PRs #1–#8 merged on 2026-10-07), live on GitHub Pages |
-| `claude/faz-7-gamlar-c3g8bj` | Phase 7, scales (PR #9)                                                                |
+| Branch | State                                                                                  |
+| ------ | -------------------------------------------------------------------------------------- |
+| `main` | Phases 0–7 and the polish round (PRs #1–#9 merged on 2026-10-07), live on GitHub Pages |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
