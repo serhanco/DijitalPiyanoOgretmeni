@@ -1,6 +1,7 @@
 // Turns a finished session into the report shown on the results screen.
 
 import { type Clef, PLACEMENT_LABELS, type StaffPlacement, staffPlacement } from '../../music/notes'
+import type { Judgement } from '../../rhythm/timing'
 import { firstTryOk, type PromptRecord } from './session'
 
 export interface NoteStat {
@@ -14,7 +15,8 @@ export interface NoteStat {
 }
 
 export interface CategoryStat {
-  placement: StaffPlacement
+  /** Topic id: a staff placement, or a rhythm value for rhythm lessons. */
+  id: string
   label: string
   shown: number
   firstTry: number
@@ -36,9 +38,28 @@ export interface SessionSummary {
   weakest: NoteStat[]
   /** Short encouragement or advice for the player. */
   message: string
+  /** Rhythm lessons: how well the presses fell on the beat. */
+  timing?: TimingSummary
 }
 
-function avg(values: number[]): number | null {
+export interface TimingSummary {
+  counts: Record<Judgement, number>
+  /** Notes to play (rests not included). */
+  notes: number
+  /** Mean signed offset of the played notes: negative = early. */
+  meanOffsetMs: number | null
+  meanAbsOffsetMs: number | null
+  /** Every played note's offset, for the spread chart. */
+  offsets: number[]
+  restsKept: number
+  rests: number
+  /** Presses near no note. */
+  stray: number
+  bestCombo: number
+  bpm: number
+}
+
+export function avg(values: number[]): number | null {
   return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null
 }
 
@@ -105,7 +126,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     .filter((p) => categories.has(p))
     .map((p) => {
       const c = categories.get(p)!
-      return { placement: p, label: PLACEMENT_LABELS[p], ...c, accuracy: c.firstTry / c.shown }
+      return { id: p, label: PLACEMENT_LABELS[p], ...c, accuracy: c.firstTry / c.shown }
     })
 
   const total = records.length

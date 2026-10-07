@@ -27,6 +27,11 @@ export function PixiStage({ create, className, children }: Props) {
     let scene: Scene | null = null
     let cancelled = false
     let ready = false
+    // Pixi's resizeTo only listens to window resizes; layouts change without one.
+    const observer = new ResizeObserver(() => {
+      if (ready && !cancelled) app.resize()
+    })
+    observer.observe(el)
 
     app
       .init({
@@ -50,6 +55,7 @@ export function PixiStage({ create, className, children }: Props) {
 
     return () => {
       cancelled = true
+      observer.disconnect()
       scene?.destroy?.()
       if (ready) app.destroy(true, { children: true })
     }

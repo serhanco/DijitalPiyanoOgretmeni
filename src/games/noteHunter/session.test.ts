@@ -64,7 +64,7 @@ describe('summarize', () => {
     expect(s.avgReactionMs).toBe(1000)
     expect(s.totalMistakes).toBe(3)
     expect(s.stars).toBe(1)
-    expect(s.perCategory.map((c) => [c.placement, c.accuracy])).toEqual([
+    expect(s.perCategory.map((c) => [c.id, c.accuracy])).toEqual([
       ['line', 1],
       ['space', 0],
       ['outside', 0],

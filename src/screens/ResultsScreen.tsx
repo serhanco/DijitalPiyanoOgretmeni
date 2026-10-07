@@ -1,5 +1,6 @@
 import type { NoteLesson } from '../games/noteHunter/lessons'
-import type { SessionSummary } from '../games/noteHunter/summary'
+import type { SessionSummary, TimingSummary } from '../games/noteHunter/summary'
+import { describeOffset, JUDGEMENT_LABELS, JUDGEMENTS } from '../rhythm/timing'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { sfx } from '../audio/sfx'
@@ -29,6 +30,64 @@ function Bar({ value }: { value: number }) {
     <div className="bar">
       <div className={`bar-fill ${tone}`} style={{ width: `${Math.max(value, 0.02) * 100}%` }} />
     </div>
+  )
+}
+
+/** Timing distribution and how early or late the player tends to be. */
+function TimingCard({ timing }: { timing: TimingSummary }) {
+  const max = Math.max(1, ...JUDGEMENTS.map((j) => timing.counts[j]))
+  const mean = timing.meanOffsetMs
+  // The strip spans ±200 ms around the beat.
+  const pos = (ms: number) => `${50 + Math.max(-50, Math.min(50, ms / 4))}%`
+  return (
+    <section className="card timing-card">
+      <h2>Zamanlama</h2>
+      <div className="timing-bars">
+        {JUDGEMENTS.map((j) => (
+          <div key={j} className="timing-row">
+            <span>{JUDGEMENT_LABELS[j]}</span>
+            <div className="bar">
+              <div className={`bar-fill judge-${j}`} style={{ width: `${(timing.counts[j] / max) * 100}%` }} />
+            </div>
+            <span className="topic-pct">{timing.counts[j]}</span>
+          </div>
+        ))}
+      </div>
+      {mean !== null && (
+        <>
+          <p className="timing-mean">
+            Ortalama sapma: <b>{describeOffset(mean)}</b>
+            {timing.meanAbsOffsetMs !== null && (
+              <> · vuruştan ortalama uzaklık {Math.round(timing.meanAbsOffsetMs)} ms</>
+            )}
+          </p>
+          <div className="offset-strip" aria-hidden>
+            <span className="offset-zone" />
+            <span className="offset-zero" />
+            {timing.offsets.map((o, i) => (
+              <span key={i} className="offset-dot" style={{ left: pos(o) }} />
+            ))}
+            <span className="offset-mean" style={{ left: pos(mean) }} />
+          </div>
+          <p className="small muted offset-axis">
+            <span>erken</span>
+            <span>vuruş</span>
+            <span>geç</span>
+          </p>
+        </>
+      )}
+      <p className="small muted">
+        Tempo {timing.bpm} BPM
+        {timing.rests > 0 && (
+          <>
+            {' '}
+            · {timing.rests} esin {timing.restsKept} tanesinde sustun
+          </>
+        )}
+        {timing.stray > 0 && <> · {timing.stray} fazladan basış</>}
+        {timing.bestCombo >= 3 && <> · en uzun seri {timing.bestCombo}</>}
+      </p>
+    </section>
   )
 }
 
@@ -142,25 +201,46 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
         </section>
       )}
 
-      <div className="stat-row">
-        <div className="stat">
-          <span className="stat-value">{pct(summary.accuracy)}</span>
-          <span className="stat-label">İlk denemede doğru</span>
+      {summary.timing ? (
+        <div className="stat-row">
+          <div className="stat">
+            <span className="stat-value">{pct(summary.accuracy)}</span>
+            <span className="stat-label">Ritim puanı</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">
+              {pct((summary.timing.counts.perfect + summary.timing.counts.good) / Math.max(1, summary.timing.notes))}
+            </span>
+            <span className="stat-label">Zamanında</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{summary.timing.counts.miss}</span>
+            <span className="stat-label">Kaçırılan</span>
+          </div>
         </div>
-        <div className="stat">
-          <span className="stat-value">{secs(summary.avgReactionMs)}</span>
-          <span className="stat-label">Ortalama tepki</span>
+      ) : (
+        <div className="stat-row">
+          <div className="stat">
+            <span className="stat-value">{pct(summary.accuracy)}</span>
+            <span className="stat-label">İlk denemede doğru</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{secs(summary.avgReactionMs)}</span>
+            <span className="stat-label">Ortalama tepki</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{summary.totalMistakes}</span>
+            <span className="stat-label">Yanlış basış</span>
+          </div>
         </div>
-        <div className="stat">
-          <span className="stat-value">{summary.totalMistakes}</span>
-          <span className="stat-label">Yanlış basış</span>
-        </div>
-      </div>
+      )}
+
+      {summary.timing && <TimingCard timing={summary.timing} />}
 
       <section className="card">
         <h2>Konulara göre başarı</h2>
         {summary.perCategory.map((c) => (
-          <div key={c.placement} className="topic-row">
+          <div key={c.id} className="topic-row">
             <span>{c.label}</span>
             <Bar value={c.accuracy} />
             <span className="topic-pct">{pct(c.accuracy)}</span>
@@ -187,20 +267,22 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
         </section>
       )}
 
-      <section className="card">
-        <h2>Nota nota sonuçlar</h2>
-        <div className="note-grid">
-          {summary.perNote.map((n) => (
-            <div key={n.midi} className="note-cell">
-              <span className="note-name">{solfegeName(n.midi)}</span>
-              <Bar value={n.accuracy} />
-              <span className="small muted">
-                {pct(n.accuracy)} · {secs(n.avgReactionMs)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {summary.perNote.length > 0 && (
+        <section className="card">
+          <h2>Nota nota sonuçlar</h2>
+          <div className="note-grid">
+            {summary.perNote.map((n) => (
+              <div key={n.midi} className="note-cell">
+                <span className="note-name">{solfegeName(n.midi)}</span>
+                <Bar value={n.accuracy} />
+                <span className="small muted">
+                  {pct(n.accuracy)} · {secs(n.avgReactionMs)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="actions">
         <button className="btn btn-secondary" onClick={onHome}>

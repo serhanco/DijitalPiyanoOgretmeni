@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_LESSONS, buildReviewLesson, isUnlocked, weakestNotes } from './curriculum'
+import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from './curriculum'
 
 describe('isUnlocked', () => {
-  it('opens the first lesson and each next one after a star', () => {
-    const [first, second, third] = ALL_LESSONS
+  it('opens the first lesson of each unit and each next one after a star', () => {
+    const [first, second, third] = UNITS[0].lessons
     const stars: Record<string, number> = { [first.id]: 1 }
     const best = (id: string) => stars[id] ?? 0
     expect(isUnlocked(first.id, best)).toBe(true)
     expect(isUnlocked(second.id, best)).toBe(true)
     expect(isUnlocked(third.id, best)).toBe(false)
     expect(isUnlocked('nope', best)).toBe(false)
+    const [rhythm1, rhythm2] = UNITS[1].lessons
+    expect(isUnlocked(rhythm1.id, best)).toBe(true)
+    expect(isUnlocked(rhythm2.id, best)).toBe(false)
   })
 })
 

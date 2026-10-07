@@ -11,12 +11,20 @@ import { useSettings } from '../state/settings'
 interface Props {
   onStart: (lesson: NoteLesson) => void
   onProfile: () => void
+  onCalibrate: () => void
 }
 
 /** Horizontal offsets that make the lesson path zigzag, Duolingo style. */
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
-const KIND_ICON: Record<LessonKind, string> = { drill: '♪', bird: '🐦', balloon: '🎈' }
+const KIND_ICON: Record<LessonKind, string> = {
+  drill: '♪',
+  bird: '🐦',
+  balloon: '🎈',
+  rhythm: '🎵',
+  dino: '🦖',
+  drum: '🥁',
+}
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -28,7 +36,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   )
 }
 
-function Settings() {
+function Settings({ onCalibrate }: { onCalibrate: () => void }) {
   const settings = useSettings()
   const { dailyGoal, setDailyGoal } = useProfile()
   return (
@@ -41,6 +49,12 @@ function Settings() {
             {xp} XP
           </button>
         ))}
+      </div>
+      <div className="goal-picker">
+        <span>Ritim gecikmesi</span>
+        <button className="pill" onClick={onCalibrate}>
+          ⏱ Ölç ve ayarla
+        </button>
       </div>
       <Toggle
         label="Rahat mod: hata yapınca can gitmesin"
@@ -81,7 +95,7 @@ function Settings() {
   )
 }
 
-export function HomeScreen({ onStart, onProfile }: Props) {
+export function HomeScreen({ onStart, onProfile, onCalibrate }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
   const [weak, setWeak] = useState<number[]>([])
@@ -121,6 +135,12 @@ export function HomeScreen({ onStart, onProfile }: Props) {
             <p>{unit.comingSoon ? 'Yakında' : unit.subtitle}</p>
           </header>
 
+          {unit.id === 'rhythm' && (
+            <button className="calib-tip" onClick={onCalibrate}>
+              ⏱ Bluetooth piyanoyla mı çalışıyorsun? Önce <b>gecikme ayarını</b> yap.
+            </button>
+          )}
+
           {!unit.comingSoon && (
             <div className="path">
               {unit.lessons.map((lesson, i) => {
@@ -158,29 +178,31 @@ export function HomeScreen({ onStart, onProfile }: Props) {
                 )
               })}
 
-              <div
-                className="path-step"
-                style={{ transform: `translateX(${ZIGZAG[unit.lessons.length % ZIGZAG.length]}px)` }}
-              >
-                <button
-                  className={`node review ${weak.length ? 'open' : 'locked'}`}
-                  onClick={() =>
-                    weak.length
-                      ? onStart(buildReviewLesson(unit.lessons[0].clef, weak))
-                      : setToast('Birkaç ders bitirince zayıf notalarını burada çalışabilirsin.')
-                  }
-                  aria-label="Zayıf notalar tekrarı"
+              {unit.review && (
+                <div
+                  className="path-step"
+                  style={{ transform: `translateX(${ZIGZAG[unit.lessons.length % ZIGZAG.length]}px)` }}
                 >
-                  🏋️
-                </button>
-                <span className="node-title">Zayıf Notalar</span>
-              </div>
+                  <button
+                    className={`node review ${weak.length ? 'open' : 'locked'}`}
+                    onClick={() =>
+                      weak.length
+                        ? onStart(buildReviewLesson(unit.lessons[0].clef, weak))
+                        : setToast('Birkaç ders bitirince zayıf notalarını burada çalışabilirsin.')
+                    }
+                    aria-label="Zayıf notalar tekrarı"
+                  >
+                    🏋️
+                  </button>
+                  <span className="node-title">Zayıf Notalar</span>
+                </div>
+              )}
             </div>
           )}
         </section>
       ))}
 
-      <Settings />
+      <Settings onCalibrate={onCalibrate} />
 
       {toast && (
         <div className="toast" role="status">

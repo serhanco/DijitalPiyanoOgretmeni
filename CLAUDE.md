@@ -80,6 +80,9 @@ Principles:
 | `main`               | README, docs, CLAUDE.md only                                        |
 | `faz-1-cekirdek`     | PR #1: phases 0 + 1                                                 |
 | `faz-2-oyunlastirma` | PR #2: phase 2, stacked on `faz-1-cekirdek` (base branch of the PR) |
+| `faz-3-karakterler`  | PR #3: phase 3, stacked on `faz-2-oyunlastirma`                     |
+| `faz-4-mini-oyunlar` | PR #4: phase 4, stacked on `faz-3-karakterler`                      |
+| `faz-5-ritim-5xfbrn` | phase 5 PR, stacked on `faz-4-mini-oyunlar`                         |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -117,15 +120,38 @@ Phase 4 (done on `faz-4-mini-oyunlar`):
 - Lessons have `kind: 'drill' | 'bird' | 'balloon'`; the treble unit now mixes drills and games (map icons ♪ 🐦 🎈).
 - `window.__dpoArcade` exposes the running game so the smoke test can play it.
 
-Next: **phase 5, rhythm and timing** (see `docs/PLAN.md`): metronome on `Tone.Transport`, timing windows, Bluetooth
-latency calibration, rhythm exercises, then **Dino Koşusu** (Chrome Dino-like: obstacles on the beat) and **Ritim
-Davulcusu** as new arcade games on the same engine pattern. A rhythm skill needs targets with a time
-(`{ midi, beat }`), so extend `SkillTarget` rather than replacing it.
+Phase 5 (done on `faz-5-ritim-5xfbrn`):
+
+- `src/rhythm/`: `rhythm.ts` (values `h q e qr`, `parseRhythm`, `generateBars`: paired eighths, halves on strong beats,
+  no leading or double rests), `timing.ts` (Mükemmel ±40 ms, İyi ±90 ms, Erken/Geç up to the note window, Kaçırıldı),
+  `track.ts` (**`BeatTrack`**: the pure engine of every rhythm activity; `press(midi, time)` / `update(now)` return
+  `hit | miss | wrong | rest-kept | stray` events; a note's window is min(220 ms, half the gap to its neighbours);
+  presses during the count-in are ignored; a wrong key costs no heart, the miss that follows does; playing into a rest
+  breaks it), `summary.ts` (`summarizeRhythm`: same `SessionSummary` plus `timing` with the distribution, mean signed
+  offset, offsets, rests kept; topics are rhythm values; accuracy is weighted 1 / 0.85 / 0.4 / 0),
+  `calibration.ts` (median-filtered mean tap offset, per input source), `lessons.ts` (unit 2, nine lessons)
+- `SkillTarget` gained optional `beat` and `value`; `rhythmSkill()` (with `anyKey` for timing-only lessons)
+- `src/audio/metronome.ts`: clicks on `Tone.Transport`, scheduled on the audio clock so they sound at the engine's
+  `performance.now()` beat times (minus `outputLatency`). Games never depend on audio: the engine clock is
+  `performance.now()`, the metronome is only sound.
+- `settings.latency` (`{ midi, screen, computer }` ms) is subtracted from presses (`correctedTime`); `settings.metronome`
+- `screens/beat/BeatFrame.tsx`: shared tempo picker, count-in, beat dots, input, judgement pop-ups, mascot, report.
+  `RhythmScreen` (VexFlow one-line rhythm notation, playhead, coloured notes, two bars per page) and
+  `BeatArcadeScreen` (**Dino Koşusu** `games/arcade/dino/`, **Ritim Davulcusu** `games/arcade/drum/`; engine.ts holds
+  the pure geometry, scene.ts draws by reading the track ref every frame) only draw the playfield.
+- `CalibrationScreen` (from the rhythm unit tip and Settings); results show a timing card (distribution, mean
+  early/late, offset strip). Rhythm sessions skip the per-note statistics. New badge "Metronom Gibi".
+- The first lesson of every unit is open (`isUnlocked` is per unit); `Unit.review` marks units with a weak-note node.
+- `PixiStage` resizes with a `ResizeObserver`; `window.__dpoBeat` / `__dpoCalibration` expose state for the smoke test.
+
+Next: **phase 6, bass clef and two hands** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
 
-`scripts/smoke.mjs` plays real lessons in Chromium: a perfect "İlk Adımlar", a "Bir Oktav" that runs out of hearts,
-then checks the map, the profile and that progress survives a reload. The staff exposes the current note as
+`scripts/smoke.mjs` plays real lessons in Chromium: the treble unit (drills, Nota Kuşu, Balon Patlatma, a lesson that
+runs out of hearts), then six rhythm lessons (the page presses keys on each beat with `setTimeout`, one run 60 ms late),
+a latency calibration that must measure 30 ms, the profile, and that progress survives a reload. The staff exposes the current note as
 `.staff-wrap[data-note]`, and keys are `.key[data-midi]`.
 
 ```bash
@@ -138,6 +164,7 @@ that error.
 
 ## Known gaps
 
+- Rhythm timing is only tested with simulated presses; real MIDI and touch latency still need the owner's calibration.
 - Not yet tested with a real MIDI keyboard. Bluetooth MIDI on Android needs pairing through a helper app; on macOS via
   Audio MIDI Setup; on Windows USB is most reliable. iOS has no Web MIDI.
 - The owner's piano model is unknown.
