@@ -241,6 +241,93 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
   return { errors, warnings, facts }
 }
 
+/**
+ * Back on the map after a lesson: the lesson's node is on screen, centred unless the page
+ * cannot scroll that far, and marked as the one just played.
+ */
+function mapPlace(title) {
+  const vh = window.innerHeight
+  const node = [...document.querySelectorAll('.home .node')].find((n) => n.getAttribute('aria-label') === title)
+  const step = node?.closest('.path-step')
+  if (!step) return { errors: [`Haritada "${title}" düğmesi yok`], warnings: [] }
+  const r = node.getBoundingClientRect()
+  const offset = Math.round(r.top + r.height / 2 - vh / 2)
+  const maxScroll = document.documentElement.scrollHeight - vh
+  const clamped = window.scrollY <= 1 || window.scrollY >= maxScroll - 1
+  const errors = []
+  const warnings = []
+  if (r.top < 0 || r.bottom > vh)
+    errors.push(`Haritaya dönünce "${title}" ekranda değil (üst kenarı ${Math.round(r.top)} px, ekran ${vh} px)`)
+  else if (!clamped && Math.abs(offset) > vh * 0.15)
+    errors.push(`Haritaya dönünce "${title}" ortada değil: ortadan ${offset} px`)
+  if (!step.classList.contains('back')) warnings.push(`"${title}" az önce oynanan ders diye işaretlenmedi`)
+  return { errors, warnings, facts: { returnOffset: offset, scrollY: Math.round(window.scrollY) } }
+}
+
+/** Wait until the map stops gliding (the smooth scroll back to the lesson). */
+async function settle(page) {
+  await page.waitForSelector('.home')
+  let last = -1
+  for (let i = 0; i < 40; i++) {
+    const y = await page.evaluate(() => window.scrollY)
+    if (y === last) return
+    last = y
+    await page.waitForTimeout(100)
+  }
+}
+
+/**
+ * Coming back to the map: from a lesson left halfway, with reduced motion (no glide: the map
+ * must already be there), and from the profile (the map stays where it was).
+ */
+async function mapReturns(page, snap, vpId) {
+  const checks = []
+  const top = () => page.evaluate(() => window.scrollTo(0, 0))
+
+  await top()
+  await page.getByRole('button', { name: 'Arpejler', exact: true }).click()
+  await page.waitForSelector('.melody-wrap')
+  await page.getByLabel('Dersten çık').click()
+  await settle(page)
+  await snap('donus-cikis')
+  checks.push({ name: 'yarıda çıkış', ...(await page.evaluate(mapPlace, 'Arpejler')), shot: `${vpId}-donus-cikis.png` })
+
+  await top()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.getByRole('button', { name: 'Majör Üçlüler', exact: true }).click()
+  await page.waitForSelector('.chord-wrap')
+  await page.getByLabel('Dersi bitir').click()
+  await page.waitForSelector('.results')
+  await page.getByText('Derslere dön').click()
+  await page.waitForSelector('.home')
+  await page.waitForTimeout(50)
+  await snap('donus-azhareket')
+  checks.push({
+    name: 'hareket azaltılmış',
+    ...(await page.evaluate(mapPlace, 'Majör Üçlüler')),
+    shot: `${vpId}-donus-azhareket.png`,
+  })
+  await page.emulateMedia({ reducedMotion: null })
+
+  // Clicked from the page so Playwright does not scroll to the buttons first.
+  const before = await page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight / 2)
+    return Math.round(window.scrollY)
+  })
+  await page.evaluate(() => document.querySelector('[aria-label="Profil"]').click())
+  await page.waitForSelector('.profile, [aria-label="Geri"]')
+  await page.evaluate(() => document.querySelector('[aria-label="Geri"]').click())
+  await settle(page)
+  const after = await page.evaluate(() => Math.round(window.scrollY))
+  checks.push({
+    name: 'profilden dönüş',
+    errors: Math.abs(after - before) > 2 ? [`Profilden dönünce harita ${before} px yerine ${after} px'de`] : [],
+    warnings: [],
+    facts: { before, after },
+  })
+  return checks
+}
+
 /** Press keys from the page `gapMs` apart (two hands at once need separate pointers). */
 async function press(page, keys, gapMs = 20, holdMs = 120) {
   await page.evaluate(
@@ -510,7 +597,8 @@ async function runViewport(vp) {
       await snap(`${c.id}-sonuc`, true)
       entry.checks.push({ ...(await check(`${c.id}-sonuc`, { play: false })), shot: `${vp.id}-${c.id}-sonuc.png` })
       await page.getByText('Derslere dön').click()
-      await page.waitForTimeout(400)
+      await settle(page)
+      entry.checks.push({ name: `${c.id}-donus`, ...(await page.evaluate(mapPlace, c.title)) })
     } catch (e) {
       entry.checks.push({ name: 'çalıştırma', errors: [`Ders oynanamadı: ${e.message.split('\n')[0]}`], warnings: [] })
       await snap(`${c.id}-hata`)
@@ -524,6 +612,16 @@ async function runViewport(vp) {
         errors: pageErrors.slice(before).map((e) => `Sayfa hatası: ${e}`),
         warnings: [],
       })
+  }
+
+  const returns = { id: 'donus', name: 'Haritaya dönüş', checks: [] }
+  results.push(returns)
+  try {
+    returns.checks.push(...(await mapReturns(page, snap, vp.id)))
+  } catch (e) {
+    returns.checks.push({ name: 'çalıştırma', errors: [`Dönüş denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
+    await page.goto(url)
+    await page.waitForTimeout(800)
   }
 
   await page.getByLabel('Profil').click()

@@ -733,6 +733,20 @@ button.chip {
   outline: 6px solid color-mix(in srgb, var(--node) 30%, transparent);
   outline-offset: 4px;
 }
+/* The lesson the learner just came back from: a ring ripples out once the map has scrolled to it. */
+.path-step.back .node {
+  animation: node-back 0.9s ease-out 0.45s 2;
+}
+@keyframes node-back {
+  from {
+    outline: 0 solid color-mix(in srgb, var(--node) 55%, transparent);
+    outline-offset: 0;
+  }
+  to {
+    outline: 14px solid color-mix(in srgb, var(--node) 0%, transparent);
+    outline-offset: 8px;
+  }
+}
 .node-title {
   font-weight: 800;
   font-size: 0.85rem;

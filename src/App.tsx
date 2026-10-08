@@ -4,7 +4,7 @@ import { type NoteLesson, PATTERN_KINDS } from './games/noteHunter/lessons'
 import type { SessionSummary } from './games/noteHunter/summary'
 import { attachComputerKeyboard, setComputerKeyboardBase } from './input/computerKeyboard'
 import { useMidi } from './midi/midiStore'
-import { buildReviewLesson } from './progress/curriculum'
+import { buildReviewLesson, mapNodeOf } from './progress/curriculum'
 import { recordSession } from './progress/history'
 import { HomeScreen } from './screens/HomeScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
@@ -35,7 +35,7 @@ const CalibrationScreen = lazy(() =>
 )
 
 type Screen =
-  | { name: 'home' }
+  | { name: 'home'; focus?: string }
   | { name: 'profile' }
   | { name: 'calibrate' }
   | { name: 'play'; lesson: NoteLesson; run: number }
@@ -108,6 +108,8 @@ export default function App() {
   }
 
   const home = () => setScreen({ name: 'home' })
+  // Finished, failed or left halfway: the map comes back at the lesson's node.
+  const backFrom = (lesson: NoteLesson) => () => setScreen({ name: 'home', focus: mapNodeOf(lesson) })
 
   const place: Place =
     screen.name === 'play'
@@ -127,6 +129,7 @@ export default function App() {
           onStart={start}
           onProfile={() => setScreen({ name: 'profile' })}
           onCalibrate={() => setScreen({ name: 'calibrate' })}
+          focus={screen.focus}
         />
       )}
       {screen.name === 'profile' && <ProfileScreen onBack={home} />}
@@ -138,26 +141,71 @@ export default function App() {
       {screen.name === 'play' && (
         <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
           {screen.lesson.kind === 'theory' ? (
-            <TheoryScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <TheoryScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' || screen.lesson.kind === 'bar' ? (
-            <ArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <ArcadeScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : screen.lesson.kind === 'melody' || screen.lesson.kind === 'scale' || screen.lesson.kind === 'arpeggio' ? (
-            <MelodyScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <MelodyScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : screen.lesson.kind === 'chord' ? (
-            <ChordScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <ChordScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : screen.lesson.kind === 'chef' || screen.lesson.kind === 'space' || screen.lesson.kind === 'chordbar' ? (
-            <ChordArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <ChordArcadeScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : screen.lesson.kind === 'rhythm' ? (
-            <RhythmScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <RhythmScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : screen.lesson.kind === 'memory' ? (
-            <MemoryScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <MemoryScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : screen.lesson.kind === 'dino' ||
             screen.lesson.kind === 'drum' ||
             screen.lesson.kind === 'ladder' ||
             screen.lesson.kind === 'surf' ? (
-            <BeatArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <BeatArcadeScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           ) : (
-            <NoteHunterScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+            <NoteHunterScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
           )}
         </Suspense>
       )}
@@ -168,7 +216,7 @@ export default function App() {
           reward={screen.reward}
           trial={screen.trial}
           onRetry={() => start(screen.lesson)}
-          onHome={home}
+          onHome={backFrom(screen.lesson)}
           onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
         />
       )}
