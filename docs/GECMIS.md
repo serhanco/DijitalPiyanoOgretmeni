@@ -35,6 +35,9 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 12. (Faz 5 sonrası) Klavyeler: **evde Yamaha CLP-845, ofiste Akai MPK Mini MK3**. Bekleyen cila işleri tamamlanıp Faz 6
     için iş planı üzerinden devam edilecek.
 
+13. (2026-10-08) İlk dersten önce **teorik temel bilgiler ve basit testler**; ardından sol anahtarında **tek oktavda
+    notalar kademeli**: önce yalnızca Do ve Sol, sonra iki nota daha, sonra iki daha.
+
 ## Verilen kararlar
 
 - **Platform:** React + TypeScript PWA. Tek kod tabanı telefonda, tablette ve bilgisayarda çalışır. iOS'ta Safari Web MIDI
@@ -60,23 +63,24 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 
 ## Yapılanlar
 
-| Tarih      | Ne                                                                                                                                                                                               | Nerede                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
-| 2026-10-07 | Repo boştu; README ve yol haritası eklendi                                                                                                                                                       | `main`                          |
-| 2026-10-07 | Faz 0 + 1: iskelet, CI, Pages yayını, MIDI, ses, porte, Nota Avcısı, sonuç ekranı                                                                                                                | PR #1, dal `faz-1-cekirdek`     |
-| 2026-10-07 | Faz 2: XP, seri, kalpler, günlük hedef, rozetler, ders haritası, profil, zayıf notalar                                                                                                           | PR #2, dal `faz-2-oyunlastirma` |
-| 2026-10-07 | Faz 3: maskot Notiş, ders içi tepkiler ve seri, ses efektleri, konfeti, seviye atlama ekranı                                                                                                     | PR #3, dal `faz-3-karakterler`  |
-| 2026-10-07 | Faz 4: PixiJS mini oyun motoru, beceri sağlayıcısı, Nota Kuşu ve Balon Patlatma                                                                                                                  | PR #4, dal `faz-4-mini-oyunlar` |
-| 2026-10-07 | Faz 5: metronom, zamanlama değerlendirmesi, gecikme kalibrasyonu, 5 ritim egzersizi, Dino Koşusu, Ritim Davulcusu, zamanlama raporu                                                              | PR #5, dal `faz-5-ritim-5xfbrn` |
-| 2026-10-07 | PR #1–#4 sırayla `main`'e birleştirildi (doküman çakışmaları `main` sürümüyle çözüldü)                                                                                                           | `main`                          |
-| 2026-10-07 | PR #5 birleşti, GitHub Pages yayını açıldı                                                                                                                                                       | `main`                          |
-| 2026-10-07 | Cila turu: 3/4, noktalı notalar (4 yeni ders), tempo hafızası, ritim XP etiketi, profilde ritim grafiği, iki klavyeye göre yardım                                                                | PR #6                           |
-| 2026-10-07 | Faz 6: fa anahtarı ünitesi (10 ders), iki el ünitesi (7 ders), büyük porte, Orta Do köprüsü, melodi dersleri, Nota Barmeni, ellere göre rapor ve iki el uyumu, 3 yeni rozet                      | PR #7                           |
-| 2026-10-07 | Faz 7: gamlar ünitesi (18 ders), doğru yazım ve donanım imi, parmak numaraları ve geçiş uyarıları, Gam Merdiveni, Melodi Hafızası, gam raporu (eşit tempo, geçişler, iki el uyumu), 3 yeni rozet | PR #9                           |
-| 2026-10-07 | Faz 7 iyileştirmeleri: Tempo Merdiveni (kalıcı tempo artışı), iki oktavlık gamlar, Si, Mi♭, La♭ parmak düzenleri, Kulaktan Hafıza, 6 yeni ders, "Hız Treni" rozeti                               | PR #10                          |
-| 2026-10-08 | Faz 8 ekleri: Akor Barmeni (Nota Barmeni akorlarla, tek ve iki el), Kulaktan Akor ve Kulaktan Yedililer (akor türünü kulakla bulma), 4 yeni ders                                                 | PR #12                          |
-| 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                          |
-| 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                          |
+| Tarih      | Ne                                                                                                                                                                                               | Nerede                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| 2026-10-07 | Repo boştu; README ve yol haritası eklendi                                                                                                                                                       | `main`                                 |
+| 2026-10-07 | Faz 0 + 1: iskelet, CI, Pages yayını, MIDI, ses, porte, Nota Avcısı, sonuç ekranı                                                                                                                | PR #1, dal `faz-1-cekirdek`            |
+| 2026-10-07 | Faz 2: XP, seri, kalpler, günlük hedef, rozetler, ders haritası, profil, zayıf notalar                                                                                                           | PR #2, dal `faz-2-oyunlastirma`        |
+| 2026-10-07 | Faz 3: maskot Notiş, ders içi tepkiler ve seri, ses efektleri, konfeti, seviye atlama ekranı                                                                                                     | PR #3, dal `faz-3-karakterler`         |
+| 2026-10-07 | Faz 4: PixiJS mini oyun motoru, beceri sağlayıcısı, Nota Kuşu ve Balon Patlatma                                                                                                                  | PR #4, dal `faz-4-mini-oyunlar`        |
+| 2026-10-07 | Faz 5: metronom, zamanlama değerlendirmesi, gecikme kalibrasyonu, 5 ritim egzersizi, Dino Koşusu, Ritim Davulcusu, zamanlama raporu                                                              | PR #5, dal `faz-5-ritim-5xfbrn`        |
+| 2026-10-07 | PR #1–#4 sırayla `main`'e birleştirildi (doküman çakışmaları `main` sürümüyle çözüldü)                                                                                                           | `main`                                 |
+| 2026-10-07 | PR #5 birleşti, GitHub Pages yayını açıldı                                                                                                                                                       | `main`                                 |
+| 2026-10-07 | Cila turu: 3/4, noktalı notalar (4 yeni ders), tempo hafızası, ritim XP etiketi, profilde ritim grafiği, iki klavyeye göre yardım                                                                | PR #6                                  |
+| 2026-10-07 | Faz 6: fa anahtarı ünitesi (10 ders), iki el ünitesi (7 ders), büyük porte, Orta Do köprüsü, melodi dersleri, Nota Barmeni, ellere göre rapor ve iki el uyumu, 3 yeni rozet                      | PR #7                                  |
+| 2026-10-07 | Faz 7: gamlar ünitesi (18 ders), doğru yazım ve donanım imi, parmak numaraları ve geçiş uyarıları, Gam Merdiveni, Melodi Hafızası, gam raporu (eşit tempo, geçişler, iki el uyumu), 3 yeni rozet | PR #9                                  |
+| 2026-10-07 | Faz 7 iyileştirmeleri: Tempo Merdiveni (kalıcı tempo artışı), iki oktavlık gamlar, Si, Mi♭, La♭ parmak düzenleri, Kulaktan Hafıza, 6 yeni ders, "Hız Treni" rozeti                               | PR #10                                 |
+| 2026-10-08 | Faz 8 ekleri: Akor Barmeni (Nota Barmeni akorlarla, tek ve iki el), Kulaktan Akor ve Kulaktan Yedililer (akor türünü kulakla bulma), 4 yeni ders                                                 | PR #12                                 |
+| 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                                 |
+| 2026-10-08 | Başlangıç ünitesi: 4 teori dersi ve testleri, notalar ikişer ikişer (tanıtım + odaklı alıştırma), 2 oyun, "İlk Oktav" rozeti                                                                     | dal `claude/baslangic-dersleri-uox0fr` |
+| 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
   el sayılır; El raporu buna göre hesaplanır. Orta Do çevresi (La3–Mi4) bazı derslerde iki portede de çıkar ve nota
@@ -111,6 +115,10 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   Clavinova testi sonraya kaldı). Kulaktan akorda kök nota yanar, çünkü yalnızca türü (majör, minör, yedili) duymak
   isteniyor, mutlak ses değil; akor oktav serbest ama kök en altta çalınır (`voicing`). Ses yüklenemezse akorun adı
   yazılır, ders yine oynanır.
+
+- **Başlangıç ünitesi:** Sıra Do-Sol (Do pozisyonunda 1. ve 5. parmak), Re-Mi, Fa-La, Si-Do5. Testlerde can yok; ilk
+  cevap sayılır, yanlışta açıklama gösterilip yeniden denenir. Seçenekler her seferinde karışık sırada. Ünite 1 kilitli
+  değil (mevcut ilerleme bozulmasın); harita "BAŞLA" ile yeni kullanıcıyı Başlangıç'a yönlendirir.
 
 ## Açık konular
 
