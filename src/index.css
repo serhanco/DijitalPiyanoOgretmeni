@@ -1730,3 +1730,101 @@ button.chip {
 .backup-message {
   font-size: 0.85rem;
 }
+
+/* Theory lessons (Başlangıç unit) */
+.theory-card,
+.theory-quiz {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  animation: theory-in 0.25s ease-out both;
+}
+@keyframes theory-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.theory-card h2 {
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+.theory-text {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.theory-card .actions {
+  margin-top: 4px;
+}
+.art {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  max-height: 34dvh;
+  margin: 0 auto;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+.art-hand {
+  max-width: 240px;
+}
+.quiz-options {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.quiz-option {
+  border: 2px solid var(--border);
+  border-bottom-width: 4px;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.05rem;
+  padding: 14px 12px;
+  cursor: pointer;
+}
+.quiz-option:active {
+  transform: translateY(2px);
+}
+.quiz-option.right {
+  border-color: var(--primary);
+  background: #d7ffb8;
+  color: var(--primary-dark);
+}
+.quiz-option.wrong {
+  border-color: var(--danger);
+  background: #ffdfe0;
+  color: var(--danger);
+  animation: shake 0.35s;
+  cursor: default;
+}
+.theory-quiz .feedback {
+  font-size: 1rem;
+}
+.intro {
+  text-align: left;
+}
+.intro .prompt {
+  text-align: left;
+  margin-top: 2px;
+}
+.intro-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 2px 10px;
+}

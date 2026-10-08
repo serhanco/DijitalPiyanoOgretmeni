@@ -22,6 +22,7 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Faz 7 iyileştirmeleri                         | Birleşti (PR #10) |
 | 8 Akorlar, çevrimler, arpejler                | Birleşti (PR #11) |
 | Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | Birleşti (PR #12) |
+| Başlangıç ünitesi (teori, notalar ikişer)     | Birleşti (PR #15) |
 | Test modu ve ilerleme kodu                    | PR #13            |
 | 9 ve sonrası                                  | Başlanmadı        |
 
@@ -82,6 +83,14 @@ Her faz ayrı bir PR olarak gelir ve sonunda denenebilir bir uygulama bırakır.
 - GitHub Actions: lint, biçim, test, build
 - GitHub Pages'e otomatik yayın (repo ayarında Pages kaynağı "GitHub Actions" seçilmeli)
 - PWA manifest ve service worker (çevrimdışı çalışma, ana ekrana ekleme)
+
+### Başlangıç ünitesi — Temeller (Faz 8 sonrası, Serhan'ın isteği)
+
+Haritanın ilk ünitesi, 10 ders. Teori kartları ve her birinin sonunda kısa test (seçmeli sorular ve "klavyede Do'ya
+bas" gibi tuş soruları; raporda konu başına başarı ve yanlış bilinen bilgilerin açıklaması): Piyanoyla Tanışma, Parmak
+Numaraları, Porte ve Sol Anahtarı, Nota Süreleri. Sol anahtarında tek oktav (Do4–Do5), notalar ikişer ikişer: Do ve Sol
+→ Re ve Mi → Fa ve La → Si ve İnce Do. Her yeni nota önce tanıtılır (portedeki yeri, ışıklı tuş, nerede olduğu), sonra
+alıştırmada yeni notalar iki kat sık çıkar. Araya Balon Patlatma ve Nota Kuşu girer.
 
 ### Faz 1 — Çekirdek: MIDI, ses, porte, ilk oyun (PR #1)
 

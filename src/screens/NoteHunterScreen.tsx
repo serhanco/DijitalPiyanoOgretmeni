@@ -6,6 +6,7 @@ import { Staff } from '../components/Staff'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { grandClefPicker, NoteHunterSession } from '../games/noteHunter/session'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
+import { NOTE_INTRO } from '../games/theory/lessons'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
 import { HEARTS_PER_LESSON } from '../progress/gamification'
@@ -17,6 +18,7 @@ const WRONG_FLASH_MS = 500
 const HINT_AFTER = 2
 
 const GREEN = '#22a559'
+const BLUE = '#1cb0f6'
 /** Celebrate every this many first-try answers in a row. */
 const COMBO_STEP = 5
 
@@ -36,9 +38,15 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
         ignoreOctave,
         hearts: relaxedMode ? undefined : HEARTS_PER_LESSON,
         clefOf: lesson.grand ? grandClefPicker(lesson.bothStaves) : undefined,
+        focus: lesson.focus,
       }),
     [lesson, ignoreOctave, relaxedMode],
   )
+  // New notes are introduced one by one (staff, key, where it sits) before the drill.
+  const introNotes = useMemo(() => lesson.introduce ?? [], [lesson])
+  const [intro, setIntro] = useState(0)
+  const introRef = useRef(0)
+  const inIntro = intro < introNotes.length
   const [position, setPosition] = useState(0)
   const [solved, setSolved] = useState<number | null>(null)
   const [wrongKey, setWrongKey] = useState<number | null>(null)
@@ -53,7 +61,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
     onFinishRef.current = onFinish
   })
 
-  const target = session.records[position]?.target ?? null
+  const target = inIntro ? introNotes[intro] : (session.records[position]?.target ?? null)
   const targetClef = session.records[position]?.clef ?? lesson.clef
 
   // Settle back to idle after each reaction.
@@ -65,13 +73,31 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
 
   // Start the reaction clock once the note is on screen.
   useEffect(() => {
-    if (solved === null) session.markShown(performance.now())
-  }, [session, position, solved])
+    if (solved === null && !inIntro) session.markShown(performance.now())
+  }, [session, position, solved, inIntro])
 
   useEffect(() => {
     const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms))
     const unsubscribe = subscribe((e) => {
       if (e.type !== 'on') return
+      if (introRef.current < introNotes.length) {
+        const note = introNotes[introRef.current]
+        if (session.matches(note, e.midi)) {
+          introRef.current++
+          setSolved(note)
+          setWrongKey(null)
+          sfx.correct()
+          setMood((m) => ({ mood: 'happy', pulse: m.pulse + 1 }))
+          later(() => {
+            setSolved((s) => (s === note ? null : s))
+            setIntro(introRef.current)
+          }, CORRECT_PAUSE_MS + 250)
+        } else {
+          setWrongKey(e.midi)
+          later(() => setWrongKey((k) => (k === e.midi ? null : k)), WRONG_FLASH_MS)
+        }
+        return
+      }
       const cur = session.current
       if (!cur) return
       const result = session.press(e.midi, e.time)
@@ -112,14 +138,14 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
       unsubscribe()
       pending.forEach(clearTimeout)
     }
-  }, [session, lesson.clef])
+  }, [session, lesson.clef, introNotes])
 
   const marks: Partial<Record<number, KeyMark>> = {}
-  if (target !== null && wrongCount >= HINT_AFTER && solved === null) marks[target] = 'hint'
+  if (target !== null && (inIntro || wrongCount >= HINT_AFTER) && solved === null) marks[target] = 'hint'
   if (wrongKey !== null) marks[wrongKey] = 'wrong'
   if (solved !== null) marks[solved] = 'correct'
 
-  const progress = (position + (solved !== null ? 1 : 0)) / session.records.length
+  const progress = inIntro ? 0 : (position + (solved !== null ? 1 : 0)) / session.records.length
 
   return (
     <div className="game">
@@ -144,9 +170,21 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
       <div className="prompt-row">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={76} />
         <div>
-          <p className="prompt">
-            {lesson.grand ? 'Bu nota hangisi? Üst porte sağ el, alt porte sol el.' : 'Bu nota hangisi? Klavyede bas!'}
-          </p>
+          {inIntro && target !== null ? (
+            <div className="intro" data-intro={target}>
+              <p className="intro-badge">
+                Yeni nota {intro + 1}/{introNotes.length}
+              </p>
+              <p className="prompt">
+                Bu <b>{solfegeName(target, false)}</b>. Işıklı tuşa bas!
+              </p>
+              <p className="small muted">{NOTE_INTRO[target]}</p>
+            </div>
+          ) : (
+            <p className="prompt">
+              {lesson.grand ? 'Bu nota hangisi? Üst porte sağ el, alt porte sol el.' : 'Bu nota hangisi? Klavyede bas!'}
+            </p>
+          )}
           {combo >= 3 && (
             <p className={`combo ${combo % COMBO_STEP === 0 ? 'big' : ''}`} key={`c${combo}`}>
               🔥 {combo} doğru üst üste{combo % COMBO_STEP === 0 ? '!' : ''}
@@ -157,7 +195,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
 
       <div
         key={shake}
-        data-note={target ?? undefined}
+        data-note={inIntro ? undefined : (target ?? undefined)}
         data-clef={targetClef}
         className={`staff-wrap ${shake && wrongKey !== null ? 'shake' : ''}`}
       >
@@ -166,18 +204,20 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
           grand={lesson.grand}
           noteClef={targetClef}
           note={target}
-          color={solved !== null ? GREEN : undefined}
+          color={solved !== null ? GREEN : inIntro ? BLUE : undefined}
         />
       </div>
 
       <p className={`feedback ${solved !== null ? 'good' : wrongKey !== null ? 'bad' : ''}`} aria-live="polite">
         {solved !== null
           ? `Harika! ${solfegeName(solved)}`
-          : wrongKey !== null
-            ? `${solfegeName(wrongKey)} değil, tekrar dene`
-            : wrongCount >= HINT_AFTER && target !== null
-              ? `İpucu: ${solfegeName(target)}`
-              : ' '}
+          : inIntro && wrongKey !== null
+            ? `Bu ${solfegeName(wrongKey, false)}. Işıklı tuşa bas.`
+            : wrongKey !== null
+              ? `${solfegeName(wrongKey)} değil, tekrar dene`
+              : wrongCount >= HINT_AFTER && target !== null
+                ? `İpucu: ${solfegeName(target)}`
+                : ' '}
       </p>
 
       <PianoKeyboard low={lesson.keyboard.low} high={lesson.keyboard.high} marks={marks} showLabels={showKeyLabels} />

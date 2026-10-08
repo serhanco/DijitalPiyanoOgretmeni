@@ -20,6 +20,21 @@ describe('buildSequence', () => {
     const seq = buildSequence([60, 62, 64, 65, 67], 5, seeded(3))
     expect([...seq].sort()).toEqual([60, 62, 64, 65, 67])
   })
+
+  it('asks focus notes twice as often, still never back to back', () => {
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+      const seq = buildSequence([60, 62, 64, 67], 600, seeded(seed), [62, 64])
+      for (let i = 1; i < seq.length; i++) expect(seq[i]).not.toBe(seq[i - 1])
+      const count = (m: number) => seq.filter((x) => x === m).length
+      expect(count(62)).toBe(200)
+      expect(count(60)).toBe(100)
+    }
+  })
+
+  it('ignores focus notes that are not in the lesson', () => {
+    const seq = buildSequence([60, 67], 4, seeded(2), [62])
+    expect(seq.every((m) => m === 60 || m === 67)).toBe(true)
+  })
 })
 
 describe('NoteHunterSession', () => {

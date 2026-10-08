@@ -515,6 +515,118 @@ async function testModeFlow() {
   await other.close()
 }
 
+/**
+ * Play a theory lesson: read the cards (screenshots of `shots` card indices),
+ * then answer the quiz from window.__dpoTheory; `wrongAt` answers that
+ * question wrong once first.
+ */
+async function playTheory(lessonTitle, shotName, { shots = [], wrongAt = -1, quizShot = -1 } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.waitForSelector('.theory-card')
+  for (let i = 0; i < 20 && (await page.$('.theory-card')); i++) {
+    await page.waitForTimeout(350)
+    if (shots.includes(i)) await page.screenshot({ path: `${out}/${shotName}-card${i + 1}.png` })
+    await page.click('.theory-next')
+  }
+  for (let i = 0; i < 30 && !(await page.$('.results')); i++) {
+    await page.waitForSelector('.theory-quiz')
+    const st = await page.evaluate(() => window.__dpoTheory)
+    const keys = await page.$$eval('.key', (els) => els.map((e) => Number(e.dataset.midi)))
+    const pick = async (right) => {
+      if (st.type === 'choice') {
+        const opts = await page.$$eval('.quiz-option', (els) => els.map((e) => Number(e.dataset.option)))
+        await page.click(`.quiz-option[data-option="${right ? st.answer : opts.find((o) => o !== st.answer)}"]`)
+      } else {
+        const key = keys.find((m) => (((m % 12) + 12) % 12 === st.answer) === right)
+        await page.click(`.key[data-midi="${key}"]`)
+      }
+    }
+    if (st.question === wrongAt) {
+      await pick(false)
+      await page.waitForTimeout(300)
+      await page.screenshot({ path: `${out}/${shotName}-wrong.png` })
+    }
+    if (st.question === quizShot) await page.screenshot({ path: `${out}/${shotName}-quiz.png` })
+    await pick(true)
+    await page.waitForTimeout(850)
+  }
+  await page.waitForSelector('.results', { timeout: 3000 })
+  await page.waitForTimeout(800)
+}
+
+/** Play a drill that first introduces new notes (the lit key), then the drill itself. */
+async function playIntro(lessonTitle, shotName) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.waitForSelector('.staff svg')
+  let intros = 0
+  for (let i = 0; i < 80 && !(await page.$('.results')); i++) {
+    const intro = await page.getAttribute('.intro', 'data-intro', { timeout: 300 }).catch(() => null)
+    if (intro) {
+      if (intros === 0) {
+        await page.waitForTimeout(300)
+        await page.screenshot({ path: `${out}/${shotName}-intro.png` })
+      }
+      intros++
+      await page.click(`.key[data-midi="${intro}"]`)
+      await page.waitForTimeout(800)
+      continue
+    }
+    const target = await page.getAttribute('.staff-wrap', 'data-note')
+    await page.click(`.key[data-midi="${target}"]`)
+    if (i === intros + 3) {
+      await page.waitForTimeout(250)
+      await page.screenshot({ path: `${out}/${shotName}.png` })
+    }
+    await page.waitForTimeout(520)
+  }
+  await page.waitForSelector('.results', { timeout: 3000 })
+  await page.waitForTimeout(800)
+  return intros
+}
+
+/** The Başlangıç unit: theory with quizzes, then the octave two notes at a time. */
+async function basicsUnit() {
+  const back = () => page.getByText('Derslere dön').click()
+  await playTheory('Piyanoyla Tanışma', 'theory-piano', { shots: [0, 1, 2], wrongAt: 2, quizShot: 1 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-theory.png`, fullPage: true })
+  const report = await page.textContent('.results')
+  if (!report.includes('Tuşlar ve gruplar') || !report.includes('Bir daha göz at') || !report.includes('cevaplar'))
+    throw new Error('Theory report lacks topics or the review card')
+  await back()
+  await playTheory('Parmak Numaraları', 'theory-fingers', { shots: [0, 1, 2], quizShot: 1 })
+  await dismissOverlay()
+  await back()
+  await playTheory('Porte ve Sol Anahtarı', 'theory-staff', { shots: [0, 1, 2, 3, 4], quizShot: 2 })
+  await dismissOverlay()
+  await back()
+  const intros = await playIntro('Do ve Sol', 'notes-do-sol')
+  if (intros !== 2) throw new Error(`Expected 2 introduced notes, got ${intros}`)
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-do-sol.png`, fullPage: true })
+  await back()
+  await playIntro('Re ve Mi', 'notes-re-mi')
+  await dismissOverlay()
+  await back()
+  await playArcade('Balonlar: Do Re Mi Sol', 'game-balloon-basics')
+  await dismissOverlay()
+  await back()
+  await playIntro('Fa ve La', 'notes-fa-la')
+  await dismissOverlay()
+  await back()
+  await playIntro('Si ve İnce Do', 'notes-si-do')
+  await dismissOverlay()
+  await back()
+  await playArcade('Nota Kuşu: İlk Oktav', 'game-bird-basics')
+  await dismissOverlay()
+  await back()
+  await playTheory('Nota Süreleri', 'theory-durations', { shots: [1], quizShot: 0 })
+  await dismissOverlay()
+  await back()
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `${out}/map-basics.png`, fullPage: true })
+}
+
 async function finish() {
   await browser.close()
   if (errors.length) {
@@ -545,8 +657,18 @@ if (process.env.SMOKE_ONLY === 'chords') {
   console.log(`Smoke test (chords) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
+// SMOKE_ONLY=basics plays only the Başlangıç unit.
+if (process.env.SMOKE_ONLY === 'basics') {
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: `${out}/map-empty.png` })
+  await basicsUnit()
+  await finish()
+  console.log(`Smoke test (basics) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
 await page.waitForTimeout(800)
 await page.screenshot({ path: `${out}/map-empty.png` })
+await basicsUnit()
 
 await play('İlk Adımlar', { shotAfter: 5, shotName: 'game-combo' })
 await dismissOverlay()

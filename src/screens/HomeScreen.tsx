@@ -20,6 +20,7 @@ interface Props {
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
 const KIND_ICON: Record<LessonKind, string> = {
+  theory: '📖',
   drill: '♪',
   melody: '🎶',
   bird: '🐦',

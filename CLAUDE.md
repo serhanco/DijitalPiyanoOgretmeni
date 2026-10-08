@@ -62,6 +62,7 @@ src/
   games/scales/           (phase 7) scale steps, Gam Merdiveni plan, scale reports, unit 5 lessons
   games/memory/           (phase 7) Melodi Hafızası engine (Simon with scale fragments)
   music/chords.ts         (phase 8) chord spelling, inversions, fingers, identifyChord, progressions, arpeggio runs
+  games/theory/           Başlangıç unit: QuizSession (cards + quiz), theory content, gradual note lessons
   games/chords/           (phase 8) ChordListener + ChordSession, chord report, arpeggio steps / Arpej Sörfü plan, unit 6
   screens/                Home, NoteHunter, Results (simple state machine in App.tsx, no router)
   state/settings.ts       Zustand + localStorage settings
@@ -262,6 +263,21 @@ titles)` now also measures "Eşit aralık" (evenness of the played intervals) fo
 - All chord kinds are in `PATTERN_KINDS` (no note statistics). XP line "İlk denemede doğru akorlar"
   (`LessonOutcome.chords`). Badges: Akor Şefi, Uzay Kahramanı (`noneMissed`), Sörf Ustası, Tek Hamlede
   (`allTogether`), Akor Ustası.
+
+Başlangıç unit (`claude/baslangic-dersleri-uox0fr`, the first unit on the map, 10 lessons):
+
+- `games/theory/quiz.ts`: `TheorySpec { cards, questions, topics }`; questions are `choice` (tap an option) or `key`
+  (press any key of a pitch class, through `inputBus`). **`QuizSession`** (pure): the first answer counts, a wrong one
+  shows `explain` and the player tries again; `summarizeQuiz` = `SessionSummary` with topics and `quiz.missed` (the
+  explanations shown in the results card "Bir daha göz at"). `kind: 'theory'` → `TheoryScreen` (cards with
+  `components/TheoryArt.tsx`: SVG keyboard with black-key groups and Do-position fingers, treble staff with names and
+  numbered lines, a hand with finger numbers, note durations), `window.__dpoTheory`. No hearts in quizzes.
+- Theory lessons: Piyanoyla Tanışma, Parmak Numaraları, Porte ve Sol Anahtarı, Nota Süreleri (before the rhythm unit).
+- Notes two at a time on a one-octave keyboard (`BASICS_KEYBOARD` C4–C5): Do ve Sol → Re ve Mi → Fa ve La → Si ve
+  İnce Do, with a balloon game and Nota Kuşu between. `NoteLesson.introduce` makes the drill show each new note first
+  (staff, lit key, `NOTE_INTRO` text: where it sits); `focus` asks those notes twice as often (`buildSequence(…, focus)`,
+  rounds reshuffled until no note repeats back to back). Badge İlk Oktav. Unit 1 stays open (the BAŞLA bubble points
+  at the basics first). `SMOKE_ONLY=basics` plays this unit.
 
 Test mode and the progress code (`claude/test-modu-oikwzf`):
 

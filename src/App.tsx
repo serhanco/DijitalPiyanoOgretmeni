@@ -20,6 +20,7 @@ const NoteHunterScreen = lazy(() => loadGame().then((m) => ({ default: m.NoteHun
 // Melodies read from the staff (VexFlow, like the drill).
 const MelodyScreen = lazy(() => import('./screens/MelodyScreen').then((m) => ({ default: m.MelodyScreen })))
 const ChordScreen = lazy(() => import('./screens/ChordScreen').then((m) => ({ default: m.ChordScreen })))
+const TheoryScreen = lazy(() => import('./screens/TheoryScreen').then((m) => ({ default: m.TheoryScreen })))
 const MemoryScreen = lazy(() => import('./screens/MemoryScreen').then((m) => ({ default: m.MemoryScreen })))
 const ArcadeScreen = lazy(() => import('./screens/ArcadeScreen').then((m) => ({ default: m.ArcadeScreen })))
 const ChordArcadeScreen = lazy(() =>
@@ -77,6 +78,7 @@ export default function App() {
       failed: summary.failed,
       rhythm: summary.timing !== undefined,
       chords: summary.chords !== undefined,
+      quiz: summary.quiz !== undefined,
       allTogether: !!summary.chords && summary.chords.played >= 5 && summary.chords.together === summary.chords.played,
       noneMissed: !!summary.chords && summary.chords.played === summary.total,
       tempoRaised: !!summary.tempoLadder?.raisedTo,
@@ -127,7 +129,9 @@ export default function App() {
       )}
       {screen.name === 'play' && (
         <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-          {screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' || screen.lesson.kind === 'bar' ? (
+          {screen.lesson.kind === 'theory' ? (
+            <TheoryScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
+          ) : screen.lesson.kind === 'bird' || screen.lesson.kind === 'balloon' || screen.lesson.kind === 'bar' ? (
             <ArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : screen.lesson.kind === 'melody' || screen.lesson.kind === 'scale' || screen.lesson.kind === 'arpeggio' ? (
             <MelodyScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
