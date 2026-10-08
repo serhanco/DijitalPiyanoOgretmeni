@@ -145,3 +145,8 @@ export function buildReviewLesson(clef: Clef | 'grand', notes: number[]): NoteLe
     keyboard: fitKeyboard(notes, { fromDo: true }),
   }
 }
+
+/** The map node a lesson is started from; the weak-notes lessons share an id, so their clef tells them apart. */
+export function mapNodeOf(lesson: NoteLesson): string {
+  return lesson.id === REVIEW_LESSON_ID ? `review-${lesson.grand ? 'grand' : lesson.clef}` : lesson.id
+}

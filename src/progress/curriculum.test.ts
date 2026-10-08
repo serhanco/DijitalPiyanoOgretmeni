@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { lessonNotes } from '../games/noteHunter/keyboard'
-import { ALL_LESSONS, buildReviewLesson, isUnlocked, UNITS, weakestNotes } from './curriculum'
+import { ALL_LESSONS, buildReviewLesson, isUnlocked, mapNodeOf, UNITS, weakestNotes } from './curriculum'
 
 describe('isUnlocked', () => {
   it('opens the first lesson of each unit and each next one after a star', () => {
@@ -78,5 +78,14 @@ describe('lesson keyboards', () => {
   it('start on Do in the note-reading units', () => {
     for (const unit of UNITS.filter((u) => ['basics', 'treble', 'bass', 'hands'].includes(u.id)))
       for (const l of unit.lessons) expect(l.keyboard.low % 12, l.id).toBe(0)
+  })
+})
+
+describe('mapNodeOf', () => {
+  it('names the node a lesson is started from, the weak-notes node by its clef', () => {
+    const lesson = UNITS[1].lessons[2]
+    expect(mapNodeOf(lesson)).toBe(lesson.id)
+    expect(mapNodeOf(buildReviewLesson('bass', [48, 50, 52, 53]))).toBe('review-bass')
+    expect(mapNodeOf(buildReviewLesson('grand', [48, 60, 64, 67]))).toBe('review-grand')
   })
 })

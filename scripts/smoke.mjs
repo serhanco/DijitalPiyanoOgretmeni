@@ -453,8 +453,9 @@ async function chordsUnit() {
  */
 async function testModeFlow() {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(url).origin })
-  await page.locator('.settings summary').click()
+  await page.getByLabel('Ayarlar', { exact: true }).click()
   await page.getByText('Test modu:').click()
+  await page.getByLabel('Ayarları kapat').click()
   await page.waitForTimeout(300)
   const locked = await page.locator('.node.locked:not(.review)').count()
   if (locked) errors.push(`Test mode left ${locked} lessons locked`)
@@ -563,7 +564,7 @@ async function testModeFlow() {
   if (count !== '2') errors.push(`Note button counts ${count} notes`)
 
   // Progress code: take it here, load it in a fresh browser (another device).
-  await page.locator('.settings').evaluate((el) => (el.open = true))
+  await page.getByLabel('Ayarlar', { exact: true }).click()
   await page.getByRole('button', { name: '📤 Kodu al' }).click()
   await page.waitForFunction(() => document.querySelector('.backup-code')?.value.startsWith('DPO'))
   const code = await page.inputValue('.backup-code')
@@ -571,13 +572,14 @@ async function testModeFlow() {
   if (fromClipboard !== code) errors.push('The progress code was not copied')
   await page.locator('.backup').screenshot({ path: `${out}/test-backup.png` })
   const xpHere = (await page.textContent('.chip.xp'))?.trim()
+  await page.getByLabel('Ayarları kapat').click()
 
   const other = await browser.newPage({ viewport: { width: 390, height: 844 } })
   other.on('pageerror', (e) => errors.push(`Other device: ${e.message}`))
   other.on('dialog', (d) => d.accept())
   await other.goto(url)
   await other.waitForTimeout(800)
-  await other.locator('.settings summary').click()
+  await other.getByLabel('Ayarlar', { exact: true }).click()
   await other.locator('.backup-code').fill(code)
   await Promise.all([other.waitForEvent('load'), other.getByRole('button', { name: 'Kodu yükle' }).click()])
   await other.waitForTimeout(1000)

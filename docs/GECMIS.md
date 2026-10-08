@@ -87,6 +87,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-08 | Başlangıç önerileri: ünite kilidi, Klavyesiz Okuma, fa anahtarının başına teori ve ikişer ikişer notalar, sesli anlatım                                                                          | dal `claude/baslangic-dersleri-uox0fr` |
 | 2026-10-08 | Test modu (bütün dersler açık, her ekranda bağlamıyla not bırakma, notları kopyalama/paylaşma) ve cihazlar arası ilerleme kodu                                                                   | PR #13                                 |
 | 2026-10-08 | Test modu ekleri: not paneli oyunu duraklatır, nota ekran görüntüsü, "Dersi bitir" kısayolu, notları .zip olarak indirme                                                                         | PR #13                                 |
+| 2026-10-08 | Haritaya dönüş: ders bitince, başarısız olunca ya da yarıda çıkınca harita o derse kayar ve onu ortalar                                                                                          | Haritaya dönüş PR'ı                    |
 | 2026-10-08 | Ekran klavyesi dersin notalarına göre: tek oktavlık derslerde tek oktav, nota okuma derslerinde hep Do'dan başlar                                                                                | Tek oktav klavye PR'ı                  |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                                 |
 
@@ -159,6 +160,18 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   göre küçülüyor (masaüstünde klavye artık kaydırmadan görünüyor); Uzay Savunması istilacıları kartları kesik
   girmesin diye ekranın biraz içinden, solarak beliriyor. İki Oktav derslerinde telefonda iki elin tuşlarını birlikte
   gösteren özel klavye düzeni yapılmadı: çok efor ve kötü görünme riski.
+
+- **Haritaya dönüş:** Serhan bir ders ya da oyun bittikten sonra "Derslere dön" deyince haritanın en başa atmasını
+  istemedi: tıklanan derse dönülmeli ya da oraya şık bir kaydırma olmalı. Ders bitince, canlar bitince ya da dersten
+  yarıda çıkınca harita önce dersin biraz üstüne atlar, son parçayı yumuşak kaydırarak dersi ekranın ortasına getirir
+  ve ders düğmesinin etrafında iki kez halka yayılır; sistem "hareketi azalt" diyorsa doğrudan oraya atlar. Profilden
+  ve gecikme ayarından dönünce harita bırakıldığı yerde durur; haritadan açılan her ekran en üstten başlar. Karar:
+  bir sonraki ders yeni açıldıysa bile oynanan derse dönülür; bir sonraki ders hemen altında göründüğü için ayrıca ona
+  kaydırılmadı. Görünüm test kümesi her dersten sonra dönüşü, yarıda çıkışı, hareket azaltılmış dönüşü ve profilden
+  dönüşü üç ekranda ölçüyor.
+  Aynı işte Serhan ayarların sayfanın en altında değil üst menüde olmasını, üst menünün de yapışkan olmasını istedi:
+  üst menü (seri, XP, günlük hedef, seviye) harita kaydırılırken ekranın üstünde kalıyor; ayarlar menüdeki ⚙️
+  düğmesiyle haritanın üstünde bir panel olarak açılıyor, ✕, Esc ya da panelin dışına dokunmak kapatıyor.
 
 ## Açık konular
 
