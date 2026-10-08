@@ -1,4 +1,5 @@
 import { parseNote, whiteKeysBetween } from '../../music/notes'
+import { BASS_START_LESSONS, LEFT_HAND_C } from '../theory/lessons'
 import type { NoteLesson } from './lessons'
 
 const notes = (low: string, high: string) => whiteKeysBetween(parseNote(low), parseNote(high))
@@ -6,11 +7,9 @@ const notes = (low: string, high: string) => whiteKeysBetween(parseNote(low), pa
 /** Mirrors the treble keyboard: from the ledger note below the staff up to middle C. */
 export const BASS_KEYBOARD = { low: parseNote('E2'), high: parseNote('C4') }
 
-/** The left hand's five-finger position, from Do3 (little finger) to Sol3 (thumb). */
-const LEFT_HAND_C = { low: parseNote('C3'), high: parseNote('C4') }
-
 /** Unit 3: the bass clef, read and played with the left hand. */
 export const BASS_LESSONS: NoteLesson[] = [
+  ...BASS_START_LESSONS,
   {
     id: 'bass-1',
     title: 'Sol El: İlk Adımlar',

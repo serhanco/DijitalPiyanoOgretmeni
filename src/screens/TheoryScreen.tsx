@@ -1,6 +1,7 @@
 import { useFinishRequest } from '../testing/finishRequest'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
+import { canSpeak, speak, stopSpeaking } from '../audio/speech'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { TheoryArt } from '../components/TheoryArt'
@@ -45,7 +46,7 @@ function shuffle<T>(items: T[]): T[] {
 
 export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
   const spec = lesson.theory!
-  const { showKeyLabels } = useSettings()
+  const { showKeyLabels, narration } = useSettings()
   const quiz = useMemo(() => new QuizSession(spec), [spec])
   // Options in a fresh order each time, so the right answer is not always in the same place.
   const orders = useMemo(
@@ -85,7 +86,20 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
     return () => clearTimeout(t)
   }, [mood.mood, mood.pulse])
 
-  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  useEffect(
+    () => () => {
+      timers.current.forEach(clearTimeout)
+      stopSpeaking()
+    },
+    [],
+  )
+
+  // What the 🔊 button (and the narration setting) reads: the card, or the question.
+  const spoken =
+    phase === 'cards' ? `${spec.cards[card].title}. ${spec.cards[card].text}` : spec.questions[question].prompt
+  useEffect(() => {
+    if (narration) speak(spoken)
+  }, [narration, spoken])
   useFinishRequest(() => onFinishRef.current(summarizeQuiz(spec, quiz.records)))
 
   const answered = (result: ReturnType<QuizSession['choose']>, value: number) => {
@@ -159,6 +173,11 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
           <div className="prompt-row">
             <Mascot mood={card === 0 ? 'happy' : 'think'} size={64} />
             <h2>{c.title}</h2>
+            {canSpeak() && (
+              <button className="icon-btn speak-btn" onClick={() => speak(spoken)} aria-label="Sesli oku">
+                🔊
+              </button>
+            )}
           </div>
           {c.art && <TheoryArt art={c.art} />}
           <p className="theory-text">{c.text}</p>
@@ -181,6 +200,11 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
           <div className="prompt-row">
             <Mascot mood={mood.mood} pulse={mood.pulse} size={64} />
             <p className="prompt">{q.prompt}</p>
+            {canSpeak() && (
+              <button className="icon-btn speak-btn" onClick={() => speak(spoken)} aria-label="Sesli oku">
+                🔊
+              </button>
+            )}
           </div>
           {q.art && <TheoryArt art={q.art} />}
           {q.type === 'choice' && (
