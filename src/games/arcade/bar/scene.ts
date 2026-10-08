@@ -3,7 +3,62 @@ import { type Clef, naturalClef } from '../../../music/notes'
 import { drawNote, drawStaffLines, INK } from '../draw'
 import type { Scene } from '../PixiStage'
 import { staffStep } from '../staffGeometry'
-import { BAR_X, type BarEvent, type BarGame, clefOfCounter, COUNTERS, type Customer } from './engine'
+import { BAR_X } from './engine'
+
+/** What the scene needs of a customer, in both bar games. */
+export interface BarCustomer {
+  index: number
+  counter: number
+  x: number
+  look: number
+  state: 'waiting' | 'served' | 'angry'
+  leftFor: number
+}
+
+/** The game the bar draws: Nota Barmeni or Akor Barmeni. */
+export interface BarView<C extends BarCustomer, E extends { type: string }> {
+  /** The staff of each counter, top to bottom. */
+  rows: Clef[]
+  customers: C[]
+  drinks: { counter: number; x: number }[]
+  update(dtMs: number, now: number): E[]
+}
+
+export interface BarSceneOptions<C> {
+  /** Staff steps each staff's cards must fit (see `noteSpans`, `chordSpans`). */
+  spans: Partial<Record<Clef, { lo: number; hi: number }>>
+  /** A customer's order: the notes on the card, and a name written beside them. */
+  order: (c: C) => { clef: Clef; notes: number[]; name?: string }
+}
+
+type Span = { lo: number; hi: number }
+const spanOf = (steps: number[]): Span => {
+  const all = [...steps, 0, 8]
+  return { lo: Math.min(...all) - 1, hi: Math.max(...all) + 1 }
+}
+
+/** Card spans for single notes: the lesson's notes (`range`, `bothStaves`) per staff. */
+export function noteSpans(range: number[], bothStaves: number[]): Record<Clef, Span> {
+  const steps = (clef: Clef) =>
+    range.filter((m) => naturalClef(m) === clef || bothStaves.includes(m)).map((m) => staffStep(m, clef))
+  return { treble: spanOf(steps('treble')), bass: spanOf(steps('bass')) }
+}
+
+/** Card spans for chords, each read on the staff of its notes. */
+export function chordSpans(chords: { clef: Clef; notes: number[] }[]): Partial<Record<Clef, Span>> {
+  const out: Partial<Record<Clef, Span>> = {}
+  for (const clef of ['treble', 'bass'] as Clef[]) {
+    const own = chords.filter((c) => c.clef === clef)
+    if (own.length) out[clef] = spanOf(own.flatMap((c) => c.notes.map((m) => staffStep(m, clef))))
+  }
+  return out
+}
+
+const label = (text: string, size: number) =>
+  new Text({
+    text,
+    style: { fontFamily: 'Nunito Variable, Nunito, sans-serif', fontSize: size, fontWeight: '900', fill: INK },
+  })
 
 /** SMuFL clef glyphs (Bravura) and the staff step their origin sits on. */
 const CLEF_GLYPH: Record<Clef, { glyph: string; step: number }> = {
@@ -25,17 +80,19 @@ function clefText(clef: Clef, size: number): Text {
 }
 
 /**
- * Draw the bar: four counters (two treble, two bass), customers holding a
- * card with their note, sliding drinks and the bartender on the right.
- * The lesson's notes (`range`, `bothStaves`) size each staff's note cards.
+ * Draw the bar: a counter per row (treble rows above bass rows), customers
+ * holding a card with their order, sliding drinks and the bartender on the
+ * right.
  */
-export function createBarScene(
+export function createBarScene<C extends BarCustomer, E extends { type: string }>(
   app: Application,
-  game: BarGame,
-  range: number[],
-  bothStaves: number[],
-  onEvents: (events: BarEvent[]) => void,
+  game: BarView<C, E>,
+  { spans, order }: BarSceneOptions<C>,
+  onEvents: (events: E[]) => void,
 ): Scene {
+  const COUNTERS = game.rows.length
+  const clefOfCounter = (row: number) => game.rows[row]
+  const handLine = game.rows.indexOf('bass')
   const root = new Container()
   app.stage.addChild(root)
   const bg = new Graphics()
@@ -46,18 +103,10 @@ export function createBarScene(
   const signs = new Container()
   root.addChild(signs)
 
-  // Steps each staff's notes need, for the card layout.
-  const stepSpan = (clef: Clef) => {
-    const own = range.filter((m) => naturalClef(m) === clef || bothStaves.includes(m))
-    const steps = [...own.map((m) => staffStep(m, clef)), 0, 8]
-    return { lo: Math.min(...steps) - 1, hi: Math.max(...steps) + 1 }
-  }
-  const spans = { treble: stepSpan('treble'), bass: stepSpan('bass') }
-
-  /** Per customer: its card container (white card, staff, note, clef). */
-  const cardOf = new Map<number, { box: Container; g: Graphics; clef: Text }>()
+  /** Per customer: its card container (white card, staff, notes, clef, name). */
+  const cardOf = new Map<number, { box: Container; g: Graphics; clef: Text; name: Text | null }>()
   let size = { w: 0, h: 0 }
-  let bartenderRow = 1.5
+  let bartenderRow = (COUNTERS - 1) / 2
   let shakeT = 0
   let lastServedRow: number | null = null
 
@@ -96,7 +145,7 @@ export function createBarScene(
       signs.addChild(sign)
     }
     // the line between the right hand's and the left hand's counters
-    bg.rect(0, rh * 2 - 2, w, 4).fill({ color: INK, alpha: 0.35 })
+    if (handLine > 0) bg.rect(0, rh * handLine - 2, w, 4).fill({ color: INK, alpha: 0.35 })
     // counters and taps
     for (let row = 0; row < COUNTERS; row++) {
       const y = counterY(row)
@@ -106,7 +155,7 @@ export function createBarScene(
     }
   }
 
-  function drawCustomer(c: Customer, now: number) {
+  function drawCustomer(c: C, now: number) {
     const rh = rowH()
     const r = rh * 0.17
     const x = xOf(c.x) + (c.state === 'served' ? -c.leftFor * rh * 1.4 : 0)
@@ -131,22 +180,28 @@ export function createBarScene(
     }
   }
 
-  function drawCard(c: Customer) {
+  function drawCard(c: C) {
     const rh = rowH()
-    const clef = c.record.clef ?? 'treble'
+    const { clef, notes, name } = order(c)
     let card = cardOf.get(c.index)
     if (!card) {
       const box = new Container()
       const g = new Graphics()
       const glyph = clefText(clef, 10)
       box.addChild(g, glyph)
+      const text = name ? label(name, 10) : null
+      if (text) {
+        text.anchor.set(0.5, 0.5)
+        box.addChild(text)
+      }
       cards.addChild(box)
-      card = { box, g, clef: glyph }
+      card = { box, g, clef: glyph, name: text }
       cardOf.set(c.index, card)
     }
-    const cardH = rh * 0.62
-    const cardW = cardH * 1.3
-    const { lo, hi } = spans[clef]
+    // Never taller than on four counters: with three, the card would cover its customer.
+    const cardH = Math.min(rh, size.h / 4) * 0.62
+    const cardW = cardH * (card.name ? 1.9 : 1.3)
+    const { lo, hi } = spans[clef] ?? spanOf([])
     const gap = (cardH / (hi - lo)) * 2
     const layout = { gap, bottomY: cardH - (0 - lo) * (gap / 2) }
     const g = card.g
@@ -155,8 +210,14 @@ export function createBarScene(
     g.roundRect(0, 0, cardW, cardH, cardH * 0.12)
       .fill(0xffffff)
       .stroke({ width: 2, color: border })
-    drawStaffLines(g, cardW * 0.06, cardW * 0.94, layout, INK, 0.7)
-    drawNote(g, cardW * 0.66, staffStep(c.record.target, clef), layout, c.state === 'served' ? 0x22a559 : INK)
+    const staffEnd = card.name ? 0.62 : 0.94
+    drawStaffLines(g, cardW * 0.06, cardW * staffEnd, layout, INK, 0.7)
+    const color = c.state === 'served' ? 0x22a559 : INK
+    for (const m of notes) drawNote(g, cardW * (card.name ? 0.42 : 0.66), staffStep(m, clef), layout, color)
+    if (card.name) {
+      card.name.style.fontSize = Math.max(10, cardH * 0.26)
+      card.name.position.set(cardW * 0.81, cardH / 2)
+    }
     if (card.clef.style.fontSize !== gap * 4) {
       card.clef.style.fontSize = gap * 4
       card.clef.style.padding = gap * 4

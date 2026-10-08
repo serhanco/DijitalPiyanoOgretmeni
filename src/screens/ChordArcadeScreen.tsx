@@ -1,4 +1,4 @@
-// Chord arcade games: Akor Aşçısı and Uzay Savunması. Same skills as the
+// Chord arcade games: Akor Aşçısı, Uzay Savunması and Akor Barmeni. Same skills as the
 // chord drill (chords played together, inversions), on a Pixi playfield.
 
 import type { Application } from 'pixi.js'
@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
+import { ChordBarGame, type ChordBarEvent, chordClef } from '../games/arcade/bar/chordEngine'
+import { chordSpans, createBarScene } from '../games/arcade/bar/scene'
 import { ChefGame, type ChefEvent } from '../games/arcade/chef/engine'
 import { createChefScene } from '../games/arcade/chef/scene'
 import { PixiStage } from '../games/arcade/PixiStage'
@@ -16,7 +18,7 @@ import { summarizeChords } from '../games/chords/report'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import type { SessionSummary } from '../games/noteHunter/summary'
 import { subscribe } from '../input/inputBus'
-import { chordTitle, INVERSION_LABELS } from '../music/chords'
+import { chordSymbol, chordTitle, INVERSION_LABELS } from '../music/chords'
 import { solfegeName } from '../music/notes'
 import { useSettings } from '../state/settings'
 
@@ -28,18 +30,26 @@ interface Props {
   onExit: () => void
 }
 
-type Game = ChefGame | SpaceGame
-type GameEvent = ChefEvent | SpaceEvent
+type Game = ChefGame | SpaceGame | ChordBarGame
+type GameEvent = ChefEvent | SpaceEvent | ChordBarEvent
+
+const recordOf = (ev: GameEvent) =>
+  'order' in ev ? ev.order.record : 'invader' in ev ? ev.invader.record : ev.customer.record
 
 export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const spec = lesson.chords!
   const chef = lesson.kind === 'chef'
+  const bar = lesson.kind === 'chordbar'
   const { ignoreOctave, showKeyLabels } = useSettings()
   const game: Game = useMemo(() => {
     const chords = chordSequence(spec)
     const options = { mode: spec.mode, hearts: ARCADE_HEARTS, ignoreOctave }
-    return chef ? new ChefGame(chords, options) : new SpaceGame(chords, options)
-  }, [spec, chef, ignoreOctave])
+    return chef
+      ? new ChefGame(chords, options)
+      : bar
+        ? new ChordBarGame(chords, options)
+        : new SpaceGame(chords, options)
+  }, [spec, chef, bar, ignoreOctave])
 
   useEffect(() => {
     ;(window as unknown as { __dpoChordArcade?: Game }).__dpoChordArcade = game
@@ -51,7 +61,9 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
       : spec.mode === 'voicing'
         ? 'Tarif çevrimi söylüyor: akoru doğru nota en altta olacak şekilde bas.'
         : 'Tarifteki akoru çal: notaları sen bul, hepsine birlikte bas.'
-    : 'İstilacının kartındaki akoru çal, lazer onu vursun! Üsse inen can götürür.'
+    : bar
+      ? 'Müşterinin istediği akoru çal, içeceği kaysın! Bara varan müşteri can götürür.'
+      : 'İstilacının kartındaki akoru çal, lazer onu vursun! Üsse inen can götürür.'
   const [hud, setHud] = useState({ score: 0, hearts: ARCADE_HEARTS, progress: 0 })
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
   const [flash, setFlash] = useState<{ midi: number; mark: KeyMark } | null>(null)
@@ -66,7 +78,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const react = useCallback(
     (events: GameEvent[]) => {
       for (const ev of events) {
-        const record = 'order' in ev ? ev.order.record : ev.invader.record
+        const record = recordOf(ev)
         const name = chordTitle(record.chord, spec.mode !== 'pcs')
         switch (ev.type) {
           case 'serve':
@@ -75,17 +87,26 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
             setMood((m) => ({ mood: ev.together ? 'happy' : 'think', pulse: m.pulse + 1 }))
             setMessage(
               ev.together
-                ? ev.type === 'serve'
-                  ? `Afiyet olsun! ${name} tam kıvamında.`
-                  : 'Tam isabet! Notalar aynı anda indi.'
+                ? ev.type === 'shoot'
+                  ? 'Tam isabet! Notalar aynı anda indi.'
+                  : bar
+                    ? `Şerefe! ${name} tam ölçüsünde.`
+                    : `Afiyet olsun! ${name} tam kıvamında.`
                 : `Oldu, ama notalar ${Math.round(record.spreadMs!)} ms arayla geldi. Hepsine birlikte bas!`,
             )
             break
           case 'burn':
           case 'land':
+          case 'angry':
             sfx.wrong()
             setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
-            setMessage(ev.type === 'burn' ? `${name} yandı! Biraz daha hızlı.` : `${name} üsse indi!`)
+            setMessage(
+              ev.type === 'burn'
+                ? `${name} yandı! Biraz daha hızlı.`
+                : ev.type === 'angry'
+                  ? `Müşteri ${name} istiyordu, kızdı gitti!`
+                  : `${name} üsse indi!`,
+            )
             break
           case 'spill':
           case 'wrong':
@@ -95,7 +116,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
             setMessage(
               ev.octave
                 ? `${solfegeName(ev.midi)}: nota doğru, oktavı değil.`
-                : `${solfegeName(ev.midi, false)} ${chef ? 'bu tarifte yok' : 'hiçbir istilacının akorunda yok'}!`,
+                : `${solfegeName(ev.midi, false)} ${chef ? 'bu tarifte yok' : bar ? 'hiçbir siparişte yok' : 'hiçbir istilacının akorunda yok'}!`,
             )
             break
           case 'inversion':
@@ -116,7 +137,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
         window.setTimeout(() => onFinishRef.current(summarizeChords(game.attempted, game.failed)), 900)
       }
     },
-    [game, chef, spec.mode],
+    [game, chef, bar, spec.mode],
   )
 
   useEffect(() => {
@@ -143,16 +164,32 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
 
   const create = useCallback(
     (app: Application) =>
-      game instanceof ChefGame
-        ? createChefScene(
+      game instanceof ChordBarGame
+        ? createBarScene(
             app,
             game,
-            { showNotes: !!spec.showNotes, withInversion: spec.mode === 'voicing' },
+            {
+              spans: chordSpans(
+                game.records.map((r) => ({ clef: chordClef(r.chord), notes: r.chord.notes.map((n) => n.midi) })),
+              ),
+              order: (c) => ({
+                clef: chordClef(c.record.chord),
+                notes: c.record.chord.notes.map((n) => n.midi),
+                name: spec.showName ? chordSymbol(c.record.chord.root, c.record.chord.quality) : undefined,
+              }),
+            },
             (events) => react(events),
           )
-        : createSpaceScene(app, game, { showName: spec.showName, playing: (now) => game.playing(now) }, (events) =>
-            react(events),
-          ),
+        : game instanceof ChefGame
+          ? createChefScene(
+              app,
+              game,
+              { showNotes: !!spec.showNotes, withInversion: spec.mode === 'voicing' },
+              (events) => react(events),
+            )
+          : createSpaceScene(app, game, { showName: spec.showName, playing: (now) => game.playing(now) }, (events) =>
+              react(events),
+            ),
     [game, spec, react],
   )
 
@@ -161,7 +198,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
   if (flash) marks[flash.midi] = flash.mark
 
   return (
-    <div className={`game arcade ${chef ? 'chef' : 'space'}`}>
+    <div className={`game arcade ${chef ? 'chef' : bar ? 'bar' : 'space'}`}>
       <header className="game-top">
         <button className="icon-btn" onClick={onExit} aria-label="Oyundan çık">
           ✕

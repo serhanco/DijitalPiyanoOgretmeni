@@ -4,14 +4,7 @@
 // Pure logic: time is passed in.
 
 import type { ChordTarget } from '../../../music/chords'
-import {
-  ChordListener,
-  type ChordMatchMode,
-  type ChordRecord,
-  judgePress,
-  matchChord,
-  newChordRecord,
-} from '../../chords/session'
+import { ChordListener, type ChordMatchMode, type ChordRecord, judgeAmong, newChordRecord } from '../../chords/session'
 
 export const SPACE_LANES = 3
 /** Seconds an invader takes from the top to the base, at the start and at the end. */
@@ -173,29 +166,9 @@ export class SpaceGame {
     const flying = this.flying
     if (!flying.length) return []
     this.listener.press(midi, now)
-    const active = this.listener.active(now)
-    const results = flying.map((inv) => ({
-      inv,
-      state: matchChord(inv.record.chord, active, this.mode, this.ignoreOctave).state,
-    }))
-    let target = results.find((r) => r.state === 'complete')?.inv
-    if (!target) {
-      if (results.some((r) => r.state === 'partial')) return []
-      target = results.find((r) => r.state === 'inversion')?.inv
-    }
-    if (!target) {
-      // The keys fit no invader together. If the new key fits one, it starts a new chord.
-      const fits = flying.find(
-        (inv) => matchChord(inv.record.chord, [{ midi, at: now }], this.mode, this.ignoreOctave).state !== 'wrong',
-      )
-      if (fits) {
-        this.listener.clear()
-        return this.press(midi, now)
-      }
-      target = flying[0]
-    }
-
-    const ev = judgePress(target.record, this.listener, now, this.mode, this.ignoreOctave)
+    const judged = judgeAmong(flying, (i) => i.record, this.listener, midi, now, this.mode, this.ignoreOctave)
+    if (!judged) return []
+    const { target, event: ev } = judged
     if (ev.type === 'chord') {
       target.state = 'hit'
       this.score++

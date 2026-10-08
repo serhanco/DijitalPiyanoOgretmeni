@@ -6,7 +6,7 @@ import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { BalloonGame } from '../games/arcade/balloon/engine'
 import { createBalloonScene } from '../games/arcade/balloon/scene'
 import { BarGame } from '../games/arcade/bar/engine'
-import { createBarScene } from '../games/arcade/bar/scene'
+import { createBarScene, noteSpans } from '../games/arcade/bar/scene'
 import { BirdGame } from '../games/arcade/bird/engine'
 import { createBirdScene } from '../games/arcade/bird/scene'
 import { PixiStage } from '../games/arcade/PixiStage'
@@ -136,14 +136,22 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const create = useCallback(
     (app: Application) =>
       game instanceof BarGame
-        ? createBarScene(app, game, lesson.notes, lesson.bothStaves ?? [], (events) => {
-            for (const ev of events) {
-              if (ev.type === 'angry') {
-                sfx.wrong()
-                react(false, `Müşteri ${solfegeName(ev.customer.record.target)} istiyordu, kızdı gitti!`)
+        ? createBarScene(
+            app,
+            game,
+            {
+              spans: noteSpans(lesson.notes, lesson.bothStaves ?? []),
+              order: (c) => ({ clef: c.record.clef ?? 'treble', notes: [c.record.target] }),
+            },
+            (events) => {
+              for (const ev of events) {
+                if (ev.type === 'angry') {
+                  sfx.wrong()
+                  react(false, `Müşteri ${solfegeName(ev.customer.record.target)} istiyordu, kızdı gitti!`)
+                }
               }
-            }
-          })
+            },
+          )
         : game instanceof BirdGame
           ? createBirdScene(
               app,

@@ -119,7 +119,7 @@ export default function App() {
             <MelodyScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : screen.lesson.kind === 'chord' ? (
             <ChordScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
-          ) : screen.lesson.kind === 'chef' || screen.lesson.kind === 'space' ? (
+          ) : screen.lesson.kind === 'chef' || screen.lesson.kind === 'space' || screen.lesson.kind === 'chordbar' ? (
             <ChordArcadeScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />
           ) : screen.lesson.kind === 'rhythm' ? (
             <RhythmScreen key={screen.run} lesson={screen.lesson} onFinish={finish(screen.lesson)} onExit={home} />

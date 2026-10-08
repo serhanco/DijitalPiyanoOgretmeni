@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { chordTarget } from '../../music/chords'
 import { parseNote } from '../../music/notes'
 import { summarizeChords } from '../chords/report'
+import { ChordBarGame, chordBarRows } from './bar/chordEngine'
 import { ChefGame, NEXT_ORDER_S } from './chef/engine'
 import { BASE_Y, SpaceGame } from './space/engine'
 
@@ -93,5 +94,42 @@ describe('Akor Aşçısı', () => {
     const events = ['E4', 'G4', 'C5'].flatMap((n, i) => game.press(parseNote(n), 1000 + i * 10))
     expect(events[2]).toMatchObject({ type: 'serve' })
     expect(game.done).toBe(true)
+  })
+})
+
+describe('Akor Barmeni', () => {
+  const Lh = chordTarget('F', 'major', 0, 'left')
+
+  it('uses three counters for one hand, two per hand with both', () => {
+    expect(chordBarRows([C, F])).toEqual(['treble', 'treble', 'treble'])
+    expect(chordBarRows([Lh])).toEqual(['bass', 'bass', 'bass'])
+    expect(chordBarRows([C, Lh])).toEqual(['treble', 'treble', 'bass', 'bass'])
+  })
+
+  it('serves the customer whose chord is played and seats left-hand chords at the bass counters', () => {
+    const game = new ChordBarGame([C, Lh], { mode: 'exact', random: () => 0 })
+    run(game, 0, 5000)
+    expect(game.waiting).toHaveLength(2)
+    const left = game.waiting.find((c) => c.record.chord === Lh)!
+    expect(game.rows[left.counter]).toBe('bass')
+    const events = play(game, Lh, 5000)
+    expect(events.at(-1)).toMatchObject({ type: 'serve', together: true })
+    expect(left.state).toBe('served')
+    expect(game.drinks).toHaveLength(1)
+  })
+
+  it('costs a heart when a customer reaches the bar, none for a wrong key or inversion', () => {
+    const game = new ChordBarGame([C], { mode: 'voicing', hearts: 3 })
+    run(game, 0, 1000)
+    expect(game.press(parseNote('D4'), 1000)).toMatchObject([{ type: 'wrong' }])
+    const inv = ['E4', 'G4', 'C5'].flatMap((n, i) => game.press(parseNote(n), 2000 + i * 10))
+    expect(inv.at(-1)).toMatchObject({ type: 'inversion' })
+    expect(game.hearts).toBe(3)
+    expect(run(game, 2100, 20000)).toContainEqual(expect.objectContaining({ type: 'angry' }))
+    expect(game.hearts).toBe(2)
+    expect(game.done).toBe(true)
+    const summary = summarizeChords(game.attempted)
+    expect(summary.accuracy).toBe(0)
+    expect(summary.chords?.inversionMistakes).toBe(1)
   })
 })

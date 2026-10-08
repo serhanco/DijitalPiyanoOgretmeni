@@ -182,6 +182,44 @@ export function judgePress(
   return { type: 'partial', record }
 }
 
+/**
+ * Several chords wait at once (the arcade games), the most urgent first:
+ * find the one the keys so far are meant for and judge the press on it.
+ * Null while the keys still fit one of them unfinished. Keys that fit none
+ * together, where the new key fits one, start a new chord; anything else is
+ * blamed on the most urgent chord. Call after `listener.press`.
+ */
+export function judgeAmong<T>(
+  candidates: T[],
+  recordOf: (t: T) => ChordRecord,
+  listener: ChordListener,
+  midi: number,
+  now: number,
+  mode: ChordMatchMode,
+  ignoreOctave: boolean,
+): { target: T; event: ChordEvent } | null {
+  if (!candidates.length) return null
+  const active = listener.active(now)
+  const states = candidates.map((t) => ({ t, state: matchChord(recordOf(t).chord, active, mode, ignoreOctave).state }))
+  let target = states.find((r) => r.state === 'complete')?.t
+  if (target === undefined) {
+    if (states.some((r) => r.state === 'partial')) return null
+    target = states.find((r) => r.state === 'inversion')?.t
+  }
+  if (target === undefined) {
+    const fits = candidates.some(
+      (t) => matchChord(recordOf(t).chord, [{ midi, at: now }], mode, ignoreOctave).state !== 'wrong',
+    )
+    if (fits && active.length > 1) {
+      listener.clear()
+      listener.press(midi, now)
+      return judgeAmong(candidates, recordOf, listener, midi, now, mode, ignoreOctave)
+    }
+    target = candidates[0]
+  }
+  return { target, event: judgePress(recordOf(target), listener, now, mode, ignoreOctave) }
+}
+
 export interface ChordSessionOptions {
   chords: ChordTarget[]
   mode: ChordMatchMode

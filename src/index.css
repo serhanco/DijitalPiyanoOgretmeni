@@ -1575,3 +1575,18 @@ button.chip {
 .chord-card p {
   margin: 6px 0;
 }
+
+/* Chords by ear: the listen button instead of the staff */
+.ear-board {
+  background: var(--surface);
+  border: 2px solid #2bc4a8;
+  border-radius: var(--radius);
+  padding: 22px 12px;
+  margin: 8px 0 4px;
+  text-align: center;
+}
+.ear-last {
+  margin: 12px 0 0;
+  font-weight: 800;
+  color: var(--muted);
+}

@@ -24,6 +24,8 @@ export interface ChordSpec {
   showNotes?: boolean
   /** Progressions: the degrees in order, shown above the staff. */
   progression?: string[]
+  /** Heard, not read: the chord is played, its root lit; the player finds its kind. */
+  byEar?: boolean
 }
 
 const same = (a: ChordTarget, b: ChordTarget) =>
@@ -55,7 +57,7 @@ const triads = (names: string[], inversions: Inversion[] = [0], hands: ChordHand
 
 const sevenths = (list: [string, ChordQuality][]): ChordTarget[] => list.map(([root, q]) => chordTarget(root, q))
 
-type Kind = 'chord' | 'chef' | 'space'
+type Kind = 'chord' | 'chef' | 'space' | 'chordbar'
 
 function chordLesson(kind: Kind, id: string, title: string, description: string, spec: ChordSpec): NoteLesson {
   const left = spec.chords.every((c) => c.hands === 'left')
@@ -176,6 +178,19 @@ export const CHORD_LESSONS: NoteLesson[] = [
     mode: 'voicing',
     showName: true,
   }),
+  chordLesson('chordbar', 'chord-bar-1', 'Akor Barmeni', 'Müşteriler akor ister: çal, içecek kaysın', {
+    chords: triads(['C', 'F', 'G', 'Am', 'Dm', 'Em']),
+    draw: 12,
+    mode: 'voicing',
+    showName: true,
+  }),
+  chordLesson('chord', 'chord-ear', 'Kulaktan Akor', 'Duyduğun akor majör mü minör mü? Kök notadan bul', {
+    chords: triads(['C', 'Cm', 'F', 'Fm', 'G', 'Gm', 'A', 'Am', 'D', 'Dm']),
+    draw: 12,
+    mode: 'voicing',
+    showName: false,
+    byEar: true,
+  }),
   chordLesson('chord', 'chord-inversions', 'Akor Çevrimleri', 'Aynı akor üç şekilde: kök durum, 1. ve 2. çevrim', {
     chords: triads(['C', 'F', 'G'], ALL_INVERSIONS),
     mode: 'exact',
@@ -250,6 +265,21 @@ export const CHORD_LESSONS: NoteLesson[] = [
     mode: 'exact',
     showName: true,
   }),
+  chordLesson('chord', 'chord-ear-7', 'Kulaktan Yedililer', 'Majör, minör ya da yedili: kulağın söylesin', {
+    chords: [
+      ...triads(['C', 'Dm', 'G', 'Am']),
+      ...sevenths([
+        ['G', 'dom7'],
+        ['C', 'dom7'],
+        ['D', 'min7'],
+        ['C', 'maj7'],
+      ]),
+    ],
+    draw: 12,
+    mode: 'voicing',
+    showName: false,
+    byEar: true,
+  }),
   progressionLesson(
     'progression-v7',
     'I – IV – V7 – I',
@@ -283,4 +313,10 @@ export const CHORD_LESSONS: NoteLesson[] = [
     arp('C', 'major', 'parallel'),
     arp('A', 'minor', 'parallel'),
   ]),
+  chordLesson('chordbar', 'chord-bar-2', 'Barmen: İki El', 'Üst tezgâhlar sağ el, alt tezgâhlar sol el; çevrimlerle', {
+    chords: [...triads(['C', 'F', 'G', 'Am'], ALL_INVERSIONS), ...triads(['C', 'F', 'G', 'Am'], [0], 'left')],
+    draw: 14,
+    mode: 'voicing',
+    showName: false,
+  }),
 ]

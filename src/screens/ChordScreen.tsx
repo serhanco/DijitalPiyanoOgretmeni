@@ -1,7 +1,10 @@
 // Chord drill and progressions: chords read from the staff (with their name
-// and fingers in the first lessons), every note pressed together.
+// and fingers in the first lessons), every note pressed together. By ear
+// (`byEar`), the chord is only heard: its root is lit and the player finds
+// the rest (major, minor, seventh).
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { initPiano, isPianoReady, pianoAttack, pianoRelease } from '../audio/piano'
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { MelodyStaff, type StepState } from '../components/MelodyStaff'
@@ -23,6 +26,8 @@ const HINT_AFTER = 2
 const COMBO_STEP = 5
 const FINISH_PAUSE_MS = 500
 const MESSAGE_MS = 1400
+/** How long a heard chord sounds. */
+const LISTEN_MS = 1300
 
 interface Props {
   lesson: NoteLesson
@@ -59,6 +64,11 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   const [shake, setShake] = useState(0)
   const [combo, setCombo] = useState(0)
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
+  const byEar = !!spec.byEar
+  const [started, setStarted] = useState(!byEar)
+  /** Ear mode, unless the piano sound could not load: then the chord's name is shown after all. */
+  const [heard, setHeard] = useState(byEar)
+  const [lastChord, setLastChord] = useState<ChordTarget | null>(null)
   const comboRef = useRef(0)
   const timers = useRef<number[]>([])
   const onFinishRef = useRef(onFinish)
@@ -71,8 +81,30 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   }, [session])
 
   useEffect(() => {
-    session.markShown(performance.now())
-  }, [session, position])
+    if (started) session.markShown(performance.now())
+  }, [session, position, started])
+
+  const listen = useCallback((chord: ChordTarget) => {
+    for (const n of chord.notes) pianoAttack(n.midi, 0.7)
+    timers.current.push(window.setTimeout(() => chord.notes.forEach((n) => pianoRelease(n.midi)), LISTEN_MS))
+  }, [])
+
+  // By ear: every new chord is played once, after a short breath.
+  useEffect(() => {
+    const chord = chords[position]
+    if (!byEar || !started || !heard || !chord) return
+    const t = window.setTimeout(() => listen(chord), position === 0 ? 150 : 700)
+    return () => clearTimeout(t)
+  }, [byEar, started, heard, position, chords, listen])
+
+  const start = () => {
+    // Start once the samples are in, but never wait long (offline the names are shown instead).
+    const wait = new Promise((resolve) => window.setTimeout(resolve, 1500))
+    void Promise.race([initPiano().catch(() => undefined), wait]).then(() => {
+      if (!isPianoReady()) setHeard(false)
+      setStarted(true)
+    })
+  }
 
   useEffect(() => {
     if (mood.mood === 'idle') return
@@ -110,6 +142,7 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
           }
           setMistakesHere(0)
           setWrongKey(null)
+          setLastChord(ev.record.chord)
           say(ev)
           setPosition(session.position)
           if (session.done) later(() => finish(false), FINISH_PAUSE_MS)
@@ -173,6 +206,7 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   const hit = held.filter((m) => wanted.includes(m))
 
   const marks: Partial<Record<number, KeyMark>> = {}
+  if (byEar && started && current) marks[current.notes[0].midi] = 'hint'
   if (mistakesHere >= HINT_AFTER) for (const m of wanted) marks[m] = 'hint'
   for (const m of held) marks[m] = 'correct'
   if (wrongKey !== null) marks[wrongKey] = 'wrong'
@@ -213,8 +247,20 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
               ))}
             </p>
           )}
-          <p className="prompt">{current && spec.showName ? `🎼 ${chordTitle(current)}` : 'Portedeki akoru çal'}</p>
-          {current && spec.showName ? (
+          <p className="prompt">
+            {byEar && current
+              ? heard
+                ? `🎧 Kök nota ${nameOf(current.notes[0].midi).replace(/\d+$/, '')}: akoru dinle, bul ve çal`
+                : `🎼 ${chordTitle(current, false)}`
+              : current && spec.showName
+                ? `🎼 ${chordTitle(current)}`
+                : 'Portedeki akoru çal'}
+          </p>
+          {byEar ? (
+            <p className="small muted">
+              {heard ? 'Majör mü, minör mü, yedili mi? Kulağın söylesin.' : 'Ses yüklenemedi: akorun adı yazıyor.'}
+            </p>
+          ) : current && spec.showName ? (
             <p className="finger-tip" key={`f${position}`}>
               Parmaklar: {fingerText(current)}
             </p>
@@ -229,20 +275,43 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
         </div>
       </div>
 
-      <div
-        key={shake}
-        className={`staff-wrap melody-wrap chord-wrap ${shake && message && !message.good ? 'shake' : ''}`}
-        data-pending={wanted.join(' ')}
-      >
-        <MelodyStaff
-          steps={page.steps}
-          states={states}
-          hit={hit}
-          clef={lesson.clef}
-          grand={lesson.grand}
-          wrong={wrongKey !== null}
-        />
-      </div>
+      {byEar ? (
+        <div
+          key={shake}
+          className={`ear-board ${shake && message && !message.good ? 'shake' : ''}`}
+          data-ear={heard}
+          data-pending={wanted.join(' ')}
+        >
+          {!started ? (
+            <button className="btn" onClick={start}>
+              🎧 Dinlemeye başla
+            </button>
+          ) : (
+            current &&
+            heard && (
+              <button className="btn btn-secondary" onClick={() => listen(current)}>
+                🔊 Tekrar dinle
+              </button>
+            )
+          )}
+          {lastChord && <p className="ear-last">Son akor: {chordTitle(lastChord, false)}</p>}
+        </div>
+      ) : (
+        <div
+          key={shake}
+          className={`staff-wrap melody-wrap chord-wrap ${shake && message && !message.good ? 'shake' : ''}`}
+          data-pending={wanted.join(' ')}
+        >
+          <MelodyStaff
+            steps={page.steps}
+            states={states}
+            hit={hit}
+            clef={lesson.clef}
+            grand={lesson.grand}
+            wrong={wrongKey !== null}
+          />
+        </div>
+      )}
 
       <p className={`feedback ${message ? (message.good ? 'good' : 'bad') : ''}`} aria-live="polite">
         {message
