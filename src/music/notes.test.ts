@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { diatonicIndex, isBlackKey, parseNote, solfegeName, staffPlacement, vexKey, whiteKeysBetween } from './notes'
+import {
+  diatonicIndex,
+  fitKeyboard,
+  isBlackKey,
+  parseNote,
+  solfegeName,
+  staffPlacement,
+  vexKey,
+  whiteKeysBetween,
+} from './notes'
 
 describe('notes', () => {
   it('parses note names', () => {
@@ -48,5 +57,24 @@ describe('notes', () => {
 
   it('lists white keys', () => {
     expect(whiteKeysBetween(60, 67)).toEqual([60, 62, 64, 65, 67])
+  })
+
+  it('fits the on-screen keyboard to the notes', () => {
+    const n = (...names: string[]) => names.map(parseNote)
+    // Within one Do-to-Do octave: exactly that octave.
+    expect(fitKeyboard(n('C4', 'G4'))).toEqual({ low: 60, high: 72 })
+    expect(fitKeyboard(n('C4', 'C5'))).toEqual({ low: 60, high: 72 })
+    expect(fitKeyboard(n('D4', 'F#4'))).toEqual({ low: 60, high: 72 })
+    // Across a Do: from the lowest to the highest note, black keys rounded out.
+    expect(fitKeyboard(n('G4', 'G5'))).toEqual({ low: 67, high: 79 })
+    expect(fitKeyboard(n('E4', 'F5'))).toEqual({ low: 64, high: 77 })
+    expect(fitKeyboard(n('Bb3', 'F#5'))).toEqual({ low: 57, high: 79 })
+    // Never less than an octave of white keys: widened upwards.
+    expect(fitKeyboard(n('F4', 'E5'))).toEqual({ low: 65, high: 77 })
+    expect(fitKeyboard(n('A4', 'D5'))).toEqual({ low: 69, high: 81 })
+    // fromDo: wider sets start on the Do at or below the lowest note.
+    expect(fitKeyboard(n('F4', 'E5'), { fromDo: true })).toEqual({ low: 60, high: 76 })
+    expect(fitKeyboard(n('G2', 'A3'), { fromDo: true })).toEqual({ low: 36, high: 57 })
+    expect(fitKeyboard(n('C4', 'G4'), { fromDo: true })).toEqual({ low: 60, high: 72 })
   })
 })

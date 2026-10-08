@@ -127,3 +127,30 @@ export function whiteKeysBetween(low: number, high: number): number[] {
   for (let n = low; n <= high; n++) if (!isBlackKey(n)) out.push(n)
   return out
 }
+
+export interface KeyRange {
+  low: number
+  high: number
+}
+
+/** The fewest white keys an on-screen keyboard shows: one octave, Do to Do. */
+export const MIN_KEYBOARD_WHITES = 8
+
+/**
+ * The on-screen keyboard for a set of notes, as small as it can be so the keys
+ * stay wide on a phone. Notes that fit in one Do-to-Do octave get exactly that
+ * octave; wider sets run from the lowest to the highest note (black keys round
+ * out to their white neighbour), widened upwards to at least an octave of
+ * white keys. `fromDo` starts the keyboard on the Do at or below the lowest
+ * note instead, so a beginner always finds Do on the left.
+ */
+export function fitKeyboard(midis: number[], { fromDo = false } = {}): KeyRange {
+  const lo = Math.min(...midis)
+  const hi = Math.max(...midis)
+  const c = lo - pitchClass(lo)
+  if (hi <= c + 12) return { low: c, high: c + 12 }
+  const range = { low: fromDo ? c : isBlackKey(lo) ? lo - 1 : lo, high: isBlackKey(hi) ? hi + 1 : hi }
+  while (whiteKeysBetween(range.low, range.high).length < MIN_KEYBOARD_WHITES)
+    range.high += isBlackKey(range.high + 1) ? 2 : 1
+  return range
+}

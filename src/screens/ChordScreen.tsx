@@ -325,7 +325,13 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
             : ' '}
       </p>
 
-      <PianoKeyboard low={lesson.keyboard.low} high={lesson.keyboard.high} marks={marks} showLabels={showKeyLabels} />
+      <PianoKeyboard
+        low={lesson.keyboard.low}
+        high={lesson.keyboard.high}
+        marks={marks}
+        showLabels={showKeyLabels}
+        focus={byEar ? undefined : wanted}
+      />
     </div>
   )
 }
