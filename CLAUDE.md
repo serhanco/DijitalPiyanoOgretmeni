@@ -38,9 +38,11 @@ npm run format:check  # Prettier (npm run format to fix)
 npm run typecheck     # tsc -b
 npm run build         # tsc -b && vite build → dist/
 npm run smoke         # Playwright smoke test against a running preview (see below)
+npm run layout        # Layout suite: every game type on desktop, phone upright and sideways (see below)
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR. `deploy.yml` publishes `dist/` to
+CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR, and the layout suite in a second
+job (report in the job summary, screenshots as the `layout-screens` artifact). `deploy.yml` publishes `dist/` to
 GitHub Pages on every push to `main` (requires Settings → Pages → Source: "GitHub Actions"). Vite `base` is `./` so the
 build works under the repo sub-path.
 
@@ -339,6 +341,17 @@ arpeggios, three Arpej Sörfü runs incl. a tempo ladder), a latency calibration
 npm run build && (npx vite preview --port 4173 &) && sleep 3
 CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -- /tmp/screens
 ```
+
+`scripts/layout.mjs` (**layout suite**, in CI) opens one lesson of every game type (theory, drills incl. intro, wide
+keyboard and grand staff, Nota Kuşu, Balon, Nota Barmeni, melody, rhythm, Dino, Davulcu, scales incl. two octaves with
+two hands, Gam Merdiveni, both memory games, chords, Kulaktan Akor, Aşçı, Uzay, Akor Barmeni, arpeggio, Sörf) in test
+mode on a desktop window (1366×700), a phone upright (390×844) and sideways (844×390, touch), plays a little, ends it
+with "Dersi bitir" and checks the play screen, the start card and the results: nothing sticks out sideways, play area
+and keyboard on screen together without scrolling and not overlapping, white keys ≥ 28 px, the wanted keys in the
+visible part of the keyboard, Pixi canvases fill their stage, Başla buttons on screen; Uzay Savunması measures how long
+a new invader's card is cut off at the top. It writes `rapor.md` / `rapor.json` and screenshots. Warnings (⚠️) and
+`KNOWN` problems (🟠, already reported) do not fail the run; remove a `KNOWN` entry when its fix lands. `LAYOUT_ONLY=space,bird`
+and `LAYOUT_VIEWPORTS=yatay` narrow a run.
 
 `SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=test` checks test mode and the progress code. Look at the screenshots after UI
 changes. Piano samples fail to load in a sandbox without network; the script ignores

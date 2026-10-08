@@ -885,9 +885,18 @@ await page.screenshot({ path: `${out}/results-grand.png`, fullPage: true })
 if (!(await page.locator('.hands-card').count())) errors.push('Grand staff results have no hands report')
 await page.getByText('Derslere dön').click()
 const bridge = await play('Orta Do Köprüsü', { shotAfter: 6, shotName: 'game-middle-c' })
-// Notes around middle C must show up on both staves.
-const onBoth = [57, 59, 60, 62, 64].filter((m) => bridge.has(`treble:${m}`) && bridge.has(`bass:${m}`))
-if (onBoth.length < 2) errors.push(`Middle C notes were not written on both staves: ${[...bridge].join(' ')}`)
+// Notes around middle C are written on either staff at random, every other note on its own staff.
+// Checked as a group: with ~13 middle notes in 24 prompts, all on one staff has odds of ~1 in 4000
+// (asking two notes to show up on both staves each failed about one run in ten).
+const MIDDLE = [57, 59, 60, 62, 64]
+const middleOn = (clef) => MIDDLE.some((m) => bridge.has(`${clef}:${m}`))
+if (!middleOn('treble') || !middleOn('bass'))
+  errors.push(`Middle C notes were not written on both staves: ${[...bridge].join(' ')}`)
+const misplaced = [...bridge].filter((s) => {
+  const [clef, midi] = [s.split(':')[0], Number(s.split(':')[1])]
+  return !MIDDLE.includes(midi) && clef !== (midi >= 60 ? 'treble' : 'bass')
+})
+if (misplaced.length) errors.push(`Notes away from middle C on the wrong staff: ${misplaced.join(' ')}`)
 await dismissOverlay()
 await page.getByText('Derslere dön').click()
 await playArcade('Nota Barmeni', 'game-bar')
