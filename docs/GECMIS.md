@@ -34,6 +34,8 @@ Sohbet boyunca eklenen istekler (2026-10-07):
     öneriler paylaşılacak, sahibin komutuyla bir sonraki faza geçilecek.
 12. (Faz 5 sonrası) Klavyeler: **evde Yamaha CLP-845, ofiste Akai MPK Mini MK3**. Bekleyen cila işleri tamamlanıp Faz 6
     için iş planı üzerinden devam edilecek.
+13. (Faz 8 sonrası) "Tek oktav bulunan derslerde tek oktav piyano göstermemiz yeterli olacaktır; çünkü ekrandaki tuşlar
+    oldukça sıkışık."
 
 ## Verilen kararlar
 
@@ -54,6 +56,8 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   sağlam yol USB. Android'de Bluetooth ayarlarından eşleştirmek yalnızca ses bağlar, MIDI için ayrı uygulama gerekir.
   Akai MPK Mini MK3 yalnızca USB, sürücüsüz, kendi sesi yok: uygulama ona her zaman piyano sesi çalar. Gecikme her
   klavye için ayrı ölçülür.
+- **Ekran klavyesi:** Her dersin klavyesi kendi notalarından hesaplanır (`fitKeyboard`). Notalar bir Do–Do oktavına
+  sığıyorsa tam o oktav (8 beyaz tuş) gösterilir; daha genişse en pes notadan en tiz notaya kadar, en az bir oktav.
 - **Ritim (Faz 5):** Oyunların saati `performance.now()`; metronom yalnızca ses ve Tone.Transport ile aynı vuruşlara
   hizalanır. Gecikme giriş kaynağına göre (MIDI, ekran, bilgisayar klavyesi) ayrı ölçülüp çıkarılır. Ritim ünitesinin
   ilk dersi baştan açık (nota okuma gerektirmiyor). Yanlış tuş can götürmez, kaçırılan vuruş götürür.
@@ -75,6 +79,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Faz 7: gamlar ünitesi (18 ders), doğru yazım ve donanım imi, parmak numaraları ve geçiş uyarıları, Gam Merdiveni, Melodi Hafızası, gam raporu (eşit tempo, geçişler, iki el uyumu), 3 yeni rozet | PR #9                           |
 | 2026-10-07 | Faz 7 iyileştirmeleri: Tempo Merdiveni (kalıcı tempo artışı), iki oktavlık gamlar, Si, Mi♭, La♭ parmak düzenleri, Kulaktan Hafıza, 6 yeni ders, "Hız Treni" rozeti                               | PR #10                          |
 | 2026-10-08 | Faz 8 ekleri: Akor Barmeni (Nota Barmeni akorlarla, tek ve iki el), Kulaktan Akor ve Kulaktan Yedililer (akor türünü kulakla bulma), 4 yeni ders                                                 | PR #12                          |
+| 2026-10-08 | Ekran klavyesi dersin notalarına göre: tek oktavlık derslerde tek oktav, tuşlar telefonda belirgin biçimde geniş                                                                                 | Tek oktav klavye PR'ı           |
 | 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                          |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                          |
 

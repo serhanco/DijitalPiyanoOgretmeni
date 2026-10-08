@@ -77,6 +77,9 @@ Principles:
   keyboard and MIDI interchangeable (and makes Playwright testing possible by clicking `.key[data-midi]`).
 - **Performance:** the game screen (VexFlow + Bravura font, ~700 kB) is lazy-loaded; Tone.js is dynamically imported.
   Keep the first screen light. Planned arcade games use PixiJS in their own lazy chunk.
+- **On-screen keyboard size:** never hand-pick a lesson's `keyboard`. Note lessons go through `withKeyboards`
+  (`games/noteHunter/keyboard.ts`), pattern lessons through `stepsKeyboard`; both use `fitKeyboard` (`music/notes.ts`):
+  notes inside one Do–Do octave get exactly that octave, wider sets run lowest to highest note, at least 8 white keys.
 - Reaction time counts only prompts answered right on the first try. Accuracy = first-try correct / prompts seen.
 
 ## Current state and next steps

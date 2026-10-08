@@ -2,7 +2,7 @@
 // fingers and crossings), the timed plan of Gam Merdiveni, and the parts of
 // the report only scales have (per scale, crossings, evenness). Pure.
 
-import { type Clef, type Hand, pitchClass } from '../../music/notes'
+import { type Clef, fitKeyboard, type Hand, type KeyRange, pitchClass } from '../../music/notes'
 import {
   type Crossing,
   keyAccidentals,
@@ -105,18 +105,14 @@ export function scaleSteps(parts: ScalePart[]): Step[] {
   })
 }
 
-/** The keyboard to show: from the C at or below the lowest note to the highest white key needed. */
-export function scaleKeyboard(parts: ScalePart[]): { low: number; high: number } {
+/** The keyboard to show: as few keys as the scales need (see `fitKeyboard`). */
+export function scaleKeyboard(parts: ScalePart[]): KeyRange {
   return stepsKeyboard(scaleSteps(parts))
 }
 
-/** The keyboard for any steps: from the C at or below the lowest note to the highest white key needed. */
-export function stepsKeyboard(steps: Step[]): { low: number; high: number } {
-  const midis = steps.flatMap((s) => s.notes.map((n) => n.midi))
-  const low = Math.min(...midis)
-  const high = Math.max(...midis)
-  const blackTop = [1, 3, 6, 8, 10].includes(pitchClass(high))
-  return { low: low - pitchClass(low), high: blackTop ? high + 1 : high }
+/** The keyboard for any steps: as few keys as they need (see `fitKeyboard`). */
+export function stepsKeyboard(steps: Step[]): KeyRange {
+  return fitKeyboard(steps.flatMap((s) => s.notes.map((n) => n.midi)))
 }
 
 /** Written names of the lesson's keys, so a B♭ is never called La#. */

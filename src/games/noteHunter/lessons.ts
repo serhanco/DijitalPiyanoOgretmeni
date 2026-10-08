@@ -5,6 +5,7 @@ import type { ArpeggioPart } from '../chords/arpeggio'
 import type { ChordSpec } from '../chords/lessons'
 import type { MemorySpec } from '../memory/engine'
 import type { ScalePart } from '../scales/steps'
+import { withKeyboards } from './keyboard'
 
 /**
  * How a lesson is played: the staff drill, a melody read note by note, a
@@ -102,9 +103,7 @@ export interface Melody {
   notes: string
 }
 
-const TREBLE_KEYBOARD = { low: parseNote('C4'), high: parseNote('G5') }
-
-export const TREBLE_LESSONS: NoteLesson[] = [
+export const TREBLE_LESSONS: NoteLesson[] = withKeyboards([
   {
     id: 'treble-1',
     title: 'İlk Adımlar',
@@ -112,7 +111,6 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: whiteKeysBetween(parseNote('C4'), parseNote('G4')),
     length: 15,
-    keyboard: TREBLE_KEYBOARD,
   },
   {
     id: 'treble-2',
@@ -121,7 +119,6 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: whiteKeysBetween(parseNote('C4'), parseNote('C5')),
     length: 20,
-    keyboard: TREBLE_KEYBOARD,
   },
   {
     id: 'treble-bird-1',
@@ -131,7 +128,6 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: whiteKeysBetween(parseNote('C4'), parseNote('C5')),
     length: 15,
-    keyboard: TREBLE_KEYBOARD,
   },
   {
     id: 'treble-3',
@@ -140,7 +136,6 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: ['E4', 'G4', 'B4', 'D5', 'F5'].map(parseNote),
     length: 20,
-    keyboard: TREBLE_KEYBOARD,
   },
   {
     id: 'treble-4',
@@ -149,7 +144,6 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: ['F4', 'A4', 'C5', 'E5'].map(parseNote),
     length: 20,
-    keyboard: TREBLE_KEYBOARD,
   },
   {
     id: 'treble-balloon-1',
@@ -159,7 +153,6 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: whiteKeysBetween(parseNote('E4'), parseNote('F5')),
     length: 20,
-    keyboard: TREBLE_KEYBOARD,
   },
   {
     id: 'treble-5',
@@ -168,7 +161,6 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: whiteKeysBetween(parseNote('C4'), parseNote('G5')),
     length: 25,
-    keyboard: TREBLE_KEYBOARD,
   },
   {
     id: 'treble-bird-2',
@@ -178,6 +170,5 @@ export const TREBLE_LESSONS: NoteLesson[] = [
     clef: 'treble',
     notes: whiteKeysBetween(parseNote('C4'), parseNote('G5')),
     length: 25,
-    keyboard: TREBLE_KEYBOARD,
   },
-]
+])

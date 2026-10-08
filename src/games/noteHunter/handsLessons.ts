@@ -1,16 +1,14 @@
 import { parseNote, whiteKeysBetween } from '../../music/notes'
 import type { NoteLesson } from './lessons'
+import { withKeyboards } from './keyboard'
 
 const notes = (low: string, high: string) => whiteKeysBetween(parseNote(low), parseNote(high))
-
-/** Both hands in C position: left Do3–Sol3, right Do4–Sol4 (and up to Do5). */
-export const GRAND_KEYBOARD = { low: parseNote('C3'), high: parseNote('C5') }
 
 /** The notes around middle C that are written on either staff. */
 const MIDDLE = ['A3', 'B3', 'C4', 'D4', 'E4'].map(parseNote)
 
 /** Unit 4: the grand staff, middle C and the two hands together. */
-export const HANDS_LESSONS: NoteLesson[] = [
+export const HANDS_LESSONS: NoteLesson[] = withKeyboards([
   {
     id: 'grand-1',
     title: 'Büyük Porte',
@@ -19,7 +17,6 @@ export const HANDS_LESSONS: NoteLesson[] = [
     grand: true,
     notes: [...notes('C3', 'G3'), ...notes('C4', 'G4')],
     length: 20,
-    keyboard: GRAND_KEYBOARD,
   },
   {
     id: 'grand-2',
@@ -30,7 +27,6 @@ export const HANDS_LESSONS: NoteLesson[] = [
     notes: notes('F3', 'G4'),
     bothStaves: MIDDLE,
     length: 24,
-    keyboard: GRAND_KEYBOARD,
   },
   {
     id: 'grand-bar-1',
@@ -41,7 +37,6 @@ export const HANDS_LESSONS: NoteLesson[] = [
     grand: true,
     notes: [...notes('C3', 'G3'), ...notes('C4', 'G4')],
     length: 20,
-    keyboard: GRAND_KEYBOARD,
   },
   {
     id: 'grand-melody-1',
@@ -52,7 +47,6 @@ export const HANDS_LESSONS: NoteLesson[] = [
     grand: true,
     notes: [],
     length: 0,
-    keyboard: GRAND_KEYBOARD,
     melodies: [
       { title: 'Merdiven', notes: 'C3 D3 E3 F3 G3 C4 D4 E4 F4 G4 F4 E4 D4 C4 G3 F3 E3 D3 C3' },
       {
@@ -70,7 +64,6 @@ export const HANDS_LESSONS: NoteLesson[] = [
     grand: true,
     notes: [],
     length: 0,
-    keyboard: GRAND_KEYBOARD,
     melodies: [
       { title: 'Ayna', notes: 'C3+C4 D3+D4 E3+E4 F3+F4 G3+G4 F3+F4 E3+E4 D3+D4 C3+C4' },
       { title: 'Zıt Yön', notes: 'G3+C4 F3+D4 E3+E4 D3+F4 C3+G4 D3+F4 E3+E4 F3+D4 G3+C4' },
@@ -86,7 +79,6 @@ export const HANDS_LESSONS: NoteLesson[] = [
     notes: notes('C3', 'C5'),
     bothStaves: [parseNote('C4')],
     length: 30,
-    keyboard: GRAND_KEYBOARD,
   },
   {
     id: 'grand-hands-2',
@@ -97,7 +89,6 @@ export const HANDS_LESSONS: NoteLesson[] = [
     grand: true,
     notes: [],
     length: 0,
-    keyboard: GRAND_KEYBOARD,
     melodies: [
       { title: 'Neşeye Övgü', notes: 'E4+C3 E4 F4 G4 G4+G3 F4 E4 D4 C4+C3 C4 D4 E4 E4+G3 D4 D4' },
       {
@@ -106,4 +97,4 @@ export const HANDS_LESSONS: NoteLesson[] = [
       },
     ],
   },
-]
+])

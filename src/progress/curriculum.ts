@@ -1,8 +1,8 @@
 import { CHORD_LESSONS } from '../games/chords/lessons'
-import { BASS_KEYBOARD, BASS_LESSONS } from '../games/noteHunter/bassLessons'
-import { GRAND_KEYBOARD, HANDS_LESSONS } from '../games/noteHunter/handsLessons'
+import { BASS_LESSONS } from '../games/noteHunter/bassLessons'
+import { HANDS_LESSONS } from '../games/noteHunter/handsLessons'
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
-import type { Clef } from '../music/notes'
+import { type Clef, fitKeyboard } from '../music/notes'
 import { SCALE_LESSONS } from '../games/scales/lessons'
 import { RHYTHM_LESSONS } from '../rhythm/lessons'
 
@@ -107,12 +107,6 @@ export const REVIEW_LESSON_ID = 'review'
 
 /** A practice lesson built from the player's weakest notes, on their staff (or both staves). */
 export function buildReviewLesson(clef: Clef | 'grand', notes: number[]): NoteLesson {
-  const keyboard =
-    clef === 'treble'
-      ? TREBLE_LESSONS[TREBLE_LESSONS.length - 1].keyboard
-      : clef === 'bass'
-        ? BASS_KEYBOARD
-        : { low: Math.min(GRAND_KEYBOARD.low, ...notes), high: Math.max(GRAND_KEYBOARD.high, ...notes) }
   return {
     id: REVIEW_LESSON_ID,
     title: 'Zayıf Notalar',
@@ -121,6 +115,6 @@ export function buildReviewLesson(clef: Clef | 'grand', notes: number[]): NoteLe
     ...(clef === 'grand' && { grand: true }),
     notes,
     length: 15,
-    keyboard,
+    keyboard: fitKeyboard(notes),
   }
 }

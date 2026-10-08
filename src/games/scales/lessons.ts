@@ -1,3 +1,4 @@
+import { fitKeyboard } from '../../music/notes'
 import { parseTonic, type ScaleType, scaleOctave } from '../../music/scales'
 import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
 import type { NoteLesson } from '../noteHunter/lessons'
@@ -71,7 +72,7 @@ function memoryLesson(
     clef: 'treble',
     notes,
     length: 0,
-    keyboard: { low: notes[0] - (notes[0] % 12), high: notes[notes.length - 1] },
+    keyboard: fitKeyboard(notes),
     memory: { startLength: 3, maxLength, ...(listenOnly && { listenOnly }) },
   }
 }

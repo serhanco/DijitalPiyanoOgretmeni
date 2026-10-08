@@ -22,6 +22,7 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Faz 7 iyileştirmeleri                         | Birleşti (PR #10) |
 | 8 Akorlar, çevrimler, arpejler                | Birleşti (PR #11) |
 | Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | PR #12            |
+| Tek oktav ekran klavyesi                      | Bu dal            |
 | 9 ve sonrası                                  | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
