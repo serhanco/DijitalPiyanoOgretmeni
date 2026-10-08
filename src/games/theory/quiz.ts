@@ -17,8 +17,8 @@ export type Illustration =
       groups?: boolean
       /** Note names on the white keys. */
       labels?: boolean
-      /** Do position finger numbers (1 on middle C) above the keys. */
-      fingers?: boolean
+      /** Do position finger numbers above the keys: right hand from middle C, left hand from the C below. */
+      fingers?: 'right' | 'left'
     }
   | {
       kind: 'staff'
@@ -32,6 +32,8 @@ export type Illustration =
       numbers?: 'lines'
       /** Draw the treble clef (default true). */
       clef?: boolean
+      /** Bass clef instead of treble. */
+      bass?: boolean
       /** Highlight this line (1–5). */
       highlight?: number
     }

@@ -80,6 +80,11 @@ function Settings({ onCalibrate }: { onCalibrate: () => void }) {
         onChange={(v) => settings.set({ soundEffects: v })}
       />
       <Toggle
+        label="Teori kartlarını ve soruları sesli oku"
+        checked={settings.narration}
+        onChange={(v) => settings.set({ narration: v })}
+      />
+      <Toggle
         label="Titreşim (Android)"
         checked={settings.vibration}
         onChange={(v) => settings.set({ vibration: v })}
@@ -141,84 +146,98 @@ export function HomeScreen({ onStart, onProfile, onCalibrate }: Props) {
       <Greeting />
       <MidiPanel />
 
-      {UNITS.map((unit) => (
-        <section key={unit.id} className={`unit ${unit.comingSoon ? 'soon' : ''}`}>
-          <header className="unit-banner" style={{ background: unit.comingSoon ? undefined : unit.color }}>
-            <h2>{unit.title}</h2>
-            <p>{unit.comingSoon ? 'Yakında' : unit.subtitle}</p>
-          </header>
+      {UNITS.map((unit) => {
+        // A unit waiting for another one (Başlangıç) says so on its banner.
+        const waiting = !!unit.requires && !isUnlocked(unit.lessons[0].id, bestStars)
+        const requiredTitle = UNITS.find((u) => u.id === unit.requires)?.title
+        return (
+          <section
+            key={unit.id}
+            className={`unit ${unit.comingSoon ? 'soon' : ''}`}
+            data-waiting={waiting || undefined}
+          >
+            <header className="unit-banner" style={{ background: unit.comingSoon ? undefined : unit.color }}>
+              <h2>{unit.title}</h2>
+              <p>{unit.comingSoon ? 'Yakında' : unit.subtitle}</p>
+              {waiting && <p className="unit-lock">🔒 {requiredTitle} bitince açılır</p>}
+            </header>
 
-          {unit.id === 'rhythm' && (
-            <button className="calib-tip" onClick={onCalibrate}>
-              ⏱ Bluetooth piyanoyla mı çalışıyorsun? Önce <b>gecikme ayarını</b> yap.
-            </button>
-          )}
+            {unit.id === 'rhythm' && (
+              <button className="calib-tip" onClick={onCalibrate}>
+                ⏱ Bluetooth piyanoyla mı çalışıyorsun? Önce <b>gecikme ayarını</b> yap.
+              </button>
+            )}
 
-          {!unit.comingSoon && (
-            <div className="path">
-              {unit.lessons.map((lesson, i) => {
-                const unlocked = isUnlocked(lesson.id, bestStars)
-                const stars = bestStars(lesson.id)
-                const isCurrent = current?.id === lesson.id
-                return (
-                  <div
-                    key={lesson.id}
-                    className="path-step"
-                    style={{ transform: `translateX(${ZIGZAG[i % ZIGZAG.length]}px)` }}
-                  >
-                    {isCurrent && <span className="start-bubble">BAŞLA</span>}
-                    <button
-                      className={`node ${unlocked ? 'open' : 'locked'} ${stars === 3 ? 'gold' : ''} ${isCurrent ? 'current' : ''}`}
-                      style={unlocked ? ({ '--node': unit.color } as React.CSSProperties) : undefined}
-                      onClick={() =>
-                        unlocked
-                          ? onStart(lesson)
-                          : setToast('Bu dersi açmak için önceki dersi en az 1 yıldızla bitir.')
-                      }
-                      aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
-                    >
-                      {unlocked ? (stars === 3 ? '👑' : KIND_ICON[lesson.kind ?? 'drill']) : '🔒'}
-                    </button>
-                    <span className="node-title">{lesson.title}</span>
-                    <span className="node-stars" aria-label={`${stars} yıldız`}>
-                      {[1, 2, 3].map((s) => (
-                        <span key={s} className={s <= stars ? 'on' : ''}>
-                          ★
-                        </span>
-                      ))}
-                    </span>
-                  </div>
-                )
-              })}
-
-              {unit.review &&
-                (() => {
-                  const clef = unit.lessons[0].clef
-                  const notes = weak[clef]
+            {!unit.comingSoon && (
+              <div className="path">
+                {unit.lessons.map((lesson, i) => {
+                  const unlocked = isUnlocked(lesson.id, bestStars)
+                  const stars = bestStars(lesson.id)
+                  const isCurrent = current?.id === lesson.id
                   return (
                     <div
+                      key={lesson.id}
                       className="path-step"
-                      style={{ transform: `translateX(${ZIGZAG[unit.lessons.length % ZIGZAG.length]}px)` }}
+                      style={{ transform: `translateX(${ZIGZAG[i % ZIGZAG.length]}px)` }}
                     >
+                      {isCurrent && <span className="start-bubble">BAŞLA</span>}
                       <button
-                        className={`node review ${notes.length ? 'open' : 'locked'}`}
+                        className={`node ${unlocked ? 'open' : 'locked'} ${stars === 3 ? 'gold' : ''} ${isCurrent ? 'current' : ''}`}
+                        style={unlocked ? ({ '--node': unit.color } as React.CSSProperties) : undefined}
                         onClick={() =>
-                          notes.length
-                            ? onStart(buildReviewLesson(clef, notes))
-                            : setToast('Birkaç ders bitirince zayıf notalarını burada çalışabilirsin.')
+                          unlocked
+                            ? onStart(lesson)
+                            : setToast(
+                                i === 0 && waiting
+                                  ? `Bu ünite ${requiredTitle} ünitesinin bütün dersleri bitince açılır.`
+                                  : 'Bu dersi açmak için önceki dersi en az 1 yıldızla bitir.',
+                              )
                         }
-                        aria-label={`Zayıf notalar tekrarı (${CLEF_NAMES[clef]})`}
+                        aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
                       >
-                        🏋️
+                        {unlocked ? (stars === 3 ? '👑' : KIND_ICON[lesson.kind ?? 'drill']) : '🔒'}
                       </button>
-                      <span className="node-title">Zayıf Notalar</span>
+                      <span className="node-title">{lesson.title}</span>
+                      <span className="node-stars" aria-label={`${stars} yıldız`}>
+                        {[1, 2, 3].map((s) => (
+                          <span key={s} className={s <= stars ? 'on' : ''}>
+                            ★
+                          </span>
+                        ))}
+                      </span>
                     </div>
                   )
-                })()}
-            </div>
-          )}
-        </section>
-      ))}
+                })}
+
+                {unit.review &&
+                  (() => {
+                    const clef = unit.lessons[0].clef
+                    const notes = weak[clef]
+                    return (
+                      <div
+                        className="path-step"
+                        style={{ transform: `translateX(${ZIGZAG[unit.lessons.length % ZIGZAG.length]}px)` }}
+                      >
+                        <button
+                          className={`node review ${notes.length ? 'open' : 'locked'}`}
+                          onClick={() =>
+                            notes.length
+                              ? onStart(buildReviewLesson(clef, notes))
+                              : setToast('Birkaç ders bitirince zayıf notalarını burada çalışabilirsin.')
+                          }
+                          aria-label={`Zayıf notalar tekrarı (${CLEF_NAMES[clef]})`}
+                        >
+                          🏋️
+                        </button>
+                        <span className="node-title">Zayıf Notalar</span>
+                      </div>
+                    )
+                  })()}
+              </div>
+            )}
+          </section>
+        )
+      })}
 
       <Settings onCalibrate={onCalibrate} />
 

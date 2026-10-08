@@ -6,7 +6,7 @@ import { Staff } from '../components/Staff'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { grandClefPicker, NoteHunterSession } from '../games/noteHunter/session'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
-import { NOTE_INTRO } from '../games/theory/lessons'
+import { noteIntro } from '../games/theory/lessons'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
 import { HEARTS_PER_LESSON } from '../progress/gamification'
@@ -178,7 +178,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
               <p className="prompt">
                 Bu <b>{solfegeName(target, false)}</b>. Işıklı tuşa bas!
               </p>
-              <p className="small muted">{NOTE_INTRO[target]}</p>
+              <p className="small muted">{noteIntro(target, targetClef)}</p>
             </div>
           ) : (
             <p className="prompt">
