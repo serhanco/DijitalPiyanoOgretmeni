@@ -21,7 +21,8 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 7 Gamlar                                      | Birleşti (PR #9)  |
 | Faz 7 iyileştirmeleri                         | Birleşti (PR #10) |
 | 8 Akorlar, çevrimler, arpejler                | Birleşti (PR #11) |
-| Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | PR #12            |
+| Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | Birleşti (PR #12) |
+| Test modu ve ilerleme kodu                    | PR #13            |
 | 9 ve sonrası                                  | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).

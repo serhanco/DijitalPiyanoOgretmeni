@@ -75,6 +75,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Faz 7: gamlar ünitesi (18 ders), doğru yazım ve donanım imi, parmak numaraları ve geçiş uyarıları, Gam Merdiveni, Melodi Hafızası, gam raporu (eşit tempo, geçişler, iki el uyumu), 3 yeni rozet | PR #9                           |
 | 2026-10-07 | Faz 7 iyileştirmeleri: Tempo Merdiveni (kalıcı tempo artışı), iki oktavlık gamlar, Si, Mi♭, La♭ parmak düzenleri, Kulaktan Hafıza, 6 yeni ders, "Hız Treni" rozeti                               | PR #10                          |
 | 2026-10-08 | Faz 8 ekleri: Akor Barmeni (Nota Barmeni akorlarla, tek ve iki el), Kulaktan Akor ve Kulaktan Yedililer (akor türünü kulakla bulma), 4 yeni ders                                                 | PR #12                          |
+| 2026-10-08 | Test modu (bütün dersler açık, her ekranda bağlamıyla not bırakma, notları kopyalama/paylaşma) ve cihazlar arası ilerleme kodu                                                                   | PR #13                          |
 | 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                          |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                          |
 
@@ -111,6 +112,12 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   Clavinova testi sonraya kaldı). Kulaktan akorda kök nota yanar, çünkü yalnızca türü (majör, minör, yedili) duymak
   isteniyor, mutlak ses değil; akor oktav serbest ama kök en altta çalınır (`voicing`). Ses yüklenemezse akorun adı
   yazılır, ders yine oynanır.
+- **Test modu:** Serhan her yeni cihazda baştan başlamadan test edip düzeltme önermek istedi. Test modu ayarlardan
+  açılır: bütün dersler açılır ve her ekranın sağında 📝 düğmesi çıkar. Not, panel açıldığı anki ekranı, dersi, ünite
+  ve ders türünü, sonuç ekranında doğruluk ve yıldızı, MIDI klavyeyi, ekran boyutunu ve uygulama sürümünü (commit +
+  tarih) kendiliğinden yazar; notlar cihazda kalır ve tek dokunuşla Markdown olarak kopyalanır ya da paylaşılır, böylece
+  sohbete yapıştırılabilir. İlerlemeyi taşımak için ayarlarda "İlerlemeyi taşı" herkese açık: bir cihazda "Kodu al",
+  ötekinde yapıştır (ya da dosya); yüklemeden önce onay sorulur, çünkü o cihazdaki ilerlemenin yerine geçer.
 
 ## Açık konular
 

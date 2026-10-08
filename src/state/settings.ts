@@ -25,6 +25,8 @@ interface SettingsState {
   deviceLatency: Record<string, number>
   /** Tempo last played in each rhythm lesson, by lesson id. */
   tempo: Record<string, number>
+  /** For trying the app out: every lesson open and a note button on every screen. */
+  testMode: boolean
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void
 }
 
@@ -42,6 +44,7 @@ export const useSettings = create<SettingsState>()(
       latency: NO_LATENCY,
       deviceLatency: {},
       tempo: {},
+      testMode: false,
       set: (patch) => set(patch),
     }),
     {

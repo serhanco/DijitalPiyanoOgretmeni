@@ -447,6 +447,74 @@ async function chordsUnit() {
     .screenshot({ path: `${out}/map-chords.png` })
 }
 
+/**
+ * Test mode: every lesson opens, a note written in a locked lesson keeps its context and
+ * copies out as Markdown, and the progress code moves everything to a fresh browser.
+ */
+async function testModeFlow() {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(url).origin })
+  await page.locator('.settings summary').click()
+  await page.getByText('Test modu:').click()
+  await page.waitForTimeout(300)
+  const locked = await page.locator('.node.locked:not(.review)').count()
+  if (locked) errors.push(`Test mode left ${locked} lessons locked`)
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.screenshot({ path: `${out}/test-map.png` })
+
+  // A lesson that is locked without test mode (it needs the one before it).
+  await page.getByRole('button', { name: 'Porte Ustası', exact: true }).click()
+  await page.waitForSelector('.staff svg')
+  await page.locator('.test-fab').click()
+  await page.locator('.test-panel textarea').fill('Tuşlar çok sıkışık, bir oktav yeter.')
+  await page.screenshot({ path: `${out}/test-note.png` })
+  await page.getByRole('button', { name: 'Kaydet' }).click()
+  await page.locator('.test-panel textarea').fill('İkinci not: porte biraz küçük.')
+  await page.getByRole('button', { name: 'Kaydet' }).click()
+  await page.waitForTimeout(200)
+  await page.screenshot({ path: `${out}/test-notes.png` })
+  await page.getByRole('button', { name: 'Hepsini kopyala' }).click()
+  await page.waitForTimeout(200)
+  const copied = await page.evaluate(() => navigator.clipboard.readText())
+  for (const part of [
+    '# Test notları (2)',
+    'Ders · Ünite 1: Sol Anahtarı › Porte Ustası',
+    'MIDI: MPK mini 3',
+    'bir oktav yeter',
+  ]) {
+    if (!copied.includes(part)) errors.push(`Copied notes miss "${part}": ${copied}`)
+  }
+  await page.getByLabel('Kapat').click()
+  await page.getByLabel('Dersten çık').click()
+  await page.waitForTimeout(300)
+  const count = (await page.textContent('.test-fab-count'))?.trim()
+  if (count !== '2') errors.push(`Note button counts ${count} notes`)
+
+  // Progress code: take it here, load it in a fresh browser (another device).
+  await page.locator('.settings').evaluate((el) => (el.open = true))
+  await page.getByRole('button', { name: '📤 Kodu al' }).click()
+  await page.waitForFunction(() => document.querySelector('.backup-code')?.value.startsWith('DPO'))
+  const code = await page.inputValue('.backup-code')
+  const fromClipboard = await page.evaluate(() => navigator.clipboard.readText())
+  if (fromClipboard !== code) errors.push('The progress code was not copied')
+  await page.locator('.backup').screenshot({ path: `${out}/test-backup.png` })
+  const xpHere = (await page.textContent('.chip.xp'))?.trim()
+
+  const other = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  other.on('pageerror', (e) => errors.push(`Other device: ${e.message}`))
+  other.on('dialog', (d) => d.accept())
+  await other.goto(url)
+  await other.waitForTimeout(800)
+  await other.locator('.settings summary').click()
+  await other.locator('.backup-code').fill(code)
+  await Promise.all([other.waitForEvent('load'), other.getByRole('button', { name: 'Kodu yükle' }).click()])
+  await other.waitForTimeout(1000)
+  const xpThere = (await other.textContent('.chip.xp'))?.trim()
+  if (xpThere !== xpHere) errors.push(`Progress code moved ${xpThere} instead of ${xpHere}`)
+  const stars = await other.locator('.node-stars .on').count()
+  if (!stars) errors.push('Progress code moved no stars')
+  await other.close()
+}
+
 async function finish() {
   await browser.close()
   if (errors.length) {
@@ -456,6 +524,18 @@ async function finish() {
 }
 
 await page.goto(url)
+
+// SMOKE_ONLY=test plays one lesson, then checks test mode and the progress code.
+if (process.env.SMOKE_ONLY === 'test') {
+  await page.waitForTimeout(800)
+  await play('İlk Adımlar')
+  await dismissOverlay()
+  await page.getByText('Derslere dön').click()
+  await testModeFlow()
+  await finish()
+  console.log(`Smoke test (test mode) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
 
 // SMOKE_ONLY=chords plays only unit 6 (its first lesson is open from the start).
 if (process.env.SMOKE_ONLY === 'chords') {

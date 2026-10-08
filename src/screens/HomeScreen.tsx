@@ -8,6 +8,7 @@ import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from '../progress/
 import { noteScores } from '../progress/history'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
+import { BackupPanel } from '../testing/BackupPanel'
 
 interface Props {
   onStart: (lesson: NoteLesson) => void
@@ -103,13 +104,21 @@ function Settings({ onCalibrate }: { onCalibrate: () => void }) {
         checked={settings.ignoreOctave}
         onChange={(v) => settings.set({ ignoreOctave: v })}
       />
+      <Toggle
+        label="Test modu: bütün dersler açık, her ekranda 📝 not düğmesi"
+        checked={settings.testMode}
+        onChange={(v) => settings.set({ testMode: v })}
+      />
+      <BackupPanel />
     </details>
   )
 }
 
 export function HomeScreen({ onStart, onProfile, onCalibrate }: Props) {
   const lessons = useProfile((s) => s.lessons)
+  const testMode = useSettings((s) => s.testMode)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
+  const unlockedLesson = (id: string) => testMode || isUnlocked(id, bestStars)
   const [weak, setWeak] = useState<Record<Clef, number[]>>({ treble: [], bass: [] })
   const [toast, setToast] = useState<string | null>(null)
 
@@ -132,11 +141,16 @@ export function HomeScreen({ onStart, onProfile, onCalibrate }: Props) {
   }, [toast])
 
   // The first unlocked lesson without stars is where the learner is.
-  const current = UNITS.flatMap((u) => u.lessons).find((l) => isUnlocked(l.id, bestStars) && bestStars(l.id) === 0)
+  const current = UNITS.flatMap((u) => u.lessons).find((l) => unlockedLesson(l.id) && bestStars(l.id) === 0)
 
   return (
     <div className="home">
       <TopBar onProfile={onProfile} />
+      {testMode && (
+        <p className="test-banner">
+          🧪 <b>Test modu açık:</b> bütün dersler açık. Bir şey görünce sağdaki 📝 ile not bırak.
+        </p>
+      )}
       <Greeting />
       <MidiPanel />
 
@@ -156,7 +170,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate }: Props) {
           {!unit.comingSoon && (
             <div className="path">
               {unit.lessons.map((lesson, i) => {
-                const unlocked = isUnlocked(lesson.id, bestStars)
+                const unlocked = unlockedLesson(lesson.id)
                 const stars = bestStars(lesson.id)
                 const isCurrent = current?.id === lesson.id
                 return (

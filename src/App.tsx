@@ -10,6 +10,8 @@ import { HomeScreen } from './screens/HomeScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { ResultsScreen } from './screens/ResultsScreen'
 import { type Reward, useProfile } from './state/profile'
+import { useSettings } from './state/settings'
+import { type Place, TestTools } from './testing/TestTools'
 
 // The staff renderer (VexFlow + music font) is large, so load it after the home screen.
 const loadGame = () => import('./screens/NoteHunterScreen')
@@ -41,6 +43,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
   const midiStatus = useMidi((s) => s.status)
   const connectMidi = useMidi((s) => s.connect)
+  const testMode = useSettings((s) => s.testMode)
 
   useSoundRouting()
   useEffect(() => attachComputerKeyboard(), [])
@@ -96,6 +99,17 @@ export default function App() {
 
   const home = () => setScreen({ name: 'home' })
 
+  const place: Place =
+    screen.name === 'play'
+      ? { screen: 'Ders', lesson: screen.lesson }
+      : screen.name === 'results'
+        ? {
+            screen: 'Sonuç',
+            lesson: screen.lesson,
+            detail: `${screen.summary.failed ? 'canlar bitti, ' : ''}doğruluk %${Math.round(screen.summary.accuracy * 100)}, ${screen.summary.stars} yıldız`,
+          }
+        : { screen: screen.name === 'profile' ? 'Profil' : screen.name === 'calibrate' ? 'Gecikme ayarı' : 'Harita' }
+
   return (
     <main className="app">
       {screen.name === 'home' && (
@@ -145,6 +159,7 @@ export default function App() {
           onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
         />
       )}
+      {testMode && <TestTools place={place} />}
     </main>
   )
 }

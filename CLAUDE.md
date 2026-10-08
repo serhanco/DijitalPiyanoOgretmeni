@@ -65,6 +65,7 @@ src/
   games/chords/           (phase 8) ChordListener + ChordSession, chord report, arpeggio steps / Arpej Sörfü plan, unit 6
   screens/                Home, NoteHunter, Results (simple state machine in App.tsx, no router)
   state/settings.ts       Zustand + localStorage settings
+  testing/                Test mode (notes with context, TestTools) and the progress code (backup, backupStore)
   progress/               (phase 2) gamification rules, Dexie DB, history, curriculum
   state/profile.ts        (phase 2) XP/streak/badges store persisted to IndexedDB via a Dexie kv table
 ```
@@ -85,6 +86,7 @@ Principles:
 | ------ | ---------------------------------------------------------------------------------------- |
 | `main` | Phases 0–8, the polish round and phase 7 improvements (PRs #1–#11), live on GitHub Pages |
 | PR #12 | Phase 8 extras: Akor Barmeni, chords by ear (unit 6 now 24 lessons)                      |
+| PR #13 | Test mode and the progress code                                                          |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -261,6 +263,21 @@ titles)` now also measures "Eşit aralık" (evenness of the played intervals) fo
   (`LessonOutcome.chords`). Badges: Akor Şefi, Uzay Kahramanı (`noneMissed`), Sörf Ustası, Tek Hamlede
   (`allTogether`), Akor Ustası.
 
+Test mode and the progress code (`claude/test-modu-oikwzf`):
+
+- `settings.testMode` (Ayarlar → "Test modu"): every lesson opens (`HomeScreen` skips `isUnlocked`), a yellow banner on
+  the map, and `testing/TestTools.tsx` puts a 📝 tab on the right edge of every screen. A note freezes its context when
+  the panel opens (`Place` from `App`: screen, lesson, unit, kind, results accuracy and stars; MIDI devices, screen
+  size, touch, relaxed mode, build stamp `__APP_BUILD__` = commit + date from `vite.config.ts`). Notes live in
+  localStorage (`dpo-test-notes`, `useTestNotes`); `notesToMarkdown` makes the list the owner pastes into the chat
+  ("Hepsini kopyala", share sheet on phones, .md download). Games keep running while the panel is open.
+- `testing/backup.ts`: `encodeBackup` = JSON → gzip (`CompressionStream`) → base64url with prefix `DPO1.` (`DPO0.`
+  plain where gzip is missing); `decodeBackup` also takes a backup file's JSON. `backupStore.ts` collects / restores
+  the Dexie `sessions`, `noteStats`, the `profile` kv row and the `dpo-settings` localStorage entry, then the page
+  reloads. In Ayarlar for everyone ("İlerlemeyi taşı": Kodu al, Dosya indir / yükle, Kodu yükle with a confirmation).
+- `SMOKE_ONLY=test` plays one lesson, turns test mode on, writes two notes in a locked lesson, checks the copied
+  Markdown and moves the progress code to a second browser page.
+
 Next: **phase 9, ear training and memory** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
@@ -280,7 +297,8 @@ npm run build && (npx vite preview --port 4173 &) && sleep 3
 CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -- /tmp/screens
 ```
 
-`SMOKE_ONLY=chords` plays only unit 6 (a few minutes instead of the whole curriculum). Look at the screenshots after UI
+`SMOKE_ONLY=chords` plays only unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=test` checks test
+mode and the progress code. Look at the screenshots after UI
 changes. Piano samples fail to load in a sandbox without network; the script ignores
 that error.
 
