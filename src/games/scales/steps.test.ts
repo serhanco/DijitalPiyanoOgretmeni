@@ -55,14 +55,14 @@ describe('scale steps', () => {
     expect(steps[16].notes[0].midi).toBe(77)
   })
 
-  it('sizes the keyboard from the lowest C to the highest key', () => {
+  it('sizes the keyboard to the notes of the scales', () => {
     expect(scaleKeyboard([{ tonic: 'C', type: 'major', hands: 'parallel' }])).toEqual({ low: 48, high: 72 })
-    expect(scaleKeyboard([{ tonic: 'E', type: 'major', hands: 'right' }])).toEqual({ low: 60, high: 76 })
+    expect(scaleKeyboard([{ tonic: 'C', type: 'major', hands: 'right' }])).toEqual({ low: 60, high: 72 })
+    expect(scaleKeyboard([{ tonic: 'E', type: 'major', hands: 'right' }])).toEqual({ low: 64, high: 76 })
   })
 
   it('builds every lesson of the unit', () => {
     for (const lesson of SCALE_LESSONS) {
-      expect(lesson.keyboard.low % 12, lesson.id).toBe(0)
       if (lesson.scales)
         expect(scaleSteps(lesson.scales).length).toBe(lesson.scales.reduce((n, p) => n + runLength(p), 0))
       if (lesson.rhythm) expect(lesson.rhythm.bars * 4).toBe(lesson.scales!.length * PART_BEATS)

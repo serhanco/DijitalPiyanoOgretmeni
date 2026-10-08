@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from './curriculum'
+import { lessonNotes } from '../games/noteHunter/keyboard'
+import { ALL_LESSONS, buildReviewLesson, isUnlocked, UNITS, weakestNotes } from './curriculum'
 
 describe('isUnlocked', () => {
   it('opens the first lesson of each unit and each next one after a star', () => {
@@ -54,5 +55,28 @@ describe('buildReviewLesson', () => {
     const l = buildReviewLesson('treble', [62, 64])
     expect(l.id).toBe('review')
     expect(l.notes).toEqual([62, 64])
+    expect(l.keyboard).toEqual({ low: 60, high: 72 })
+  })
+})
+
+describe('lesson keyboards', () => {
+  it('show every key a note lesson asks for', () => {
+    for (const l of ALL_LESSONS)
+      for (const n of lessonNotes(l)) {
+        expect(n, l.id).toBeGreaterThanOrEqual(l.keyboard.low)
+        expect(n, l.id).toBeLessThanOrEqual(l.keyboard.high)
+      }
+  })
+
+  it('show one octave when the notes fit in one', () => {
+    const ids = ['treble-1', 'treble-2', 'treble-bird-1', 'bass-1', 'bass-melody-2', 'scale-c-right', 'scale-g-right']
+    for (const id of ids) {
+      const { low, high } = ALL_LESSONS.find((l) => l.id === id)!.keyboard
+      expect(high - low, id).toBe(12)
+    }
+  })
+  it('start on Do in the note-reading units', () => {
+    for (const unit of UNITS.filter((u) => ['basics', 'treble', 'bass', 'hands'].includes(u.id)))
+      for (const l of unit.lessons) expect(l.keyboard.low % 12, l.id).toBe(0)
   })
 })

@@ -34,8 +34,10 @@ Sohbet boyunca eklenen istekler (2026-10-07):
     öneriler paylaşılacak, sahibin komutuyla bir sonraki faza geçilecek.
 12. (Faz 5 sonrası) Klavyeler: **evde Yamaha CLP-845, ofiste Akai MPK Mini MK3**. Bekleyen cila işleri tamamlanıp Faz 6
     için iş planı üzerinden devam edilecek.
+13. (Faz 8 sonrası) "Tek oktav bulunan derslerde tek oktav piyano göstermemiz yeterli olacaktır; çünkü ekrandaki tuşlar
+    oldukça sıkışık."
 
-13. (2026-10-08) İlk dersten önce **teorik temel bilgiler ve basit testler**; ardından sol anahtarında **tek oktavda
+14. (2026-10-08) İlk dersten önce **teorik temel bilgiler ve basit testler**; ardından sol anahtarında **tek oktavda
     notalar kademeli**: önce yalnızca Do ve Sol, sonra iki nota daha, sonra iki daha.
 
 ## Verilen kararlar
@@ -57,6 +59,8 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   sağlam yol USB. Android'de Bluetooth ayarlarından eşleştirmek yalnızca ses bağlar, MIDI için ayrı uygulama gerekir.
   Akai MPK Mini MK3 yalnızca USB, sürücüsüz, kendi sesi yok: uygulama ona her zaman piyano sesi çalar. Gecikme her
   klavye için ayrı ölçülür.
+- **Ekran klavyesi:** Her dersin klavyesi kendi notalarından hesaplanır (`fitKeyboard`). Notalar bir Do–Do oktavına
+  sığıyorsa tam o oktav (8 beyaz tuş) gösterilir; daha genişse en pes notadan en tiz notaya kadar, en az bir oktav.
 - **Ritim (Faz 5):** Oyunların saati `performance.now()`; metronom yalnızca ses ve Tone.Transport ile aynı vuruşlara
   hizalanır. Gecikme giriş kaynağına göre (MIDI, ekran, bilgisayar klavyesi) ayrı ölçülüp çıkarılır. Ritim ünitesinin
   ilk dersi baştan açık (nota okuma gerektirmiyor). Yanlış tuş can götürmez, kaçırılan vuruş götürür.
@@ -83,6 +87,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-08 | Başlangıç önerileri: ünite kilidi, Klavyesiz Okuma, fa anahtarının başına teori ve ikişer ikişer notalar, sesli anlatım                                                                          | dal `claude/baslangic-dersleri-uox0fr` |
 | 2026-10-08 | Test modu (bütün dersler açık, her ekranda bağlamıyla not bırakma, notları kopyalama/paylaşma) ve cihazlar arası ilerleme kodu                                                                   | PR #13                                 |
 | 2026-10-08 | Test modu ekleri: not paneli oyunu duraklatır, nota ekran görüntüsü, "Dersi bitir" kısayolu, notları .zip olarak indirme                                                                         | PR #13                                 |
+| 2026-10-08 | Ekran klavyesi dersin notalarına göre: tek oktavlık derslerde tek oktav, nota okuma derslerinde hep Do'dan başlar                                                                                | Tek oktav klavye PR'ı                  |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol

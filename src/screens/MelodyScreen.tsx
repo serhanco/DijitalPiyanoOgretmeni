@@ -264,7 +264,7 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
               : ' '}
       </p>
 
-      <PianoKeyboard low={keyboard.low} high={keyboard.high} marks={marks} showLabels={showKeyLabels} />
+      <PianoKeyboard low={keyboard.low} high={keyboard.high} marks={marks} showLabels={showKeyLabels} focus={pending} />
     </div>
   )
 }
