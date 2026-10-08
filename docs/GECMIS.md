@@ -143,6 +143,13 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   cevap sayılır, yanlışta açıklama gösterilip yeniden denenir. Seçenekler her seferinde karışık sırada. Ünite 1 kilitli
   değil (mevcut ilerleme bozulmasın); harita "BAŞLA" ile yeni kullanıcıyı Başlangıç'a yönlendirir.
 
+- **Yatay telefon yerleşimi:** Serhan telefonu yan çevirince ders ekranının sığmadığını, klavyenin ekranın altında
+  kaldığını fark etti ve ayrı bir iş olarak yapılmasını istedi ("uygundur"). Yatay ve kısa ekranlarda (yükseklik
+  ≤ 520 px) ders ekranı tek bir ekrana sıkıştırılıyor: üst çubuk, maskot ve yönerge birer satıra iniyor, porte ya da
+  oyun alanı kalan yüksekliğe göre küçülüyor, klavye altta sabit bir pay alıyor. Ritim ekranında başlangıç kartı
+  (tempo, metronom, Başla) tek satır; teori kartlarında resim metnin yanında. Yalnızca CSS değişti, dikey yerleşim
+  aynı kaldı.
+
 ## Açık konular
 
 - **Gerçek MIDI testi yapılmadı.** Uygulama tarayıcıda ekran klavyesiyle uçtan uca denendi; gerçek bir Bluetooth/USB

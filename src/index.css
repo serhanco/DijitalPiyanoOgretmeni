@@ -1887,3 +1887,192 @@ button.chip {
   font-size: 1.3rem;
   flex: none;
 }
+
+/*
+ * Landscape phones: the lesson has to fit one short screen with the keyboard in view. The header, mascot and
+ * prompt shrink to a line each, the staff (or game field) takes whatever height is left and the keyboard keeps a
+ * fixed share at the bottom.
+ */
+@media (orientation: landscape) and (max-height: 520px) {
+  .app {
+    max-width: none;
+    padding: max(6px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  .game {
+    gap: 4px;
+    height: calc(100dvh - 12px);
+    min-height: 0;
+  }
+  .game.theory {
+    height: auto;
+    min-height: calc(100dvh - 12px);
+  }
+  .game-top {
+    gap: 8px;
+  }
+  /* The header (exit, progress, hearts) shares one line with the mascot and the prompt, on the left. */
+  .game:not(.theory) {
+    position: relative;
+  }
+  .game:not(.theory) > .game-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 34%;
+    height: 36px;
+  }
+  .game:not(.theory) > .game-top + * {
+    min-height: 36px;
+    padding-left: calc(34% + 12px);
+  }
+  .game-top .icon-btn {
+    font-size: 1.1rem;
+    padding: 0 6px;
+  }
+  .progress {
+    height: 10px;
+  }
+  .prompt-row,
+  .arcade-info {
+    margin-top: 0;
+    gap: 8px;
+  }
+  .game .mascot svg {
+    width: 36px;
+    height: 36px;
+  }
+  .prompt-row > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+  }
+  .prompt,
+  .arcade-message {
+    font-size: 1rem;
+  }
+  .prompt-row .finger-tip,
+  .prompt-row .small,
+  .prompt-row .combo {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+  .combo.big {
+    font-size: 0.95rem;
+  }
+  /* The staff gives up height to the keyboard: it scales down to whatever is left. */
+  .game > .staff-wrap {
+    flex: 1 1 0;
+    min-height: 64px;
+    padding: 2px 8px;
+  }
+  .game > .staff-wrap .staff {
+    max-width: none;
+    display: flex;
+    justify-content: center;
+  }
+  .game > .staff-wrap .staff svg {
+    width: 100%;
+    height: 100%;
+  }
+  .feedback {
+    font-size: 0.9rem;
+    min-height: 1.25em;
+    line-height: 1.25;
+  }
+  .keyboard {
+    flex-shrink: 0;
+  }
+  .keyboard,
+  .keyboard[data-octave],
+  .arcade .keyboard[data-octave] {
+    height: clamp(90px, 30dvh, 140px);
+  }
+  .pixi-stage {
+    min-height: 0;
+  }
+  /* The rhythm line keeps its proportions (the playhead is placed by width), so it narrows to fit the height. */
+  .beat-field {
+    min-height: 0;
+    container-type: size;
+  }
+  .rhythm-field {
+    gap: 2px;
+    align-items: center;
+  }
+  .rhythm-staff {
+    padding: 2px 4px;
+    width: min(100%, (100cqh - 28px) * 3);
+  }
+  .rhythm-legend {
+    font-size: 0.75rem;
+  }
+  /* Before the start: tempo, metronome and the start button on one line. */
+  .beat-ready {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 8px 12px;
+  }
+  .beat-ready > .small.muted {
+    display: none;
+  }
+  .beat-ready .tempo-ladder {
+    order: 5;
+    flex-basis: 100%;
+    margin: 0;
+  }
+  .beat-start {
+    align-self: center;
+    margin-left: auto;
+    padding: 8px 20px;
+  }
+  .memory-board,
+  .ear-board {
+    margin: 0;
+    padding: 8px 12px;
+  }
+  /* Melodi Hafızası: the run's length, its dots and the start button on one line. */
+  .memory-board {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 16px;
+  }
+  .memory-round {
+    margin: 0;
+  }
+  .memory-start {
+    padding: 8px 20px;
+  }
+  /* Theory cards: the picture beside the text. */
+  .theory-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px 12px;
+  }
+  .theory-card > .prompt-row,
+  .theory-card > .actions {
+    grid-column: 1 / -1;
+  }
+  .theory-card > .theory-text {
+    font-size: 1rem;
+    padding: 10px 12px;
+    align-self: center;
+  }
+  .theory-card:not(:has(.art)) > .theory-text {
+    grid-column: 1 / -1;
+  }
+  .art {
+    max-height: 55dvh;
+  }
+  .theory-quiz {
+    gap: 6px;
+  }
+  .theory-quiz .art {
+    max-height: 30dvh;
+  }
+}

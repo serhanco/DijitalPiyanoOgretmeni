@@ -19,6 +19,7 @@ import {
 import type { Step, StepNote } from '../games/melody/session'
 import { type Clef, isBlackKey, letterOf, octaveOf, vexKey } from '../music/notes'
 import { vexSpelled } from '../music/scales'
+import { setStaffViewBox, staffBand, useCompactLandscape } from './staffCrop'
 
 export type StepState = 'done' | 'current' | 'todo'
 
@@ -58,6 +59,7 @@ function waitForFonts() {
 export function MelodyStaff({ steps, states, hit, clef, grand = false, wrong = false }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [fontsLoaded, setFontsLoaded] = useState(false)
+  const compact = useCompactLandscape()
 
   useEffect(() => {
     let alive = true
@@ -138,7 +140,9 @@ export function MelodyStaff({ steps, states, hit, clef, grand = false, wrong = f
 
     const svg = el.querySelector('svg')
     if (svg) {
-      svg.setAttribute('viewBox', `0 0 ${WIDTH} ${height}`)
+      // Landscape phone: crop to the staves and notes, with room for the finger numbers.
+      const notes = voices.flatMap((v) => v.getTickables()).filter((t): t is StaveNote => t instanceof StaveNote)
+      setStaffViewBox(svg, WIDTH, height, compact ? staffBand(staves, notes, 20, 20) : undefined)
       svg.removeAttribute('width')
       svg.removeAttribute('height')
       svg.style.removeProperty('width')
@@ -148,7 +152,7 @@ export function MelodyStaff({ steps, states, hit, clef, grand = false, wrong = f
     }
     // `key` stands for every prop the drawing reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, fontsLoaded])
+  }, [key, fontsLoaded, compact])
 
   return <div className="staff" ref={ref} />
 }
