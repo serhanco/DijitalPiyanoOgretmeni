@@ -3,16 +3,22 @@ import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from './curriculum
 
 describe('isUnlocked', () => {
   it('opens the first lesson of each unit and each next one after a star', () => {
-    const [first, second, third] = UNITS[0].lessons
+    const unit = (id: string) => UNITS.find((u) => u.id === id)!.lessons
+    const [first, second, third] = unit('treble')
     const stars: Record<string, number> = { [first.id]: 1 }
     const best = (id: string) => stars[id] ?? 0
     expect(isUnlocked(first.id, best)).toBe(true)
     expect(isUnlocked(second.id, best)).toBe(true)
     expect(isUnlocked(third.id, best)).toBe(false)
     expect(isUnlocked('nope', best)).toBe(false)
-    const [rhythm1, rhythm2] = UNITS[1].lessons
+    const [rhythm1, rhythm2] = unit('rhythm')
     expect(isUnlocked(rhythm1.id, best)).toBe(true)
     expect(isUnlocked(rhythm2.id, best)).toBe(false)
+  })
+
+  it('starts the map with the basics unit', () => {
+    expect(UNITS[0].id).toBe('basics')
+    expect(UNITS[0].lessons[0].kind).toBe('theory')
   })
 })
 

@@ -404,6 +404,23 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
             <span className="stat-label">Kaçırılan</span>
           </div>
         </div>
+      ) : summary.quiz ? (
+        <div className="stat-row">
+          <div className="stat">
+            <span className="stat-value">{pct(summary.accuracy)}</span>
+            <span className="stat-label">İlk denemede doğru</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">
+              {summary.firstTry}/{summary.total}
+            </span>
+            <span className="stat-label">Doğru soru</span>
+          </div>
+          <div className="stat">
+            <span className="stat-value">{summary.totalMistakes}</span>
+            <span className="stat-label">Yanlış cevap</span>
+          </div>
+        </div>
       ) : (
         <div className="stat-row">
           <div className="stat">
@@ -434,6 +451,16 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
         ))}
       </section>
 
+      {summary.quiz && summary.quiz.missed.length > 0 && (
+        <section className="card quiz-card">
+          <h2>Bir daha göz at</h2>
+          <ul className="weak-list">
+            {summary.quiz.missed.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       {summary.chords && <ChordCard chords={summary.chords} />}
       {summary.scale && (
         <ScaleCard scale={summary.scale} arpeggio={lesson.kind === 'arpeggio' || lesson.kind === 'surf'} />
