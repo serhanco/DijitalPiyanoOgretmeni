@@ -37,7 +37,7 @@ function useMapScroll(focus: string | undefined) {
       if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) window.scrollTo(0, target)
       else {
         window.scrollTo(0, Math.max(0, target - window.innerHeight * 0.4))
-        requestAnimationFrame(() => window.scrollTo({ top: target, behavior: 'smooth' }))
+        window.scrollTo({ top: target, behavior: 'smooth' })
       }
     }
     // The next screen (a lesson, the profile) opens at its top.

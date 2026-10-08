@@ -267,10 +267,12 @@ function mapPlace(title) {
 /** Wait until the map stops gliding (the smooth scroll back to the lesson). */
 async function settle(page) {
   await page.waitForSelector('.home')
+  await page.waitForTimeout(300)
   let last = -1
-  for (let i = 0; i < 40; i++) {
+  let still = 0
+  for (let i = 0; i < 50 && still < 3; i++) {
     const y = await page.evaluate(() => window.scrollY)
-    if (y === last) return
+    still = y === last ? still + 1 : 0
     last = y
     await page.waitForTimeout(100)
   }
