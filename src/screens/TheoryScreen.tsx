@@ -1,3 +1,4 @@
+import { useFinishRequest } from '../testing/finishRequest'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
@@ -85,6 +86,7 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
   }, [mood.mood, mood.pulse])
 
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  useFinishRequest(() => onFinishRef.current(summarizeQuiz(spec, quiz.records)))
 
   const answered = (result: ReturnType<QuizSession['choose']>, value: number) => {
     if (result === 'correct') {

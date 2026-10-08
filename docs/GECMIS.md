@@ -81,6 +81,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                          |
 | 2026-10-08 | Başlangıç ünitesi: 4 teori dersi ve testleri, notalar ikişer ikişer (tanıtım + odaklı alıştırma), 2 oyun, "İlk Oktav" rozeti                                                                     | PR #15                          |
 | 2026-10-08 | Test modu (bütün dersler açık, her ekranda bağlamıyla not bırakma, notları kopyalama/paylaşma) ve cihazlar arası ilerleme kodu                                                                   | PR #13                          |
+| 2026-10-08 | Test modu ekleri: not paneli oyunu duraklatır, nota ekran görüntüsü, "Dersi bitir" kısayolu, notları .zip olarak indirme                                                                         | PR #13                          |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                          |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -122,6 +123,12 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   tarih) kendiliğinden yazar; notlar cihazda kalır ve tek dokunuşla Markdown olarak kopyalanır ya da paylaşılır, böylece
   sohbete yapıştırılabilir. İlerlemeyi taşımak için ayarlarda "İlerlemeyi taşı" herkese açık: bir cihazda "Kodu al",
   ötekinde yapıştır (ya da dosya); yüklemeden önce onay sorulur, çünkü o cihazdaki ilerlemenin yerine geçer.
+- **Test modu ekleri:** Serhan rapordaki ilk üç öneriyi istedi ("ilk 3 önerini uygulayabiliriz"). 📝 açılınca oyun
+  durur (bütün oyunlar ortak bir oyun saatiyle çalışır, metronom da durur, panel açıkken basılan tuşlar sayılmaz).
+  Not açıldığı anda ekranın görüntüsü alınır, istenirse nottan çıkarılır; görüntüler cihazda ayrı bir veritabanında
+  durur, "İndir" notlar ve görüntülerle bir .zip verir, telefonda "Paylaş" dosyaları gönderir. "Dersi bitir" (⏭)
+  dersi o ana kadar çalınanla bitirir ve sonuç ekranını gösterir; bu sonuç XP'ye, yıldızlara ve istatistiklere
+  yazılmaz, çünkü yarım bir ders gerçek ilerlemeyi bozmamalı.
 
 - **Başlangıç ünitesi:** Sıra Do-Sol (Do pozisyonunda 1. ve 5. parmak), Re-Mi, Fa-La, Si-Do5. Testlerde can yok; ilk
   cevap sayılır, yanlışta açıklama gösterilip yeniden denenir. Seçenekler her seferinde karışık sırada. Ünite 1 kilitli

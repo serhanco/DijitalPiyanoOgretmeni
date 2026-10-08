@@ -50,7 +50,8 @@ interface ProfileState {
   lessonsCompleted: number
   lessons: Record<string, LessonProgress>
   badges: Record<string, number>
-  completeLesson: (outcome: LessonOutcome, now?: Date) => Reward
+  /** `save: false` (a test finish) works the reward out without keeping it. */
+  completeLesson: (outcome: LessonOutcome, now?: Date, save?: boolean) => Reward
   setDailyGoal: (xp: number) => void
 }
 
@@ -76,7 +77,7 @@ export const useProfile = create<ProfileState>()(
       lessons: {},
       badges: {},
 
-      completeLesson(outcome, now = new Date()) {
+      completeLesson(outcome, now = new Date(), save = true) {
         const s = get()
         const today = dayKey(now)
         const xpLines = xpFor(outcome)
@@ -119,7 +120,7 @@ export const useProfile = create<ProfileState>()(
         const badges = { ...s.badges }
         for (const b of newBadges) badges[b.id] = now.getTime()
 
-        set({ totalXp, streak, daily: { day: today, xp: dailyXp }, lessons, lessonsCompleted, badges })
+        if (save) set({ totalXp, streak, daily: { day: today, xp: dailyXp }, lessons, lessonsCompleted, badges })
 
         return {
           xpLines,

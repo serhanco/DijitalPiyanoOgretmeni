@@ -40,6 +40,7 @@ describe('notesToMarkdown', () => {
           kind: 'bird',
           detail: '2 yıldız',
         }),
+        shot: true,
       },
     ]
     const md = notesToMarkdown(notes)
@@ -48,6 +49,8 @@ describe('notesToMarkdown', () => {
     expect(md.indexOf('Kuş çok hızlı')).toBeLessThan(md.indexOf('Tuşlar çok sıkışık'))
     expect(md).toContain('## 1. Sonuç · Ünite 1: Sol Anahtarı › Nota Kuşu (treble-3, bird)')
     expect(md).toContain('_08.10 09:30 · MIDI yok · 390×844 · dokunmatik · 2 yıldız_')
+    expect(md).toContain('Kuş çok hızlı\n\n![Ekran görüntüsü](ekranlar/not-01.jpg)')
+    expect(md).not.toContain('not-02.jpg')
     expect(md.endsWith('Tuşlar çok sıkışık\n')).toBe(true)
   })
 })

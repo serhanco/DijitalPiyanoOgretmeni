@@ -18,7 +18,11 @@ export async function copyText(text: string): Promise<boolean> {
 
 /** Save text as a file through the browser's download. */
 export function downloadText(name: string, text: string, type = 'text/plain'): void {
-  const url = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }))
+  downloadBlob(name, new Blob([text], { type: `${type};charset=utf-8` }))
+}
+
+export function downloadBlob(name: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = name
@@ -29,9 +33,11 @@ export function downloadText(name: string, text: string, type = 'text/plain'): v
 /** The phone's share sheet (send straight to a chat app), where there is one. */
 export const canShare = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
-export async function shareText(title: string, text: string): Promise<void> {
+/** Share files where the browser can (phones), else the text. */
+export async function shareNotes(title: string, text: string, files: File[]): Promise<void> {
   try {
-    await navigator.share({ title, text })
+    if (files.length && navigator.canShare?.({ files })) await navigator.share({ title, files })
+    else await navigator.share({ title, text })
   } catch {
     // Cancelled by the user.
   }

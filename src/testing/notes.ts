@@ -20,7 +20,15 @@ export interface TestNote {
   at: number
   text: string
   context: NoteContext
+  /** A screenshot is stored for this note (shots.ts). */
+  shot?: boolean
 }
+
+/** The notes in the order they are listed and numbered: oldest first. */
+export const sortNotes = (notes: TestNote[]) => [...notes].sort((a, b) => a.at - b.at)
+
+/** File name of the screenshot of the `index`-th note (0-based) in exports. */
+export const shotFileName = (index: number) => `ekranlar/not-${String(index + 1).padStart(2, '0')}.jpg`
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -40,7 +48,7 @@ export function describePlace(c: NoteContext): string {
 /** All notes as Markdown, oldest first, ready to paste into a chat. */
 export function notesToMarkdown(notes: TestNote[]): string {
   if (!notes.length) return ''
-  const sorted = [...notes].sort((a, b) => a.at - b.at)
+  const sorted = sortNotes(notes)
   const builds = [...new Set(sorted.map((n) => n.context.build))]
   const lines = [`# Test notları (${sorted.length})`, '', `Sürüm: ${builds.join(', ')}`, '']
   sorted.forEach((n, i) => {
@@ -49,6 +57,7 @@ export function notesToMarkdown(notes: TestNote[]): string {
     lines.push('')
     lines.push(n.text.trim())
     lines.push('')
+    if (n.shot) lines.push(`![Ekran görüntüsü](${shotFileName(i)})`, '')
   })
   return lines.join('\n').trimEnd() + '\n'
 }

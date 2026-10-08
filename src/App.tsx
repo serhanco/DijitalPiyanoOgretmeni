@@ -11,6 +11,7 @@ import { ProfileScreen } from './screens/ProfileScreen'
 import { ResultsScreen } from './screens/ResultsScreen'
 import { type Reward, useProfile } from './state/profile'
 import { useSettings } from './state/settings'
+import { consumeFinishRequest } from './testing/finishRequest'
 import { type Place, TestTools } from './testing/TestTools'
 
 // The staff renderer (VexFlow + music font) is large, so load it after the home screen.
@@ -38,7 +39,7 @@ type Screen =
   | { name: 'profile' }
   | { name: 'calibrate' }
   | { name: 'play'; lesson: NoteLesson; run: number }
-  | { name: 'results'; lesson: NoteLesson; summary: SessionSummary; reward: Reward }
+  | { name: 'results'; lesson: NoteLesson; summary: SessionSummary; reward: Reward; trial: boolean }
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
@@ -83,7 +84,13 @@ export default function App() {
       noneMissed: !!summary.chords && summary.chords.played === summary.total,
       tempoRaised: !!summary.tempoLadder?.raisedTo,
     }
-    const reward = useProfile.getState().completeLesson(outcome)
+    // "Dersi bitir" in test mode shows the results but keeps them out of the progress.
+    const trial = consumeFinishRequest()
+    const earned = useProfile.getState().completeLesson(outcome, new Date(), !trial)
+    // Nothing was kept, so nothing is celebrated as new.
+    const reward = trial
+      ? { ...earned, newBadges: [], levelAfter: earned.levelBefore, goalJustReached: false, streakExtended: false }
+      : earned
     const timing = summary.timing && {
       counts: summary.timing.counts,
       meanOffsetMs: summary.timing.meanOffsetMs,
@@ -92,11 +99,12 @@ export default function App() {
     // Rhythm results say how well notes were timed, and scales and memory runs are known in
     // advance: only note-reading lessons feed the note statistics.
     const reading = !summary.timing && !PATTERN_KINDS.includes(lesson.kind ?? 'drill')
-    void recordSession(
-      { ...outcome, at: Date.now(), xp: reward.xpGained, timing },
-      reading ? summary.perNote : [],
-    ).catch((err) => console.error('Could not save the session', err))
-    setScreen({ name: 'results', lesson, summary, reward })
+    if (!trial)
+      void recordSession(
+        { ...outcome, at: Date.now(), xp: reward.xpGained, timing },
+        reading ? summary.perNote : [],
+      ).catch((err) => console.error('Could not save the session', err))
+    setScreen({ name: 'results', lesson, summary, reward, trial })
   }
 
   const home = () => setScreen({ name: 'home' })
@@ -158,6 +166,7 @@ export default function App() {
           lesson={screen.lesson}
           summary={screen.summary}
           reward={screen.reward}
+          trial={screen.trial}
           onRetry={() => start(screen.lesson)}
           onHome={home}
           onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}

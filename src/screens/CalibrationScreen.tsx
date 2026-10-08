@@ -1,3 +1,4 @@
+import { gameNow } from '../input/gameClock'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type Metronome, prepareMetronome, startMetronome } from '../audio/metronome'
 import { Mascot } from '../components/Mascot'
@@ -51,7 +52,7 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
     await prepareMetronome()
     taps.current = []
     setSaved(false)
-    const startAt = performance.now() + LEAD_MS + COUNT_IN * BEAT_MS
+    const startAt = gameNow() + LEAD_MS + COUNT_IN * BEAT_MS
     ;(window as unknown as { __dpoCalibration?: unknown }).__dpoCalibration = { startAt, beatMs: BEAT_MS }
     setPhase({ name: 'running', startAt })
     metronome.current?.stop()
@@ -81,7 +82,7 @@ export function CalibrationScreen({ onBack }: { onBack: () => void }) {
     let raf = 0
     const end = phase.startAt + (CALIBRATION_BEATS - 0.5) * BEAT_MS
     const loop = () => {
-      const t = performance.now()
+      const t = gameNow()
       setNow(t)
       if (t > end) {
         metronome.current?.stop()

@@ -286,13 +286,27 @@ Test mode and the progress code (`claude/test-modu-oikwzf`):
   the panel opens (`Place` from `App`: screen, lesson, unit, kind, results accuracy and stars; MIDI devices, screen
   size, touch, relaxed mode, build stamp `__APP_BUILD__` = commit + date from `vite.config.ts`). Notes live in
   localStorage (`dpo-test-notes`, `useTestNotes`); `notesToMarkdown` makes the list the owner pastes into the chat
-  ("Hepsini kopyala", share sheet on phones, .md download). Games keep running while the panel is open.
+  ("Hepsini kopyala", share sheet on phones, .md download).
+- **Game clock** (`input/gameClock.ts`): `gameNow()` = `performance.now()` minus the time spent paused; every lesson
+  screen, `PixiStage`, `BeatFrame`, the calibration and the metronome use it, and `inputBus.emit` converts event times
+  to it and drops key presses while paused. `gameTimeout` is a setTimeout that waits out pauses (the screens' `later`
+  helpers). The 📝 panel calls `pauseGame()` / `resumeGame()`; the metronome pauses `Tone.Transport` with it. New
+  screens must take time from `gameNow()`, never `performance.now()`.
+- Each note can carry a screenshot (`testing/shots.ts`: `modern-screenshot`, lazily loaded; the visible viewport as
+  JPEG, stored in a separate Dexie database `dpo-test-shots`). VexFlow's Bravura is a FontFace the screenshot cannot
+  see, so `embedMusicFont` adds it as a stylesheet rule. Pixi canvases use `preserveDrawingBuffer`. "İndir" builds a
+  .zip (`testing/zip.ts`, stored entries) with `test-notlari.md` and `ekranlar/not-NN.jpg`; "Paylaş" shares the files.
+- **Dersi bitir** (⏭ under 📝 in lessons): `requestFinish()` (`testing/finishRequest.ts`) makes the lesson screen
+  build its summary from what was played (`useFinishRequest` / `onFinishRequest` in every lesson screen; `BeatFrame`
+  counts the round in progress). `App` sees `consumeFinishRequest()` and runs `completeLesson(outcome, now, false)`
+  (reward worked out, not kept), skips `recordSession`, and the results show a test banner and no reward card.
 - `testing/backup.ts`: `encodeBackup` = JSON → gzip (`CompressionStream`) → base64url with prefix `DPO1.` (`DPO0.`
   plain where gzip is missing); `decodeBackup` also takes a backup file's JSON. `backupStore.ts` collects / restores
   the Dexie `sessions`, `noteStats`, the `profile` kv row and the `dpo-settings` localStorage entry, then the page
   reloads. In Ayarlar for everyone ("İlerlemeyi taşı": Kodu al, Dosya indir / yükle, Kodu yükle with a confirmation).
-- `SMOKE_ONLY=test` plays one lesson, turns test mode on, writes two notes in a locked lesson, checks the copied
-  Markdown and moves the progress code to a second browser page.
+- `SMOKE_ONLY=test` plays one lesson, turns test mode on, writes a note with a screenshot in a locked lesson, finishes
+  it early (XP unchanged), checks that the balloons stand still behind the panel and move again after it, finishes a
+  rhythm lesson mid-round, checks the copied Markdown and the .zip, and moves the progress code to a second page.
 
 Next: **phase 9, ear training and memory** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.

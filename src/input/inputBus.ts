@@ -1,6 +1,8 @@
 // One stream of note events, whatever they come from: a MIDI keyboard,
 // the on-screen keyboard or the computer keyboard.
 
+import { isPaused, toGameTime } from './gameClock'
+
 export type InputSource = 'midi' | 'screen' | 'computer'
 
 export interface NoteEvent {
@@ -8,7 +10,7 @@ export interface NoteEvent {
   midi: number
   velocity: number // 0..1
   source: InputSource
-  time: number // performance.now() milliseconds
+  time: number // game clock milliseconds (gameClock.ts)
   /** MIDI only: the name of the keyboard's port. */
   device?: string
 }
@@ -23,7 +25,10 @@ export function subscribe(listener: Listener): () => void {
   return () => listeners.delete(listener)
 }
 
-export function emit(e: NoteEvent): void {
+/** `time` is a performance.now() time; listeners get it on the game clock. Keys pressed while paused are dropped. */
+export function emit(raw: NoteEvent): void {
+  if (raw.type === 'on' && isPaused()) return
+  const e = { ...raw, time: toGameTime(raw.time) }
   if (e.type === 'on') held.set(e.midi, e.source)
   else held.delete(e.midi)
   for (const l of listeners) l(e)

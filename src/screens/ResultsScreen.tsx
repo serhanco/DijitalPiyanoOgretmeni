@@ -19,6 +19,8 @@ interface Props {
   lesson: NoteLesson
   summary: SessionSummary
   reward: Reward
+  /** Ended early with test mode's "Dersi bitir": nothing was saved. */
+  trial?: boolean
   onRetry: () => void
   onHome: () => void
   /** Start a short drill on these notes, on their staff (or both staves). */
@@ -281,7 +283,7 @@ function Comparison({ before, now }: { before: number | null; now: number }) {
   return <p className={`compare ${diff > 0 ? 'up' : ''}`}>{text}</p>
 }
 
-export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPractice }: Props) {
+export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome, onPractice }: Props) {
   const practiceNotes = [...new Set(summary.weakest.map((n) => n.midi))]
   const practiceClefs = new Set(summary.weakest.map((n) => n.clef))
   const practiceClef: Clef | 'grand' = practiceClefs.size === 1 ? [...practiceClefs][0] : 'grand'
@@ -307,6 +309,7 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
 
   return (
     <div className="results">
+      {trial && <p className="test-banner">🧪 Test: ders erken bitirildi, sonuç ilerlemeye yazılmadı.</p>}
       <AnimatePresence>
         {showLevelUp && (
           <motion.div
@@ -343,34 +346,39 @@ export function ResultsScreen({ lesson, summary, reward, onRetry, onHome, onPrac
       <h1>{summary.failed ? 'Kalplerin bitti' : `${lesson.title} tamamlandı!`}</h1>
       {!summary.failed && <Comparison before={reward.previousBestAccuracy} now={summary.accuracy} />}
 
-      <section className="card rewards">
-        <div className="reward-xp">
-          <span className="xp-big">
-            <CountUp value={reward.xpGained} prefix="+" /> XP
-          </span>
-          <ul>
-            {reward.xpLines
-              .filter((l) => l.xp > 0)
-              .map((l) => (
-                <li key={l.label}>
-                  {l.label} <b>+{l.xp}</b>
-                </li>
-              ))}
-          </ul>
-        </div>
-        <div className="reward-side">
-          <div className={`reward-chip ${reward.streakExtended ? 'pop' : ''}`}>
-            🔥 <b>{reward.streak}</b> günlük seri
-          </div>
-          <div className="reward-chip">
-            <GoalRing value={reward.dailyXp} goal={reward.dailyGoal} size={28} />
-            {reward.goalJustReached ? 'Günlük hedef tamam!' : `Bugün ${reward.dailyXp}/${reward.dailyGoal} XP`}
-          </div>
-          {reward.levelAfter > reward.levelBefore && (
-            <div className="reward-chip pop">🎉 Seviye {reward.levelAfter}!</div>
-          )}
-        </div>
-      </section>
+      {/* A test finish keeps nothing, so it shows no reward. */}
+      {!trial && (
+        <>
+          <section className="card rewards">
+            <div className="reward-xp">
+              <span className="xp-big">
+                <CountUp value={reward.xpGained} prefix="+" /> XP
+              </span>
+              <ul>
+                {reward.xpLines
+                  .filter((l) => l.xp > 0)
+                  .map((l) => (
+                    <li key={l.label}>
+                      {l.label} <b>+{l.xp}</b>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+            <div className="reward-side">
+              <div className={`reward-chip ${reward.streakExtended ? 'pop' : ''}`}>
+                🔥 <b>{reward.streak}</b> günlük seri
+              </div>
+              <div className="reward-chip">
+                <GoalRing value={reward.dailyXp} goal={reward.dailyGoal} size={28} />
+                {reward.goalJustReached ? 'Günlük hedef tamam!' : `Bugün ${reward.dailyXp}/${reward.dailyGoal} XP`}
+              </div>
+              {reward.levelAfter > reward.levelBefore && (
+                <div className="reward-chip pop">🎉 Seviye {reward.levelAfter}!</div>
+              )}
+            </div>
+          </section>
+        </>
+      )}
 
       {reward.newBadges.length > 0 && (
         <section className="card badges-new">
