@@ -274,8 +274,15 @@ Başlangıç unit (`claude/baslangic-dersleri-uox0fr`, the first unit on the map
 - Notes two at a time on a one-octave keyboard (`BASICS_KEYBOARD` C4–C5): Do ve Sol → Re ve Mi → Fa ve La → Si ve
   İnce Do, with a balloon game and Nota Kuşu between. `NoteLesson.introduce` makes the drill show each new note first
   (staff, lit key, `NOTE_INTRO` text: where it sits); `focus` asks those notes twice as often (`buildSequence(…, focus)`,
-  rounds reshuffled until no note repeats back to back). Badge İlk Oktav. Unit 1 stays open (the BAŞLA bubble points
-  at the basics first). `SMOKE_ONLY=basics` plays this unit.
+  rounds reshuffled until no note repeats back to back). Badge İlk Oktav. `SMOKE_ONLY=basics` plays this unit.
+- Follow-up (owner's go on all four suggestions): `Unit.requires: 'basics'` keeps every other unit's first lesson
+  locked until each Başlangıç lesson has a star, unless the learner already has stars in that unit (old progress stays
+  open); the banner says "🔒 … bitince açılır". `nameQuestion(midi, clef)` ("Bu nota hangisi?", the two neighbour
+  names as distractors, topic = line/space/outside) feeds Klavyesiz Okuma (treble, before Nota Kuşu) and the staff
+  quizzes. Unit 3 starts with `BASS_START_LESSONS`: Fa Anahtarı theory (left-hand Do position, `fingers: 'left'`,
+  `bass` staff art), Sol El: Do ve Sol → Re ve Mi → Fa ve La → Si ve Orta Do, Fa: Klavyesiz Okuma. Intro texts per
+  staff: `noteIntro(midi, clef)`. `audio/speech.ts` reads cards and questions aloud (Web Speech, tr-TR) when
+  `settings.narration` is on (default), plus a 🔊 button.
 
 Next: **phase 9, ear training and memory** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
@@ -296,7 +303,7 @@ npm run build && (npx vite preview --port 4173 &) && sleep 3
 CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -- /tmp/screens
 ```
 
-`SMOKE_ONLY=chords` plays only unit 6 (a few minutes instead of the whole curriculum). Look at the screenshots after UI
+`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum). Look at the screenshots after UI
 changes. Piano samples fail to load in a sandbox without network; the script ignores
 that error.
 

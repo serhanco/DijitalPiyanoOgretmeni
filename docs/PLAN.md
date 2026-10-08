@@ -22,7 +22,8 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Faz 7 iyileştirmeleri                         | Birleşti (PR #10) |
 | 8 Akorlar, çevrimler, arpejler                | Birleşti (PR #11) |
 | Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | PR #12            |
-| Başlangıç ünitesi (teori, notalar ikişer)     | PR açık           |
+| Başlangıç ünitesi (teori, notalar ikişer)     | Birleşti (PR #15) |
+| Başlangıç önerileri (kilit, fa, okuma, ses)   | PR açık           |
 | 9 ve sonrası                                  | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
@@ -90,6 +91,11 @@ bas" gibi tuş soruları; raporda konu başına başarı ve yanlış bilinen bil
 Numaraları, Porte ve Sol Anahtarı, Nota Süreleri. Sol anahtarında tek oktav (Do4–Do5), notalar ikişer ikişer: Do ve Sol
 → Re ve Mi → Fa ve La → Si ve İnce Do. Her yeni nota önce tanıtılır (portedeki yeri, ışıklı tuş, nerede olduğu), sonra
 alıştırmada yeni notalar iki kat sık çıkar. Araya Balon Patlatma ve Nota Kuşu girer.
+
+Ekler: diğer bütün üniteler Başlangıç bitince açılır (önceden yıldız alınmış üniteler açık kalır). Klavyesiz Okuma testi
+(portedeki notanın adını seç; rapor çizgi, ara, porte dışı). Ünite 3 aynı yolla başlar: Fa Anahtarı teori dersi, sol elde
+Do pozisyonu, Do ve Sol → Re ve Mi → Fa ve La → Si ve Orta Do, Fa: Klavyesiz Okuma. Teori kartları ve sorular sesli
+okunur (ayarlardan kapatılabilir, 🔊 düğmesiyle tekrar).
 
 ### Faz 1 — Çekirdek: MIDI, ses, porte, ilk oyun (PR #1)
 

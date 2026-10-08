@@ -519,6 +519,9 @@ async function playIntro(lessonTitle, shotName) {
 /** The Başlangıç unit: theory with quizzes, then the octave two notes at a time. */
 async function basicsUnit() {
   const back = () => page.getByText('Derslere dön').click()
+  // Every other unit waits for Başlangıç.
+  const locked = await page.getAttribute('.node[aria-label="Sol El: İlk Adımlar (kilitli)"]', 'aria-label')
+  if (!locked) throw new Error('Units after Başlangıç should start locked')
   await playTheory('Piyanoyla Tanışma', 'theory-piano', { shots: [0, 1, 2], wrongAt: 2, quizShot: 1 })
   await dismissOverlay()
   await page.screenshot({ path: `${out}/results-theory.png`, fullPage: true })
@@ -549,6 +552,10 @@ async function basicsUnit() {
   await playIntro('Si ve İnce Do', 'notes-si-do')
   await dismissOverlay()
   await back()
+  await playTheory('Klavyesiz Okuma', 'theory-read', { quizShot: 0, wrongAt: 3 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-read.png`, fullPage: true })
+  await back()
   await playArcade('Nota Kuşu: İlk Oktav', 'game-bird-basics')
   await dismissOverlay()
   await back()
@@ -569,9 +576,10 @@ async function finish() {
 
 await page.goto(url)
 
-// SMOKE_ONLY=chords plays only unit 6 (its first lesson is open from the start).
+// SMOKE_ONLY=chords plays Başlangıç (it opens the other units), then unit 6.
 if (process.env.SMOKE_ONLY === 'chords') {
   await page.waitForTimeout(800)
+  await basicsUnit()
   await chordsUnit()
   await finish()
   console.log(`Smoke test (chords) passed. Screenshots in ${out}/`)
@@ -680,7 +688,23 @@ await playBeat('Davulcu: Noktalılar', 'game-drum-dotted')
 await dismissOverlay()
 await page.getByText('Derslere dön').click()
 
-// Phase 6, unit 3: the bass clef with the left hand.
+// Phase 6, unit 3: the bass clef with the left hand, starting with the clef and the notes two at a time.
+await playTheory('Fa Anahtarı', 'theory-bass', { shots: [0, 2], quizShot: 5 })
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+for (const [title, shot] of [
+  ['Sol El: Do ve Sol', 'notes-bass-do-sol'],
+  ['Sol El: Re ve Mi', 'notes-bass-re-mi'],
+  ['Sol El: Fa ve La', 'notes-bass-fa-la'],
+  ['Sol El: Si ve Orta Do', 'notes-bass-si-do'],
+]) {
+  await playIntro(title, shot)
+  await dismissOverlay()
+  await page.getByText('Derslere dön').click()
+}
+await playTheory('Fa: Klavyesiz Okuma', 'theory-bass-read', { quizShot: 0 })
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
 await play('Sol El: İlk Adımlar', { shotAfter: 3, shotName: 'game-bass' })
 await dismissOverlay()
 await page.getByText('Derslere dön').click()

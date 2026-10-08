@@ -17,7 +17,12 @@ export interface Unit {
   comingSoon?: boolean
   /** Ends with a "weak notes" review built from the note statistics. */
   review?: boolean
+  /** The unit opens once every lesson of this unit has a star. */
+  requires?: string
 }
+
+/** Every unit after Başlangıç waits for it. */
+const AFTER_BASICS = 'basics'
 
 export const UNITS: Unit[] = [
   {
@@ -29,6 +34,7 @@ export const UNITS: Unit[] = [
   },
   {
     id: 'treble',
+    requires: AFTER_BASICS,
     title: 'Ünite 1: Sol Anahtarı',
     subtitle: 'Sağ elin notalarını tanı',
     color: '#58cc02',
@@ -37,6 +43,7 @@ export const UNITS: Unit[] = [
   },
   {
     id: 'rhythm',
+    requires: AFTER_BASICS,
     title: 'Ünite 2: Ritim ve Tempo',
     subtitle: 'Zamanında çal',
     color: '#ce82ff',
@@ -44,6 +51,7 @@ export const UNITS: Unit[] = [
   },
   {
     id: 'bass',
+    requires: AFTER_BASICS,
     title: 'Ünite 3: Fa Anahtarı',
     subtitle: 'Sol elin notaları',
     color: '#1cb0f6',
@@ -52,6 +60,7 @@ export const UNITS: Unit[] = [
   },
   {
     id: 'hands',
+    requires: AFTER_BASICS,
     title: 'Ünite 4: İki El',
     subtitle: 'Büyük porte, Orta Do ve iki el birlikte',
     color: '#ff4b8b',
@@ -59,6 +68,7 @@ export const UNITS: Unit[] = [
   },
   {
     id: 'scales',
+    requires: AFTER_BASICS,
     title: 'Ünite 5: Gamlar',
     subtitle: 'Sağ el, sol el, iki el eş zamanlı',
     color: '#2bc4a8',
@@ -66,6 +76,7 @@ export const UNITS: Unit[] = [
   },
   {
     id: 'chords',
+    requires: AFTER_BASICS,
     title: 'Ünite 6: Akorlar',
     subtitle: 'Üçlüler, çevrimler, arpejler',
     color: '#ff9600',
@@ -79,14 +90,22 @@ export function findLesson(id: string): NoteLesson | undefined {
   return ALL_LESSONS.find((l) => l.id === id)
 }
 
+/** True when every lesson of the unit has at least one star. */
+export function unitDone(unitId: string, bestStars: (id: string) => number): boolean {
+  const unit = UNITS.find((u) => u.id === unitId)
+  return !!unit && unit.lessons.every((l) => bestStars(l.id) >= 1)
+}
+
 /**
- * The first lesson of every unit is open (rhythm does not need note reading),
- * and each next one opens once the one before it in the unit has a star.
+ * The first lesson of a unit opens when the unit it requires is done (or when
+ * the learner already has stars in the unit, so earlier progress stays open);
+ * each next lesson opens once the one before it has a star.
  */
 export function isUnlocked(lessonId: string, bestStars: (id: string) => number): boolean {
   for (const unit of UNITS) {
     const i = unit.lessons.findIndex((l) => l.id === lessonId)
-    if (i === 0) return true
+    if (i === 0)
+      return !unit.requires || unitDone(unit.requires, bestStars) || unit.lessons.some((l) => bestStars(l.id) >= 1)
     if (i > 0) return bestStars(unit.lessons[i - 1].id) >= 1
   }
   return false

@@ -17,6 +17,8 @@ interface SettingsState {
   soundEffects: boolean
   /** Vibrate on mistakes (Android). */
   vibration: boolean
+  /** Read theory cards and quiz questions aloud. */
+  narration: boolean
   /** Metronome clicks in rhythm activities. */
   metronome: boolean
   /** Measured delay of each input, subtracted from presses in rhythm activities. */
@@ -39,6 +41,7 @@ export const useSettings = create<SettingsState>()(
       soundEffects: true,
       vibration: true,
       metronome: true,
+      narration: true,
       latency: NO_LATENCY,
       deviceLatency: {},
       tempo: {},

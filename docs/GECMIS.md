@@ -80,6 +80,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-08 | Faz 8 ekleri: Akor Barmeni (Nota Barmeni akorlarla, tek ve iki el), Kulaktan Akor ve Kulaktan Yedililer (akor türünü kulakla bulma), 4 yeni ders                                                 | PR #12                                 |
 | 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                                 |
 | 2026-10-08 | Başlangıç ünitesi: 4 teori dersi ve testleri, notalar ikişer ikişer (tanıtım + odaklı alıştırma), 2 oyun, "İlk Oktav" rozeti                                                                     | dal `claude/baslangic-dersleri-uox0fr` |
+| 2026-10-08 | Başlangıç önerileri: ünite kilidi, Klavyesiz Okuma, fa anahtarının başına teori ve ikişer ikişer notalar, sesli anlatım                                                                          | dal `claude/baslangic-dersleri-uox0fr` |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -116,7 +117,10 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   isteniyor, mutlak ses değil; akor oktav serbest ama kök en altta çalınır (`voicing`). Ses yüklenemezse akorun adı
   yazılır, ders yine oynanır.
 
-- **Başlangıç ünitesi:** Sıra Do-Sol (Do pozisyonunda 1. ve 5. parmak), Re-Mi, Fa-La, Si-Do5. Testlerde can yok; ilk
+- **Başlangıç ünitesi:** Sıra Do-Sol (Do pozisyonunda 1. ve 5. parmak), Re-Mi, Fa-La, Si-Do5. Serhan dört öneriyi de istedi ("4 önerin harika,
+  uygulayalım"): diğer üniteler Başlangıç'tan sonra açılır ama içinde yıldızı olan ünite açık kalır, böylece mevcut
+  ilerleme kaybolmaz; fa anahtarı da sol elde Do pozisyonuyla (serçe Do3, başparmak Sol3) ikişer ikişer başlar;
+  klavyesiz okuma testleri; sesli anlatım tarayıcının Türkçe sesiyle, varsayılan açık. Testlerde can yok; ilk
   cevap sayılır, yanlışta açıklama gösterilip yeniden denenir. Seçenekler her seferinde karışık sırada. Ünite 1 kilitli
   değil (mevcut ilerleme bozulmasın); harita "BAŞLA" ile yeni kullanıcıyı Başlangıç'a yönlendirir.
 
