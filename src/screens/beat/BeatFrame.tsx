@@ -3,6 +3,8 @@
 // mascot and the report at the end. A tempo ladder plays the same plan in
 // rounds of rising tempo. Each activity only draws its playfield.
 
+import { useFinishRequest } from '../../testing/finishRequest'
+import { gameNow, gameTimeout } from '../../input/gameClock'
 import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type Metronome, prepareMetronome, startMetronome } from '../../audio/metronome'
 import { vibrate } from '../../audio/sfx'
@@ -145,7 +147,7 @@ export function BeatFrame({
   const [bpm, setBpm] = useState(() => clampBpm(useSettings.getState().tempo[lesson.id] ?? spec.bpm))
   const [track, setTrack] = useState<BeatTrack | null>(null)
   const trackRef = useRef<BeatTrack | null>(null)
-  const [now, setNow] = useState(() => performance.now())
+  const [now, setNow] = useState(() => gameNow())
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
   const [message, setMessage] = useState(howTo)
   const [popup, setPopup] = useState<Popup | null>(null)
@@ -156,7 +158,7 @@ export function BeatFrame({
   const tempos = useMemo(() => (ladder ? ladderTempos(bpm, ladder) : [bpm]), [ladder, bpm])
   /** Finished rounds of a tempo ladder (just one otherwise). */
   const tracksRef = useRef<BeatTrack[]>([])
-  const roundTimer = useRef(0)
+  const roundTimer = useRef<() => void>(() => undefined)
   const metronomeRef = useRef<Metronome | null>(null)
   const finished = useRef(false)
   const onFinishRef = useRef(onFinish)
@@ -178,7 +180,7 @@ export function BeatFrame({
       setRoundIndex(index)
       const b = beatMs(roundBpm)
       const countIn = spec.beatsPerBar * COUNT_IN_BARS
-      const startAt = performance.now() + LEAD_MS + countIn * b
+      const startAt = gameNow() + LEAD_MS + countIn * b
       const t = new BeatTrack(skill, { bpm: roundBpm, startAt, hearts: heartsLeft })
       trackRef.current = t
       ;(window as unknown as { __dpoBeat?: BeatTrack }).__dpoBeat = t
@@ -207,19 +209,20 @@ export function BeatFrame({
   /** The report of every round played. */
   const finish = useCallback(() => {
     const tracks = tracksRef.current
-    const last = tracks[tracks.length - 1]
+    const last = tracks.at(-1)
     const summary = summarizeRhythm(
       tracks.flatMap((t) => t.attempted),
       {
-        failed: last.failed,
+        failed: last?.failed ?? false,
         pitched: !spec.anyKey && !reportRef.current,
         stray: tracks.reduce((n, t) => n + t.stray, 0),
-        bestCombo: Math.max(...tracks.map((t) => t.bestCombo)),
-        bpm: last.bpm,
+        bestCombo: Math.max(0, ...tracks.map((t) => t.bestCombo)),
+        bpm: last?.bpm ?? bpm,
       },
     )
-    let out = reportRef.current ? reportRef.current(tracks, summary) : summary
-    if (ladder) {
+    // A test finish before the first round started has nothing to report per part.
+    let out = reportRef.current && last ? reportRef.current(tracks, summary) : summary
+    if (ladder && last) {
       const tempoLadder = tempoLadderSummary(tracks, tempos, ladder)
       out = { ...out, tempoLadder, perCategory: [...tempoTopics(tracks), ...out.perCategory] }
       // Every round passed: next time the ladder starts one step higher.
@@ -227,13 +230,23 @@ export function BeatFrame({
         set({ tempo: { ...useSettings.getState().tempo, [lesson.id]: tempoLadder.raisedTo } })
     }
     onFinishRef.current(out)
-  }, [spec.anyKey, ladder, tempos, set, lesson.id])
+  }, [spec.anyKey, ladder, tempos, set, lesson.id, bpm])
+
+  // Test mode: end now, with the round being played counted as it stands.
+  useFinishRequest(() => {
+    if (finished.current) return
+    finished.current = true
+    metronomeRef.current?.stop()
+    const current = trackRef.current
+    if (current && !tracksRef.current.includes(current)) tracksRef.current = [...tracksRef.current, current]
+    finish()
+  })
 
   useEffect(
     () => () => {
       finished.current = true
       metronomeRef.current?.stop()
-      clearTimeout(roundTimer.current)
+      roundTimer.current()
     },
     [],
   )
@@ -289,7 +302,7 @@ export function BeatFrame({
     let raf = 0
     let over = false
     const loop = () => {
-      const t = performance.now()
+      const t = gameNow()
       react(track.update(t))
       setNow(t)
       if (track.done && !over) {
@@ -302,10 +315,10 @@ export function BeatFrame({
           setMessage(`✓ ${track.bpm} BPM geçildi! Şimdi ${next} BPM, biraz daha hızlı.`)
           setMood((m) => ({ mood: 'cheer', pulse: m.pulse + 1 }))
           const index = rounds.length
-          roundTimer.current = window.setTimeout(() => void playRound(index, track.hearts), ROUND_PAUSE_MS)
+          roundTimer.current = gameTimeout(() => void playRound(index, track.hearts), ROUND_PAUSE_MS)
         } else {
           finished.current = true
-          window.setTimeout(finish, FINISH_DELAY_MS)
+          gameTimeout(finish, FINISH_DELAY_MS)
         }
       }
       if (!over) raf = requestAnimationFrame(loop)

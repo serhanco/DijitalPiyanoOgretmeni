@@ -1,8 +1,25 @@
+import { execSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 import { VitePWA } from 'vite-plugin-pwa'
 
+/** Short commit and build date, so test notes say which version they were written on. */
+function buildStamp(): string {
+  let sha = process.env.GITHUB_SHA?.slice(0, 7) ?? ''
+  if (!sha) {
+    try {
+      sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+        .toString()
+        .trim()
+    } catch {
+      sha = 'yerel'
+    }
+  }
+  return `${sha} · ${new Date().toISOString().slice(0, 10)}`
+}
+
 export default defineConfig({
+  define: { __APP_BUILD__: JSON.stringify(buildStamp()) },
   // Relative base so the build works on GitHub Pages under any repo path.
   base: './',
   plugins: [

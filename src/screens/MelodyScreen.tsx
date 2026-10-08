@@ -1,3 +1,5 @@
+import { onFinishRequest } from '../testing/finishRequest'
+import { gameNow, gameTimeout } from '../input/gameClock'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
@@ -74,7 +76,7 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
   const comboRef = useRef(0)
   const stepClean = useRef(true)
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
-  const timers = useRef<number[]>([])
+  const timers = useRef<(() => void)[]>([])
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
     onFinishRef.current = onFinish
@@ -92,11 +94,11 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
 
   // The reaction clock of a step starts when it becomes current.
   useEffect(() => {
-    session.markShown(performance.now())
+    session.markShown(gameNow())
   }, [session, position])
 
   useEffect(() => {
-    const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms))
+    const later = (fn: () => void, ms: number) => timers.current.push(gameTimeout(fn, ms))
     const finish = (failed: boolean) => {
       let summary = summarize(session.attempted, lesson.clef, failed)
       const sync = syncSummary(session.stepRecords.filter((rs) => rs[0].shownAt !== null))
@@ -108,6 +110,7 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
       }
       onFinishRef.current(summary)
     }
+    const stopFinish = onFinishRequest(() => finish(false))
     const unsubscribe = subscribe((e) => {
       if (e.type !== 'on' || session.done) return
       const result = session.press(e.midi, e.time)
@@ -153,7 +156,8 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
     const pending = timers.current
     return () => {
       unsubscribe()
-      pending.forEach(clearTimeout)
+      stopFinish()
+      pending.forEach((cancel) => cancel())
     }
   }, [session, lesson.clef, pattern])
 

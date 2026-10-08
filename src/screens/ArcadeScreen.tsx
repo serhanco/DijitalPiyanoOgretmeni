@@ -1,3 +1,4 @@
+import { useFinishRequest } from '../testing/finishRequest'
 import type { Application } from 'pixi.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
@@ -75,6 +76,11 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
     onFinishRef.current = onFinish
+  })
+
+  useFinishRequest(() => {
+    finished.current = true
+    onFinishRef.current(summarize(game.attempted, lesson.clef, game.failed))
   })
 
   const react = useCallback(

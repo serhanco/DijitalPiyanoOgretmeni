@@ -1,7 +1,7 @@
 // End-to-end smoke test in a real browser.
 // Usage: npm run build && npx vite preview --port 4173 & npm run smoke [-- <screenshot dir>]
 // In Claude Code cloud sessions set CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { chromium } from 'playwright'
 
 const out = process.argv[2] ?? 'smoke-screens'
@@ -448,6 +448,147 @@ async function chordsUnit() {
 }
 
 /**
+ * Test mode: every lesson opens, a note written in a locked lesson keeps its context and
+ * copies out as Markdown, and the progress code moves everything to a fresh browser.
+ */
+async function testModeFlow() {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(url).origin })
+  await page.locator('.settings summary').click()
+  await page.getByText('Test modu:').click()
+  await page.waitForTimeout(300)
+  const locked = await page.locator('.node.locked:not(.review)').count()
+  if (locked) errors.push(`Test mode left ${locked} lessons locked`)
+  // Some progress to carry over with the progress code, in a unit that test mode opened.
+  await play('İlk Adımlar')
+  await dismissOverlay()
+  await page.getByText('Derslere dön').click()
+  await page.waitForTimeout(300)
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.screenshot({ path: `${out}/test-map.png` })
+  const xpStart = (await page.textContent('.chip.xp'))?.trim()
+
+  // A lesson that is locked without test mode (it needs the one before it).
+  await page.getByRole('button', { name: 'Porte Ustası', exact: true }).click()
+  await page.waitForSelector('.staff svg')
+  await page.locator('.test-fab').first().click()
+  await page.waitForSelector('.test-shot img', { timeout: 10000 })
+  await page.locator('.test-panel textarea').fill('Tuşlar çok sıkışık, bir oktav yeter.')
+  await page.screenshot({ path: `${out}/test-note.png` })
+  await page.getByRole('button', { name: 'Kaydet' }).click()
+  await page.waitForTimeout(300)
+  if (await page.$('.test-panel')) errors.push('Saving a note did not close the panel')
+  // Two notes in, then "Dersi bitir": the results show, nothing is saved.
+  for (let i = 0; i < 2; i++) {
+    await page.click(`.key[data-midi="${await page.getAttribute('.staff-wrap', 'data-note')}"]`)
+    await page.waitForTimeout(600)
+  }
+  await page.getByLabel('Dersi bitir').click()
+  await page.waitForSelector('.results')
+  await page.waitForTimeout(800)
+  const banner = await page.textContent('.results .test-banner')
+  if (!banner?.includes('ilerlemeye yazılmadı')) errors.push(`Early finish banner: ${banner}`)
+  const total = await page.textContent('.results')
+  if (!total?.includes('Porte Ustası')) errors.push('Early finish did not show the lesson results')
+  await page.screenshot({ path: `${out}/test-finish.png`, fullPage: true })
+  await page.locator('.test-fab').first().click()
+  await page.waitForSelector('.test-shot img', { timeout: 10000 })
+  await page.getByText('Ekran görüntüsünü ekle').click() // this one goes without a picture
+  await page.locator('.test-panel textarea').fill('İkinci not: sonuç ekranı.')
+  await page.getByRole('button', { name: 'Kaydet' }).click()
+  await page.getByText('Derslere dön').click()
+  await page.waitForTimeout(400)
+  const xpAfter = (await page.textContent('.chip.xp'))?.trim()
+  if (xpAfter !== xpStart) errors.push(`Early finish changed XP from ${xpStart} to ${xpAfter}`)
+
+  // The note panel pauses an arcade game: the balloons stand still while it is open.
+  await page.getByRole('button', { name: 'Balon Patlatma', exact: true }).click()
+  await page.waitForSelector('.pixi-stage canvas')
+  await page.waitForTimeout(1500)
+  const balloons = () => page.evaluate(() => JSON.stringify(window.__dpoArcade.flying.map((b) => b.y)))
+  await page.locator('.test-fab').first().click()
+  const frozen = await balloons()
+  await page.waitForTimeout(1500)
+  if ((await balloons()) !== frozen) errors.push('The game kept running behind the note panel')
+  await page.waitForSelector('.test-shot img', { timeout: 10000 })
+  await page.screenshot({ path: `${out}/test-note-game.png` })
+  await page.getByLabel('Kapat').click()
+  await page.waitForTimeout(800)
+  if ((await balloons()) === frozen) errors.push('The game did not resume after the note panel')
+  await page.getByLabel('Dersi bitir').click()
+  await page.waitForSelector('.results')
+  await page.getByText('Derslere dön').click()
+
+  // A rhythm lesson finished mid-round.
+  await page.getByRole('button', { name: 'Dörtlükler', exact: true }).click()
+  await page.click('.beat-start')
+  await page.waitForTimeout(3000)
+  await page.getByLabel('Dersi bitir').click()
+  await page.waitForSelector('.results')
+  await page.getByText('Derslere dön').click()
+  await page.waitForTimeout(300)
+
+  await page.locator('.test-fab').first().click()
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `${out}/test-notes.png` })
+  await page.getByRole('button', { name: 'Hepsini kopyala' }).click()
+  await page.waitForTimeout(300)
+  const copied = await page.evaluate(() => navigator.clipboard.readText())
+  for (const part of [
+    '# Test notları (2)',
+    'Ders · Ünite 1: Sol Anahtarı › Porte Ustası',
+    'Sonuç · Ünite 1: Sol Anahtarı › Porte Ustası',
+    'MIDI: MPK mini 3',
+    'bir oktav yeter',
+    '![Ekran görüntüsü](ekranlar/not-01.jpg)',
+  ]) {
+    if (!copied.includes(part)) errors.push(`Copied notes miss "${part}": ${copied}`)
+  }
+  if (copied.includes('not-02.jpg')) errors.push('A note saved without its picture still lists one')
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'İndir' }).click(),
+  ])
+  const zipPath = `${out}/test-notlari.zip`
+  await download.saveAs(zipPath)
+  const zip = readFileSync(zipPath)
+  if (
+    zip.subarray(0, 2).toString() !== 'PK' ||
+    !zip.includes('ekranlar/not-01.jpg') ||
+    !zip.includes('test-notlari.md')
+  )
+    errors.push('The notes download is not a zip with the notes and the screenshot')
+  await page.getByLabel('Kapat').click()
+  await page.waitForTimeout(300)
+  const count = (await page.textContent('.test-fab-count'))?.trim()
+  if (count !== '2') errors.push(`Note button counts ${count} notes`)
+
+  // Progress code: take it here, load it in a fresh browser (another device).
+  await page.locator('.settings').evaluate((el) => (el.open = true))
+  await page.getByRole('button', { name: '📤 Kodu al' }).click()
+  await page.waitForFunction(() => document.querySelector('.backup-code')?.value.startsWith('DPO'))
+  const code = await page.inputValue('.backup-code')
+  const fromClipboard = await page.evaluate(() => navigator.clipboard.readText())
+  if (fromClipboard !== code) errors.push('The progress code was not copied')
+  await page.locator('.backup').screenshot({ path: `${out}/test-backup.png` })
+  const xpHere = (await page.textContent('.chip.xp'))?.trim()
+
+  const other = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  other.on('pageerror', (e) => errors.push(`Other device: ${e.message}`))
+  other.on('dialog', (d) => d.accept())
+  await other.goto(url)
+  await other.waitForTimeout(800)
+  await other.locator('.settings summary').click()
+  await other.locator('.backup-code').fill(code)
+  await Promise.all([other.waitForEvent('load'), other.getByRole('button', { name: 'Kodu yükle' }).click()])
+  await other.waitForTimeout(1000)
+  const xpThere = (await other.textContent('.chip.xp'))?.trim()
+  if (xpThere !== xpHere) errors.push(`Progress code moved ${xpThere} instead of ${xpHere}`)
+  const stars = await other.locator('.node-stars .on').count()
+  if (!stars) errors.push('Progress code moved no stars')
+  await other.close()
+}
+
+/**
  * Play a theory lesson: read the cards (screenshots of `shots` card indices),
  * then answer the quiz from window.__dpoTheory; `wrongAt` answers that
  * question wrong once first.
@@ -575,6 +716,15 @@ async function finish() {
 }
 
 await page.goto(url)
+
+// SMOKE_ONLY=test checks test mode (all lessons open, notes, early finish) and the progress code.
+if (process.env.SMOKE_ONLY === 'test') {
+  await page.waitForTimeout(800)
+  await testModeFlow()
+  await finish()
+  console.log(`Smoke test (test mode) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
 
 // SMOKE_ONLY=chords plays Başlangıç (it opens the other units), then unit 6.
 if (process.env.SMOKE_ONLY === 'chords') {

@@ -1,3 +1,5 @@
+import { onFinishRequest } from '../testing/finishRequest'
+import { gameNow, gameTimeout } from '../input/gameClock'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
@@ -55,7 +57,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
   const [combo, setCombo] = useState(0)
   const comboRef = useRef(0)
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
-  const timers = useRef<number[]>([])
+  const timers = useRef<(() => void)[]>([])
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
     onFinishRef.current = onFinish
@@ -73,11 +75,12 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
 
   // Start the reaction clock once the note is on screen.
   useEffect(() => {
-    if (solved === null && !inIntro) session.markShown(performance.now())
+    if (solved === null && !inIntro) session.markShown(gameNow())
   }, [session, position, solved, inIntro])
 
   useEffect(() => {
-    const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms))
+    const later = (fn: () => void, ms: number) => timers.current.push(gameTimeout(fn, ms))
+    const stopFinish = onFinishRequest(() => onFinishRef.current(summarize(session.attempted, lesson.clef)))
     const unsubscribe = subscribe((e) => {
       if (e.type !== 'on') return
       if (introRef.current < introNotes.length) {
@@ -136,7 +139,8 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
     const pending = timers.current
     return () => {
       unsubscribe()
-      pending.forEach(clearTimeout)
+      stopFinish()
+      pending.forEach((cancel) => cancel())
     }
   }, [session, lesson.clef, introNotes])
 

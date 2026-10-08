@@ -2,6 +2,8 @@
 // the player repeats it. The run grows by one note every round. In ear mode
 // (`listenOnly`) only the first note lights up: the rest is heard.
 
+import { useFinishRequest } from '../testing/finishRequest'
+import { gameNow, gameTimeout } from '../input/gameClock'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { initPiano, isPianoReady, pianoAttack, pianoRelease } from '../audio/piano'
 import { sfx } from '../audio/sfx'
@@ -58,7 +60,7 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
   /** Ear mode, unless the piano sound could not load: then the keys light up after all. */
   const [byEar, setByEar] = useState(!!spec.listenOnly)
   const byEarRef = useRef(byEar)
-  const timers = useRef<number[]>([])
+  const timers = useRef<(() => void)[]>([])
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
     onFinishRef.current = onFinish
@@ -69,12 +71,12 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
   }, [game])
 
   const later = useCallback((fn: () => void, ms: number) => {
-    timers.current.push(window.setTimeout(fn, Math.max(0, ms)))
+    timers.current.push(gameTimeout(fn, Math.max(0, ms)))
   }, [])
 
   useEffect(() => {
     const pending = timers.current
-    return () => pending.forEach(clearTimeout)
+    return () => pending.forEach((cancel) => cancel())
   }, [])
 
   const finish = useCallback(() => {
@@ -87,10 +89,11 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
       message: messageFor(memory.longestClean, memory.maxLength, game.failed),
     })
   }, [game, lesson.clef])
+  useFinishRequest(finish)
 
   /** Play the run: sound and light each note, then hand over to the player. */
   const playRound = useCallback(() => {
-    const schedule = game.startRound(performance.now())
+    const schedule = game.startRound(gameNow())
     rerender()
     const hidden = byEarRef.current
     schedule.forEach((n, i) => {
@@ -98,22 +101,22 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
         if (!hidden || i === 0) setLit(n.midi)
         setLitIndex(i)
         pianoAttack(n.midi, 0.7)
-      }, n.at - performance.now())
+      }, n.at - gameNow())
       later(
         () => {
           pianoRelease(n.midi)
           setLit((m) => (m === n.midi ? null : m))
         },
-        n.at + n.durationMs - performance.now(),
+        n.at + n.durationMs - gameNow(),
       )
     })
     const end = schedule[schedule.length - 1]
     later(
       () => {
         setLitIndex(-1)
-        if (game.update(performance.now()).length) rerender()
+        if (game.update(gameNow()).length) rerender()
       },
-      end.at + game.noteMs - performance.now() + 5,
+      end.at + game.noteMs - gameNow() + 5,
     )
   }, [game, later, rerender])
 

@@ -1,7 +1,8 @@
-// Metronome on Tone.Transport. The games keep time with performance.now();
+// Metronome on Tone.Transport. The games keep time with gameNow();
 // the clicks are scheduled on the audio clock so they sound exactly on those
 // beats, after the audio output latency.
 
+import { gameNow, onPauseChange } from '../input/gameClock'
 import { useSettings } from '../state/settings'
 
 type ToneModule = typeof import('tone')
@@ -25,7 +26,7 @@ export async function prepareMetronome(): Promise<ToneModule | null> {
 export interface MetronomeOptions {
   bpm: number
   beatsPerBar: number
-  /** performance.now() time of `fromBeat`. */
+  /** gameNow() time of `fromBeat`. */
   firstClickAt: number
   /** Beat number of the first click (negative for a count-in). */
   fromBeat: number
@@ -70,11 +71,14 @@ export async function startMetronome(opts: MetronomeOptions): Promise<Metronome>
   }, '4n')
 
   const outputLatency = (ctx.outputLatency || ctx.baseLatency || 0) as number
-  const audioStart = ctx.currentTime + (opts.firstClickAt - performance.now()) / 1000 - outputLatency
+  const audioStart = ctx.currentTime + (opts.firstClickAt - gameNow()) / 1000 - outputLatency
   transport.start(Math.max(ctx.currentTime + 0.02, audioStart))
+  // The game clock stops while a test note is written; the clicks stop with it.
+  const unsubscribe = onPauseChange((paused) => (paused ? transport.pause() : transport.start()))
 
   return {
     stop() {
+      unsubscribe()
       transport.stop()
       transport.cancel()
       // Let the last click ring out.

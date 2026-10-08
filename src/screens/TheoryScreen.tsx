@@ -1,3 +1,4 @@
+import { useFinishRequest } from '../testing/finishRequest'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
 import { canSpeak, speak, stopSpeaking } from '../audio/speech'
@@ -99,6 +100,7 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
   useEffect(() => {
     if (narration) speak(spoken)
   }, [narration, spoken])
+  useFinishRequest(() => onFinishRef.current(summarizeQuiz(spec, quiz.records)))
 
   const answered = (result: ReturnType<QuizSession['choose']>, value: number) => {
     if (result === 'correct') {

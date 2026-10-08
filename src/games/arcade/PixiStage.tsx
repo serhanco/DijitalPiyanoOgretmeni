@@ -1,3 +1,4 @@
+import { gameNow, isPaused } from '../../input/gameClock'
 import { Application } from 'pixi.js'
 import { type ReactNode, useEffect, useRef } from 'react'
 
@@ -38,6 +39,8 @@ export function PixiStage({ create, className, children }: Props) {
         resizeTo: el,
         backgroundAlpha: 0,
         antialias: true,
+        // Keeps the last frame readable, so a test note's screenshot shows the game.
+        preserveDrawingBuffer: true,
         resolution: Math.min(window.devicePixelRatio || 1, 2),
         autoDensity: true,
       })
@@ -49,7 +52,9 @@ export function PixiStage({ create, className, children }: Props) {
         }
         el.appendChild(app.canvas)
         scene = createRef.current(app)
-        app.ticker.add((t) => scene?.tick(Math.min(t.deltaMS, 100), performance.now()))
+        app.ticker.add((t) => {
+          if (!isPaused()) scene?.tick(Math.min(t.deltaMS, 100), gameNow())
+        })
       })
       .catch((err) => console.error('Could not start the game canvas', err))
 
