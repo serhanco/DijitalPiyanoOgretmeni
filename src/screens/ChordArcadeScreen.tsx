@@ -1,6 +1,8 @@
 // Chord arcade games: Akor Aşçısı, Uzay Savunması and Akor Barmeni. Same skills as the
 // chord drill (chords played together, inversions), on a Pixi playfield.
 
+import { useFinishRequest } from '../testing/finishRequest'
+import { gameNow } from '../input/gameClock'
 import type { Application } from 'pixi.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { sfx } from '../audio/sfx'
@@ -73,6 +75,10 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
     onFinishRef.current = onFinish
+  })
+  useFinishRequest(() => {
+    finished.current = true
+    onFinishRef.current(summarizeChords(game.attempted, game.failed))
   })
 
   const react = useCallback(
@@ -157,7 +163,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
       subscribe((e) => {
         if (e.type === 'off') game.release(e.midi)
         else react(game.press(e.midi, e.time) as GameEvent[])
-        setHeld(game.playing(performance.now()))
+        setHeld(game.playing(gameNow()))
       }),
     [game, react],
   )

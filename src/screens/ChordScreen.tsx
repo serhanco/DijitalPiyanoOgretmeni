@@ -3,6 +3,8 @@
 // (`byEar`), the chord is only heard: its root is lit and the player finds
 // the rest (major, minor, seventh).
 
+import { onFinishRequest } from '../testing/finishRequest'
+import { gameNow, gameTimeout } from '../input/gameClock'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { initPiano, isPianoReady, pianoAttack, pianoRelease } from '../audio/piano'
 import { sfx } from '../audio/sfx'
@@ -70,7 +72,7 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   const [heard, setHeard] = useState(byEar)
   const [lastChord, setLastChord] = useState<ChordTarget | null>(null)
   const comboRef = useRef(0)
-  const timers = useRef<number[]>([])
+  const timers = useRef<(() => void)[]>([])
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
     onFinishRef.current = onFinish
@@ -81,12 +83,12 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   }, [session])
 
   useEffect(() => {
-    if (started) session.markShown(performance.now())
+    if (started) session.markShown(gameNow())
   }, [session, position, started])
 
   const listen = useCallback((chord: ChordTarget) => {
     for (const n of chord.notes) pianoAttack(n.midi, 0.7)
-    timers.current.push(window.setTimeout(() => chord.notes.forEach((n) => pianoRelease(n.midi)), LISTEN_MS))
+    timers.current.push(gameTimeout(() => chord.notes.forEach((n) => pianoRelease(n.midi)), LISTEN_MS))
   }, [])
 
   // By ear: every new chord is played once, after a short breath.
@@ -119,7 +121,7 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   }, [message])
 
   useEffect(() => {
-    const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms))
+    const later = (fn: () => void, ms: number) => timers.current.push(gameTimeout(fn, ms))
     const finish = (failed: boolean) => onFinishRef.current(summarizeChords(session.attempted, failed))
     const say = (ev: ChordEvent) => {
       const f = chordFeedback(ev, (m) => names.get(m) ?? solfegeName(m))
@@ -163,26 +165,28 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
           }
         }
       }
-      setHeld(session.playing(performance.now()))
+      setHeld(session.playing(gameNow()))
     }
+    const stopFinish = onFinishRequest(() => finish(false))
     const unsubscribe = subscribe((e) => {
       if (session.done) return
       if (e.type === 'off') {
         session.release(e.midi)
-        setHeld(session.playing(performance.now()))
+        setHeld(session.playing(gameNow()))
         return
       }
       handle(session.press(e.midi, e.time))
     })
     // Attempts given up are found as time passes.
     const tick = window.setInterval(() => {
-      if (!session.done) handle(session.update(performance.now()))
+      if (!session.done) handle(session.update(gameNow()))
     }, 100)
     const pending = timers.current
     return () => {
       unsubscribe()
+      stopFinish()
       clearInterval(tick)
-      pending.forEach(clearTimeout)
+      pending.forEach((cancel) => cancel())
     }
   }, [session, names])
 

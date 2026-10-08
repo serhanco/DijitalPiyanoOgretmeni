@@ -93,13 +93,14 @@ function KeyboardArt({ low, high, marks = [], groups, labels, fingers }: Extract
         })}
       {fingers &&
         [0, 2, 4, 5, 7].map((offset, i) => {
-          const m = MIDDLE_C + offset
+          // Right hand: thumb on middle C. Left hand: little finger on the C below.
+          const m = (fingers === 'left' ? MIDDLE_C - 12 : MIDDLE_C) + offset
           if (!whites.includes(m)) return null
           return (
             <g key={m}>
               <circle cx={xOfWhite(m) + W / 2} cy={13} r={10} fill="#ff9600" />
               <text x={xOfWhite(m) + W / 2} y={17.5} textAnchor="middle" fontSize={13} fontWeight={800} fill="#fff">
-                {i + 1}
+                {fingers === 'left' ? 5 - i : i + 1}
               </text>
             </g>
           )
@@ -139,7 +140,11 @@ function NoteHead({
   )
 }
 
-const BOTTOM_LINE = diatonicIndex(parseNote('E4'))
+/** Bottom line and the clef glyph (SMuFL, Bravura) with the step it sits on. */
+const CLEFS = {
+  treble: { bottom: diatonicIndex(parseNote('E4')), glyph: '\uE050', step: 2 },
+  bass: { bottom: diatonicIndex(parseNote('G2')), glyph: '\uE062', step: 6 },
+}
 
 function StaffArt({
   notes = [],
@@ -147,9 +152,11 @@ function StaffArt({
   captions,
   numbers,
   clef = true,
+  bass = false,
   highlight,
 }: Extract<Illustration, { kind: 'staff' }>) {
   const gap = 10
+  const kind = CLEFS[bass ? 'bass' : 'treble']
   const base = 84 // y of the bottom line
   const left = clef ? 58 : 34
   const spacing = notes.length > 4 ? 30 : 46
@@ -157,7 +164,12 @@ function StaffArt({
   const y = (step: number) => base - (step * gap) / 2
   const below = names || captions ? (names && captions ? 140 : 124) : 104
   return (
-    <svg viewBox={`0 0 ${width} ${below}`} className="art art-staff" role="img" aria-label="Porte">
+    <svg
+      viewBox={`0 0 ${width} ${below}`}
+      className="art art-staff"
+      role="img"
+      aria-label={bass ? 'Fa anahtarlı porte' : 'Porte'}
+    >
       {[0, 1, 2, 3, 4].map((i) => (
         <line
           key={i}
@@ -176,12 +188,12 @@ function StaffArt({
           </text>
         ))}
       {clef && (
-        <text x={10} y={y(2)} fontSize={gap * 4} fontFamily="Bravura" fill={INK}>
-          {''}
+        <text x={10} y={y(kind.step)} fontSize={gap * 4} fontFamily="Bravura" fill={INK}>
+          {kind.glyph}
         </text>
       )}
       {notes.map((m, i) => {
-        const step = diatonicIndex(m) - BOTTOM_LINE
+        const step = diatonicIndex(m) - kind.bottom
         const x = left + i * spacing + spacing / 2
         const ledgers: number[] = []
         for (let s = -2; s >= step; s -= 2) ledgers.push(s)

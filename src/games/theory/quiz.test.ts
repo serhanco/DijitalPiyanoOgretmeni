@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BASICS_LESSONS, NOTE_INTRO } from './lessons'
+import { BASICS_LESSONS, BASS_START_LESSONS, nameQuestion, noteIntro } from './lessons'
 import { QuizSession, summarizeQuiz, type TheorySpec } from './quiz'
 
 const spec: TheorySpec = {
@@ -51,7 +51,7 @@ describe('basics unit', () => {
   it('teaches the octave two notes at a time, starting with Do and Sol', () => {
     const intro = BASICS_LESSONS.flatMap((l) => l.introduce ?? [])
     expect(intro).toEqual([60, 67, 62, 64, 65, 69, 71, 72])
-    for (const midi of intro) expect(NOTE_INTRO[midi]).toBeTruthy()
+    for (const midi of intro) expect(noteIntro(midi, 'treble')).toBeTruthy()
     // A lesson only asks notes that were introduced in it or before it.
     const known = new Set<number>()
     for (const l of BASICS_LESSONS) {
@@ -60,8 +60,23 @@ describe('basics unit', () => {
     }
   })
 
+  it('teaches the left hand the same way on the bass staff', () => {
+    const intro = BASS_START_LESSONS.flatMap((l) => l.introduce ?? [])
+    expect(intro).toEqual([48, 55, 50, 52, 53, 57, 59, 60])
+    for (const midi of intro) expect(noteIntro(midi, 'bass')).toBeTruthy()
+    expect(noteIntro(60, 'bass')).not.toBe(noteIntro(60, 'treble'))
+  })
+
+  it('asks a note by name with its two neighbours as distractors', () => {
+    const q = nameQuestion(60)
+    expect(q.options).toEqual(['Do', 'Si', 'Re'])
+    expect(q.topic).toBe('outside')
+    expect(nameQuestion(53, 'bass').topic).toBe('line')
+    expect(nameQuestion(67).options).toEqual(['Sol', 'Fa', 'La'])
+  })
+
   it('has valid quizzes', () => {
-    for (const l of BASICS_LESSONS.filter((l) => l.kind === 'theory')) {
+    for (const l of [...BASICS_LESSONS, ...BASS_START_LESSONS].filter((l) => l.kind === 'theory')) {
       const t = l.theory!
       expect(t.cards.length).toBeGreaterThan(0)
       for (const q of t.questions) {
