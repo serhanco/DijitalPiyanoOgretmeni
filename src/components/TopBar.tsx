@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { currentStreak, dayKey, levelFromXp } from '../progress/gamification'
 import { useProfile } from '../state/profile'
+import { SettingsPanel } from './SettingsPanel'
 
 interface Props {
   onProfile: () => void
+  onCalibrate: () => void
 }
 
 /** Ring that fills up as today's XP approaches the daily goal. */
@@ -26,7 +28,9 @@ export function GoalRing({ value, goal, size = 40 }: { value: number; goal: numb
   )
 }
 
-export function TopBar({ onProfile }: Props) {
+/** The map's top bar: sticks to the top of the screen while the map scrolls. */
+export function TopBar({ onProfile, onCalibrate }: Props) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const { totalXp, streak, daily, dailyGoal } = useProfile()
   const [today] = useState(() => dayKey(new Date()))
   const streakNow = currentStreak(streak, today)
@@ -48,6 +52,23 @@ export function TopBar({ onProfile }: Props) {
       <button className="chip level" onClick={onProfile} aria-label="Profil">
         Sv. {level} 👤
       </button>
+      <button
+        className="chip settings-btn"
+        onClick={() => setSettingsOpen(true)}
+        aria-label="Ayarlar"
+        aria-expanded={settingsOpen}
+      >
+        ⚙️
+      </button>
+      {settingsOpen && (
+        <SettingsPanel
+          onCalibrate={() => {
+            setSettingsOpen(false)
+            onCalibrate()
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   )
 }

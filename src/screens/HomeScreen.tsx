@@ -8,7 +8,6 @@ import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from '../progress/
 import { noteScores } from '../progress/history'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
-import { BackupPanel } from '../testing/BackupPanel'
 
 interface Props {
   onStart: (lesson: NoteLesson) => void
@@ -72,86 +71,6 @@ const KIND_ICON: Record<LessonKind, string> = {
   surf: '🏄',
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="toggle">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span className="toggle-track" aria-hidden />
-      <span>{label}</span>
-    </label>
-  )
-}
-
-function Settings({ onCalibrate }: { onCalibrate: () => void }) {
-  const settings = useSettings()
-  const { dailyGoal, setDailyGoal } = useProfile()
-  return (
-    <details className="card settings">
-      <summary>Ayarlar</summary>
-      <div className="goal-picker">
-        <span>Günlük hedef</span>
-        {[10, 20, 30, 50].map((xp) => (
-          <button key={xp} className={`pill ${dailyGoal === xp ? 'on' : ''}`} onClick={() => setDailyGoal(xp)}>
-            {xp} XP
-          </button>
-        ))}
-      </div>
-      <div className="goal-picker">
-        <span>Ritim gecikmesi</span>
-        <button className="pill" onClick={onCalibrate}>
-          ⏱ Ölç ve ayarla
-        </button>
-      </div>
-      <Toggle
-        label="Rahat mod: hata yapınca can gitmesin"
-        checked={settings.relaxedMode}
-        onChange={(v) => settings.set({ relaxedMode: v })}
-      />
-      <Toggle
-        label="Ses efektleri"
-        checked={settings.soundEffects}
-        onChange={(v) => settings.set({ soundEffects: v })}
-      />
-      <Toggle
-        label="Teori kartlarını ve soruları sesli oku"
-        checked={settings.narration}
-        onChange={(v) => settings.set({ narration: v })}
-      />
-      <Toggle
-        label="Titreşim (Android)"
-        checked={settings.vibration}
-        onChange={(v) => settings.set({ vibration: v })}
-      />
-      <Toggle
-        label="Ekran klavyesinde nota adlarını göster"
-        checked={settings.showKeyLabels}
-        onChange={(v) => settings.set({ showKeyLabels: v })}
-      />
-      <Toggle
-        label="Ekran ve bilgisayar klavyesi için ses"
-        checked={settings.soundForScreen}
-        onChange={(v) => settings.set({ soundForScreen: v })}
-      />
-      <Toggle
-        label="MIDI klavye için de uygulamadan ses çal (Akai gibi sessiz klavyelerde hep açık)"
-        checked={settings.soundForMidi}
-        onChange={(v) => settings.set({ soundForMidi: v })}
-      />
-      <Toggle
-        label="Oktav fark etmesin (küçük klavyeler için)"
-        checked={settings.ignoreOctave}
-        onChange={(v) => settings.set({ ignoreOctave: v })}
-      />
-      <Toggle
-        label="Test modu: bütün dersler açık, her ekranda 📝 not düğmesi"
-        checked={settings.testMode}
-        onChange={(v) => settings.set({ testMode: v })}
-      />
-      <BackupPanel />
-    </details>
-  )
-}
-
 export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const testMode = useSettings((s) => s.testMode)
@@ -184,7 +103,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
 
   return (
     <div className="home">
-      <TopBar onProfile={onProfile} />
+      <TopBar onProfile={onProfile} onCalibrate={onCalibrate} />
       {testMode && (
         <p className="test-banner">
           🧪 <b>Test modu açık:</b> bütün dersler açık. Bir şey görünce sağdaki 📝 ile not bırak.
@@ -287,8 +206,6 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
           </section>
         )
       })}
-
-      <Settings onCalibrate={onCalibrate} />
 
       {toast && (
         <div className="toast" role="status">

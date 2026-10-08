@@ -169,6 +169,9 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   bir sonraki ders yeni açıldıysa bile oynanan derse dönülür; bir sonraki ders hemen altında göründüğü için ayrıca ona
   kaydırılmadı. Görünüm test kümesi her dersten sonra dönüşü, yarıda çıkışı, hareket azaltılmış dönüşü ve profilden
   dönüşü üç ekranda ölçüyor.
+  Aynı işte Serhan ayarların sayfanın en altında değil üst menüde olmasını, üst menünün de yapışkan olmasını istedi:
+  üst menü (seri, XP, günlük hedef, seviye) harita kaydırılırken ekranın üstünde kalıyor; ayarlar menüdeki ⚙️
+  düğmesiyle haritanın üstünde bir panel olarak açılıyor, ✕, Esc ya da panelin dışına dokunmak kapatıyor.
 
 ## Açık konular
 

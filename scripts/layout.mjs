@@ -330,6 +330,68 @@ async function mapReturns(page, snap, vpId) {
   return checks
 }
 
+/**
+ * The map's top bar stays at the top while the map scrolls, and its ⚙️ button opens the
+ * settings sheet: on screen, scrollable to its last setting, closed with ✕.
+ */
+async function topBar(page, snap, vpId) {
+  const checks = []
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2))
+  await page.waitForTimeout(200)
+  await snap('ust-menu')
+  const bar = await page.evaluate(() => {
+    const r = document.querySelector('.top-bar').getBoundingClientRect()
+    const gear = document.querySelector('[aria-label="Ayarlar"]').getBoundingClientRect()
+    return { top: Math.round(r.top), bottom: Math.round(r.bottom), gear: gear.top >= 0 && gear.bottom <= r.bottom }
+  })
+  checks.push({
+    name: 'yapışkan menü',
+    errors: [
+      ...(Math.abs(bar.top) > 1 ? [`Kaydırınca üst menü ekranın üstünde değil (${bar.top} px)`] : []),
+      ...(bar.gear ? [] : ['⚙️ düğmesi üst menüde görünmüyor']),
+    ],
+    warnings: [],
+    facts: { topBarHeight: bar.bottom - bar.top },
+    shot: `${vpId}-ust-menu.png`,
+  })
+
+  // Clicked from the page so Playwright does not scroll first: the bar must work where it is.
+  await page.evaluate(() => document.querySelector('[aria-label="Ayarlar"]').click())
+  await page.waitForSelector('.settings-sheet .settings')
+  await page.waitForTimeout(300)
+  await snap('ayarlar')
+  const sheet = await page.evaluate(() => {
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    const panel = document.querySelector('.settings-sheet .settings').getBoundingClientRect()
+    const close = document.querySelector('[aria-label="Ayarları kapat"]').getBoundingClientRect()
+    const errors = []
+    if (panel.left < -1 || panel.right > vw + 1)
+      errors.push(`Ayarlar paneli yana taşıyor (${Math.round(panel.left)}…${Math.round(panel.right)} px)`)
+    if (close.top < 0 || close.bottom > vh) errors.push('Ayarları kapatma düğmesi ekranda değil')
+    return { errors, height: Math.round(panel.height) }
+  })
+  // The last setting can be reached by scrolling the sheet.
+  await page.locator('.settings-sheet .backup').scrollIntoViewIfNeeded()
+  const lastVisible = await page.evaluate(() => {
+    const r = document.querySelector('.settings-sheet .backup').getBoundingClientRect()
+    return r.top < window.innerHeight && r.bottom > 0
+  })
+  if (!lastVisible) sheet.errors.push('Ayarların sonuna (İlerlemeyi taşı) kaydırılamıyor')
+  checks.push({
+    name: 'ayarlar paneli',
+    errors: sheet.errors,
+    warnings: [],
+    facts: { height: sheet.height },
+    shot: `${vpId}-ayarlar.png`,
+  })
+  await page.getByLabel('Ayarları kapat').click()
+  if (await page.$('.settings-sheet'))
+    checks.push({ name: 'ayarları kapat', errors: ['✕ ayarları kapatmadı'], warnings: [] })
+  await page.evaluate(() => window.scrollTo(0, 0))
+  return checks
+}
+
 /** Press keys from the page `gapMs` apart (two hands at once need separate pointers). */
 async function press(page, keys, gapMs = 20, holdMs = 120) {
   await page.evaluate(
@@ -567,13 +629,22 @@ async function runViewport(vp) {
   await page.goto(url)
   await page.waitForTimeout(800)
   // Test mode opens every lesson and gives "Dersi bitir".
-  await page.locator('.settings summary').click()
+  await page.getByLabel('Ayarlar', { exact: true }).click()
   await page.getByText('Test modu:').click()
-  await page.locator('.settings summary').click()
+  await page.getByLabel('Ayarları kapat').click()
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForTimeout(300)
   await snap('harita')
   results.push({ id: 'harita', name: 'Ders haritası', checks: [await check('harita', { play: false })] })
+  const menu = { id: 'ust-menu', name: 'Üst menü ve ayarlar', checks: [] }
+  results.push(menu)
+  try {
+    menu.checks.push(...(await topBar(page, snap, vp.id)))
+  } catch (e) {
+    menu.checks.push({ name: 'çalıştırma', errors: [`Üst menü denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
+    await page.goto(url)
+    await page.waitForTimeout(800)
+  }
 
   for (const c of CASES) {
     const before = pageErrors.length

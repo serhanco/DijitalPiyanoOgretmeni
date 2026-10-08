@@ -90,7 +90,8 @@ Principles:
 - **Back to the map:** `App` passes `focus = mapNodeOf(lesson)` when a lesson ends or is left; `HomeScreen` jumps to
   just above that `[data-node]`, glides it to the centre and ripples a ring (`.path-step.back`); reduced motion jumps.
   Other screens come back to the scroll position the map was left at, and every screen opened from the map starts at
-  its top.
+  its top. The map's `TopBar` is sticky and its ⚙️ button (`aria-label="Ayarlar"`) opens `components/SettingsPanel.tsx`
+  as a sheet (`.settings-sheet`, closed by "Ayarları kapat", Escape or a tap outside).
 - Reaction time counts only prompts answered right on the first try. Accuracy = first-try correct / prompts seen.
 
 ## Current state and next steps
@@ -354,7 +355,8 @@ with "Dersi bitir" and checks the play screen, the start card and the results: n
 and keyboard on screen together without scrolling and not overlapping, white keys ≥ 28 px, the wanted keys in the
 visible part of the keyboard, Pixi canvases fill their stage, Başla buttons on screen; Uzay Savunması measures how long
 a new invader's card is cut off at the top. Back on the map after every lesson it checks the lesson's node is
-centred (`mapPlace`), and `mapReturns` checks leaving a lesson halfway, reduced motion and coming back from the profile.
+centred (`mapPlace`), and `mapReturns` checks leaving a lesson halfway, reduced motion and coming back from the profile; `topBar` checks the
+sticky bar and the settings sheet.
 It writes `rapor.md` / `rapor.json` and screenshots. Warnings (⚠️) and
 `KNOWN` problems (🟠, already reported) do not fail the run; remove a `KNOWN` entry when its fix lands. `LAYOUT_ONLY=space,bird`
 and `LAYOUT_VIEWPORTS=yatay` narrow a run.
