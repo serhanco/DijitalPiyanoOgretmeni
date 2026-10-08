@@ -61,4 +61,8 @@ describe('lesson keyboards', () => {
       expect(high - low, id).toBe(12)
     }
   })
+  it('start on Do in the note-reading units', () => {
+    for (const unit of UNITS.filter((u) => ['basics', 'treble', 'bass', 'hands'].includes(u.id)))
+      for (const l of unit.lessons) expect(l.keyboard.low % 12, l.id).toBe(0)
+  })
 })

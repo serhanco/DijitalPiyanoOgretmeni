@@ -123,6 +123,6 @@ export function buildReviewLesson(clef: Clef | 'grand', notes: number[]): NoteLe
     ...(clef === 'grand' && { grand: true }),
     notes,
     length: 15,
-    keyboard: fitKeyboard(notes),
+    keyboard: fitKeyboard(notes, { fromDo: true }),
   }
 }

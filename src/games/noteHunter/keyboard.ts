@@ -9,6 +9,6 @@ export type LessonDraft = Omit<NoteLesson, 'keyboard'>
 export const lessonNotes = (lesson: LessonDraft): number[] =>
   lesson.melodies ? parseMelodies(lesson.melodies).flatMap((s) => s.notes.map((n) => n.midi)) : lesson.notes
 
-/** Give each lesson the smallest keyboard its notes need: one octave when they fit in one. */
+/** Give each lesson the smallest keyboard its notes need, starting on Do: one octave when they fit in one. */
 export const withKeyboards = (lessons: LessonDraft[]): NoteLesson[] =>
-  lessons.map((lesson) => ({ ...lesson, keyboard: fitKeyboard(lessonNotes(lesson)) }))
+  lessons.map((lesson) => ({ ...lesson, keyboard: fitKeyboard(lessonNotes(lesson), { fromDo: true }) }))

@@ -37,7 +37,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 13. (Faz 8 sonrası) "Tek oktav bulunan derslerde tek oktav piyano göstermemiz yeterli olacaktır; çünkü ekrandaki tuşlar
     oldukça sıkışık."
 
-13. (2026-10-08) İlk dersten önce **teorik temel bilgiler ve basit testler**; ardından sol anahtarında **tek oktavda
+14. (2026-10-08) İlk dersten önce **teorik temel bilgiler ve basit testler**; ardından sol anahtarında **tek oktavda
     notalar kademeli**: önce yalnızca Do ve Sol, sonra iki nota daha, sonra iki daha.
 
 ## Verilen kararlar
@@ -84,7 +84,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-08 | Faz 8 ekleri: Akor Barmeni (Nota Barmeni akorlarla, tek ve iki el), Kulaktan Akor ve Kulaktan Yedililer (akor türünü kulakla bulma), 4 yeni ders                                                 | PR #12                                 |
 | 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                                 |
 | 2026-10-08 | Başlangıç ünitesi: 4 teori dersi ve testleri, notalar ikişer ikişer (tanıtım + odaklı alıştırma), 2 oyun, "İlk Oktav" rozeti                                                                     | dal `claude/baslangic-dersleri-uox0fr` |
-| 2026-10-08 | Ekran klavyesi dersin notalarına göre: tek oktavlık derslerde tek oktav, nota okuma derslerinde hep Do'dan başlar | Tek oktav klavye PR'ı |
+| 2026-10-08 | Ekran klavyesi dersin notalarına göre: tek oktavlık derslerde tek oktav, nota okuma derslerinde hep Do'dan başlar                                                                                | Tek oktav klavye PR'ı                  |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol

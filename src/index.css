@@ -399,13 +399,27 @@ kbd {
   color: var(--danger);
 }
 
+.keyboard-scroll {
+  margin-top: auto;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
 .keyboard {
   position: relative;
   display: flex;
   height: clamp(140px, 30dvh, 240px);
-  margin-top: auto;
   user-select: none;
   touch-action: none;
+}
+/* One octave: wide keys, so they can be taller too (the drill screens have room below the staff). */
+.keyboard[data-octave] {
+  height: clamp(150px, 36dvh, 300px);
+}
+/* Wider than the screen: a sideways swipe scrolls; a tap still plays. */
+.keyboard-scroll[data-scrolls] .keyboard {
+  touch-action: pan-x;
 }
 .key {
   cursor: pointer;
@@ -1045,8 +1059,11 @@ button.chip {
   position: absolute;
   inset: 0;
 }
-.arcade .keyboard {
+.arcade .keyboard-scroll {
   margin-top: 0;
+}
+.arcade .keyboard[data-octave] {
+  height: clamp(140px, 30dvh, 240px);
 }
 .clef-overlay {
   position: absolute;

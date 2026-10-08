@@ -72,5 +72,9 @@ describe('notes', () => {
     // Never less than an octave of white keys: widened upwards.
     expect(fitKeyboard(n('F4', 'E5'))).toEqual({ low: 65, high: 77 })
     expect(fitKeyboard(n('A4', 'D5'))).toEqual({ low: 69, high: 81 })
+    // fromDo: wider sets start on the Do at or below the lowest note.
+    expect(fitKeyboard(n('F4', 'E5'), { fromDo: true })).toEqual({ low: 60, high: 76 })
+    expect(fitKeyboard(n('G2', 'A3'), { fromDo: true })).toEqual({ low: 36, high: 57 })
+    expect(fitKeyboard(n('C4', 'G4'), { fromDo: true })).toEqual({ low: 60, high: 72 })
   })
 })
