@@ -22,6 +22,8 @@ export interface LessonOutcome {
   rhythm?: boolean
   /** Tempo merdiveni: every round passed, so the starting tempo went up. */
   tempoRaised?: boolean
+  /** Theory lessons: `firstTry` counts quiz answers. */
+  quiz?: boolean
   /** Chord lessons: `firstTry` counts chords. */
   chords?: boolean
   /** Chord lessons: every chord played had its notes within TOGETHER_MS (at least five chords). */
@@ -40,7 +42,9 @@ export function xpFor(outcome: LessonOutcome): XpLine[] {
     ? 'Vuruşunda çalınan notalar'
     : outcome.chords
       ? 'İlk denemede doğru akorlar'
-      : 'İlk denemede doğru notalar'
+      : outcome.quiz
+        ? 'İlk denemede doğru cevaplar'
+        : 'İlk denemede doğru notalar'
   const lines: XpLine[] = [{ label, xp: outcome.firstTry * XP_PER_FIRST_TRY }]
   if (outcome.failed) return lines
   lines.push({ label: 'Ders tamamlandı', xp: XP_LESSON_COMPLETE })
@@ -176,6 +180,13 @@ export const BADGES: Badge[] = [
     description: 'Fa anahtarındaki tüm dersleri 3 yıldızla bitir',
     icon: '🎹',
     earned: (c) => c.allBassLessonIds.length > 0 && c.allBassLessonIds.every((id) => c.threeStarLessons.includes(id)),
+  },
+  {
+    id: 'first-octave',
+    title: 'İlk Oktav',
+    description: 'Başlangıç ünitesinde sekiz notanın hepsini 2 yıldızla öğren',
+    icon: '🎹',
+    earned: (c) => c.outcome.lessonId === 'basics-notes-4' && !c.outcome.failed && c.outcome.stars >= 2,
   },
   {
     id: 'two-hands',

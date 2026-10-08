@@ -5,13 +5,15 @@ import type { ArpeggioPart } from '../chords/arpeggio'
 import type { ChordSpec } from '../chords/lessons'
 import type { MemorySpec } from '../memory/engine'
 import type { ScalePart } from '../scales/steps'
+import type { TheorySpec } from '../theory/quiz'
 import { withKeyboards } from './keyboard'
 
 /**
  * How a lesson is played: the staff drill, a melody read note by note, a
- * rhythm exercise or one of the arcade games.
+ * rhythm exercise, one of the arcade games or a theory lesson with a quiz.
  */
 export type LessonKind =
+  | 'theory'
   | 'drill'
   | 'melody'
   | 'bird'
@@ -38,6 +40,7 @@ export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'su
  * that are judged per chord: kept out of the note-reading statistics.
  */
 export const PATTERN_KINDS: LessonKind[] = [
+  'theory',
   'scale',
   'ladder',
   'memory',
@@ -91,6 +94,12 @@ export interface NoteLesson {
   chords?: ChordSpec
   /** Arpeggio and Arpej Sörfü lessons: the arpeggios, played in order. */
   arpeggios?: ArpeggioPart[]
+  /** Theory lessons: the explanation cards and the quiz. */
+  theory?: TheorySpec
+  /** Drill: new notes shown one by one (staff, key, where it sits) before the drill starts. */
+  introduce?: number[]
+  /** Drill: notes asked twice as often (the ones just introduced). */
+  focus?: number[]
 }
 
 export interface Melody {

@@ -27,24 +27,39 @@ export interface SessionOptions {
   /** Lives: the session fails after this many wrong presses. Unlimited when omitted. */
   hearts?: number
   random?: () => number
+  /** Notes asked twice as often as the others. */
+  focus?: number[]
   /** Grand-staff lessons: pick the staff each prompt is shown on. */
   clefOf?: (midi: number) => Clef
 }
 
-/** Random sequence that never shows the same note twice in a row. */
-export function buildSequence(notes: number[], length: number, random: () => number = Math.random): number[] {
+/**
+ * Random sequence that never shows the same note twice in a row. Notes in
+ * `focus` come twice in every round.
+ */
+export function buildSequence(
+  notes: number[],
+  length: number,
+  random: () => number = Math.random,
+  focus: number[] = [],
+): number[] {
   if (notes.length === 0) throw new Error('A lesson needs at least one note')
+  const pool = [...notes, ...focus.filter((f) => notes.includes(f))]
   const seq: number[] = []
-  // Cover every note once before repeating, shuffled in rounds.
-  while (seq.length < length) {
-    const round = [...notes]
+  // Cover every note once before repeating, shuffled in rounds. A round with a
+  // note twice in a row (focus notes, or across rounds) is reshuffled.
+  const shuffled = () => {
+    const round = [...pool]
     for (let i = round.length - 1; i > 0; i--) {
       const j = Math.floor(random() * (i + 1))
       ;[round[i], round[j]] = [round[j], round[i]]
     }
-    if (round.length > 1 && round[0] === seq[seq.length - 1]) {
-      ;[round[0], round[1]] = [round[1], round[0]]
-    }
+    return round
+  }
+  const repeats = (round: number[]) => round.some((x, i) => x === (i === 0 ? seq[seq.length - 1] : round[i - 1]))
+  while (seq.length < length) {
+    let round = shuffled()
+    for (let tries = 0; tries < 100 && repeats(round); tries++) round = shuffled()
     seq.push(...round)
   }
   return seq.slice(0, length)
@@ -60,7 +75,7 @@ export class NoteHunterSession {
   constructor(opts: SessionOptions) {
     this.ignoreOctave = opts.ignoreOctave ?? false
     this.hearts = opts.hearts ?? null
-    this.records = buildSequence(opts.notes, opts.length, opts.random).map((target) => ({
+    this.records = buildSequence(opts.notes, opts.length, opts.random, opts.focus).map((target) => ({
       target,
       shownAt: null,
       answeredAt: null,

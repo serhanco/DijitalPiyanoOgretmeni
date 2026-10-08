@@ -5,6 +5,7 @@ import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import { type Clef, fitKeyboard } from '../music/notes'
 import { SCALE_LESSONS } from '../games/scales/lessons'
 import { RHYTHM_LESSONS } from '../rhythm/lessons'
+import { BASICS_LESSONS } from '../games/theory/lessons'
 
 export interface Unit {
   id: string
@@ -19,6 +20,13 @@ export interface Unit {
 }
 
 export const UNITS: Unit[] = [
+  {
+    id: 'basics',
+    title: 'Başlangıç: Temeller',
+    subtitle: 'Klavye, parmaklar, porte; notalar ikişer ikişer',
+    color: '#ffc800',
+    lessons: BASICS_LESSONS,
+  },
   {
     id: 'treble',
     title: 'Ünite 1: Sol Anahtarı',
