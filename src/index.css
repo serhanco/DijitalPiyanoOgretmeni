@@ -1911,6 +1911,21 @@ button.chip {
   .game-top {
     gap: 8px;
   }
+  /* The header (exit, progress, hearts) shares one line with the mascot and the prompt, on the left. */
+  .game:not(.theory) {
+    position: relative;
+  }
+  .game:not(.theory) > .game-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 34%;
+    height: 36px;
+  }
+  .game:not(.theory) > .game-top + * {
+    min-height: 36px;
+    padding-left: calc(34% + 12px);
+  }
   .game-top .icon-btn {
     font-size: 1.1rem;
     padding: 0 6px;
