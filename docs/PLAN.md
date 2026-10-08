@@ -20,7 +20,8 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 6 Fa anahtarı ve iki el                       | Birleşti (PR #7)  |
 | 7 Gamlar                                      | Birleşti (PR #9)  |
 | Faz 7 iyileştirmeleri                         | Birleşti (PR #10) |
-| 8 Akorlar, çevrimler, arpejler                | PR #11            |
+| 8 Akorlar, çevrimler, arpejler                | Birleşti (PR #11) |
+| Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | PR #12            |
 | 9 ve sonrası                                  | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
@@ -167,7 +168,9 @@ akorlar, kök durum ve iki çevrim, yedili akorlar (Sol7, Do Majör 7, Re Minör
 ilerlemeleri (çevrimler en az hareketle seçilir; iki elde sol el kök notayı çalar), tek ve iki elle arpejler (1-2-3-5,
 iki oktavda başparmak geçişi). Oyunlar: Akor Aşçısı, Uzay Savunması, Arpej Sörfü (3/4'te, tempo merdiveniyle). Rapor:
 akor ailesi, çevrim, el ve derece başına başarı, aynı anda basma oranı, geç kalan nota (bas, alt, üst), yanlış çevrim
-sayısı, en zayıf akorlar; arpejlerde parmak geçişleri ve eşit aralık. Plan:
+sayısı, en zayıf akorlar; arpejlerde parmak geçişleri ve eşit aralık. Ekler (PR #12, ünite 24 ders): **Akor Barmeni**
+(müşteriler akor ister; tek elle ve iki elle iki ders) ve **Kulaktan Akor** / **Kulaktan Yedililer** (akor çalınır,
+kök nota yanar, öğrenci majör, minör ya da yedili olduğunu kulağıyla bulup çalar). Plan:
 
 - Akor algılama (aynı anda basılan notaları pencere içinde gruplama)
 - Majör/minör üçlüler, sonra 7'li akorlar; akor çevrimleri (kök, 1. çevrim, 2. çevrim)

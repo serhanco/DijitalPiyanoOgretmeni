@@ -25,6 +25,7 @@ export type LessonKind =
   | 'chord'
   | 'chef'
   | 'space'
+  | 'chordbar'
   | 'arpeggio'
   | 'surf'
 
@@ -35,10 +36,20 @@ export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'su
  * Kinds whose notes are known in advance (scales, memory runs, arpeggios) or
  * that are judged per chord: kept out of the note-reading statistics.
  */
-export const PATTERN_KINDS: LessonKind[] = ['scale', 'ladder', 'memory', 'chord', 'chef', 'space', 'arpeggio', 'surf']
+export const PATTERN_KINDS: LessonKind[] = [
+  'scale',
+  'ladder',
+  'memory',
+  'chord',
+  'chef',
+  'space',
+  'chordbar',
+  'arpeggio',
+  'surf',
+]
 
 /** Chord kinds: judged per chord, reported with the chord card. */
-export const CHORD_KINDS: LessonKind[] = ['chord', 'chef', 'space']
+export const CHORD_KINDS: LessonKind[] = ['chord', 'chef', 'space', 'chordbar']
 
 export interface RhythmSpec {
   bpm: number

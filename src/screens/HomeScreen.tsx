@@ -33,6 +33,7 @@ const KIND_ICON: Record<LessonKind, string> = {
   chord: '🎼',
   chef: '🍳',
   space: '🚀',
+  chordbar: '🍸',
   arpeggio: '〰️',
   surf: '🏄',
 }

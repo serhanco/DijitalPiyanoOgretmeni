@@ -83,8 +83,8 @@ Principles:
 
 | Branch | State                                                                                    |
 | ------ | ---------------------------------------------------------------------------------------- |
-| `main` | Phases 0–7, the polish round and phase 7 improvements (PRs #1–#10), live on GitHub Pages |
-| PR #11 | Phase 8: chords, inversions, progressions, arpeggios (unit 6)                            |
+| `main` | Phases 0–8, the polish round and phase 7 improvements (PRs #1–#11), live on GitHub Pages |
+| PR #12 | Phase 8 extras: Akor Barmeni, chords by ear (unit 6 now 24 lessons)                      |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -220,7 +220,7 @@ Phase 7 improvements (`claude/faz-7-iyilestirme-655r1z`, unit 5 now 24 lessons):
 - `MemorySpec.listenOnly` (Kulaktan Hafıza): only the first note lights up, every run starts on the tonic
   (`firstPosition`), falls back to lit keys when the piano samples did not load (`.memory-board[data-ear]`).
 
-Phase 8 (chords, `claude/faz-8-akorlar-0xd3ut`, unit 6 = 20 lessons):
+Phase 8 (chords, `claude/faz-8-akorlar-0xd3ut`, unit 6 = 24 lessons with the extras):
 
 - `src/music/chords.ts`: `chordTones` spells by thirds (B♭-D-F); qualities major, minor, dim, dom7, maj7, min7;
   `invert`, `chordFingers` (RH 1-3-5 / 1-2-5, LH 5-3-1 / 5-2-1, sevenths 1-2-3-5), `chordTarget(root, quality,
@@ -250,6 +250,13 @@ titles)` now also measures "Eşit aralık" (evenness of the played intervals) fo
   chord on a mini staff, the cannon shoots the one whose chord is played; a key that fits another invader starts a new
   chord; a landed invader costs a heart), **Arpej Sörfü** (`arcade/surf/scene.ts`: the wave is the arpeggio's pitch
   contour, buoys with names and finger badges, the surfer wipes out on a miss; one lesson with a tempo ladder).
+- Extras (PR #12): **Akor Barmeni** (`kind: 'chordbar'`, `arcade/bar/chordEngine.ts`: Nota Barmeni's customers order
+  chords; three counters for one hand, two per hand when both play, `chordBarRows`). `judgeAmong` in
+  `chords/session.ts` picks which of several waiting chords the keys are for (Uzay Savunması and Akor Barmeni).
+  `createBarScene` is generic over both bar games (`BarView`, `noteSpans` / `chordSpans`, `order(c)` gives a card's
+  notes and name). **Kulaktan Akor** / **Kulaktan Yedililer** (`ChordSpec.byEar`): `ChordScreen` plays the chord,
+  lights its root and hides the staff (`.ear-board[data-ear][data-pending]`, "Tekrar dinle"); the player finds major,
+  minor or seventh; without piano samples the chord's name is shown instead.
 - All chord kinds are in `PATTERN_KINDS` (no note statistics). XP line "İlk denemede doğru akorlar"
   (`LessonOutcome.chords`). Badges: Akor Şefi, Uzay Kahramanı (`noneMissed`), Sörf Ustası, Tek Hamlede
   (`allTogether`), Akor Ustası.
@@ -263,7 +270,7 @@ the plan against the code, test, report with suggestions, and wait for the go be
 runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
 all twenty-four scale lessons (scale drills with one and two hands and two octaves, four Gam Merdiveni runs at a faster
 tempo, two tempo ladders: one passed in three rounds whose raised tempo is checked on reopening, one with a late second
-round that stops the ladder; three Melodi Hafızası games, one with a wrong key, one by ear), all twenty chord lessons
+round that stops the ladder; three Melodi Hafızası games, one with a wrong key, one by ear), all twenty-four chord lessons
 (chords pressed 25 ms apart and once 140 ms apart, a wrong inversion in Aşçı: Çevrimler, progressions with both hands,
 arpeggios, three Arpej Sörfü runs incl. a tempo ladder), a latency calibration that must measure 30 ms, the profile with its rhythm chart, a fake Akai MIDI input (recognised, octave hint), and that progress survives a reload. The staff exposes the current note as
 `.staff-wrap[data-note]`, and keys are `.key[data-midi]`.

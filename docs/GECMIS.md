@@ -74,6 +74,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-07 | Faz 6: fa anahtarı ünitesi (10 ders), iki el ünitesi (7 ders), büyük porte, Orta Do köprüsü, melodi dersleri, Nota Barmeni, ellere göre rapor ve iki el uyumu, 3 yeni rozet                      | PR #7                           |
 | 2026-10-07 | Faz 7: gamlar ünitesi (18 ders), doğru yazım ve donanım imi, parmak numaraları ve geçiş uyarıları, Gam Merdiveni, Melodi Hafızası, gam raporu (eşit tempo, geçişler, iki el uyumu), 3 yeni rozet | PR #9                           |
 | 2026-10-07 | Faz 7 iyileştirmeleri: Tempo Merdiveni (kalıcı tempo artışı), iki oktavlık gamlar, Si, Mi♭, La♭ parmak düzenleri, Kulaktan Hafıza, 6 yeni ders, "Hız Treni" rozeti                               | PR #10                          |
+| 2026-10-08 | Faz 8 ekleri: Akor Barmeni (Nota Barmeni akorlarla, tek ve iki el), Kulaktan Akor ve Kulaktan Yedililer (akor türünü kulakla bulma), 4 yeni ders                                                 | PR #12                          |
 | 2026-10-07 | Faz 8: akorlar ünitesi (20 ders), akor algılama, çevrimler, yedili akorlar, ilerlemeler, arpejler, Akor Aşçısı, Uzay Savunması, Arpej Sörfü, akor raporu, 5 yeni rozet                           | PR #11                          |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                          |
 
@@ -106,6 +107,10 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   İlerlemelerde her akor bir öncekine en az hareketle (her nota en yakın notaya uzaklık toplamı) ulaşan çevrimde
   yazılır: Do'da I–IV–V–I = Do-Mi-Sol, Do-Fa-La, Si-Re-Sol, Do-Mi-Sol. Arpej Sörfü 3/4'te: bir oktav 6 vuruş ve
   tutulan son nota (3 vuruş) = 3 ölçü.
+- **Faz 8 ekleri:** Serhan Faz 8 raporundaki 2. ve 3. öneriyi istedi ("2. ve 3. maddeleri tamamlayıp kapatabiliriz";
+  Clavinova testi sonraya kaldı). Kulaktan akorda kök nota yanar, çünkü yalnızca türü (majör, minör, yedili) duymak
+  isteniyor, mutlak ses değil; akor oktav serbest ama kök en altta çalınır (`voicing`). Ses yüklenemezse akorun adı
+  yazılır, ders yine oynanır.
 
 ## Açık konular
 

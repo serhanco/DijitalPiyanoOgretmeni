@@ -52,6 +52,7 @@ export type BarEvent = { type: 'serve' | 'angry' | 'wrong'; customer: Customer }
 
 export class BarGame {
   readonly records: PromptRecord[]
+  readonly rows: Clef[] = [...COUNTERS_OF.treble, ...COUNTERS_OF.bass].map(clefOfCounter)
   customers: Customer[] = []
   drinks: Drink[] = []
   hearts: number

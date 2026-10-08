@@ -259,11 +259,15 @@ async function pressTogether(keys, gapMs, holdMs = 150) {
 }
 
 /** Play a chord drill: every note of the current chord, `gapMs` apart. */
-async function playChords(lessonTitle, shotName, { gapMs = 25, shotAfter = 3 } = {}) {
+async function playChords(lessonTitle, shotName, { gapMs = 25, shotAfter = 3, ear = false } = {}) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
-  await page.waitForSelector('.chord-wrap .staff svg')
+  const board = ear ? '.ear-board' : '.chord-wrap'
+  if (ear) {
+    await page.getByRole('button', { name: /Dinlemeye başla/ }).click()
+    await page.waitForSelector('.ear-board[data-pending]:not([data-pending=""])')
+  } else await page.waitForSelector('.chord-wrap .staff svg')
   for (let i = 0; i < 60 && !(await page.$('.results')); i++) {
-    const pending = await page.getAttribute('.chord-wrap', 'data-pending').catch(() => null)
+    const pending = await page.getAttribute(board, 'data-pending').catch(() => null)
     if (pending) await pressTogether(pending.split(' ').map(Number), gapMs)
     if (shotName && i === shotAfter) await page.screenshot({ path: `${out}/${shotName}.png` })
     await page.waitForTimeout(120)
@@ -284,7 +288,16 @@ async function playChordArcade(lessonTitle, shotName, { wrongInversion = false }
     const chord = await page.evaluate(() => {
       const g = window.__dpoChordArcade
       if (!g) return null
-      const target = 'invaders' in g ? (g.urgent && g.urgent.y > 0.15 ? g.urgent : null) : g.cooking
+      const target =
+        'invaders' in g
+          ? g.urgent && g.urgent.y > 0.15
+            ? g.urgent
+            : null
+          : 'customers' in g
+            ? g.urgent && g.urgent.x > 0.15
+              ? g.urgent
+              : null
+            : g.cooking
       return target
         ? { notes: target.record.chord.notes.map((n) => n.midi), inversion: target.record.chord.inversion }
         : null
@@ -343,6 +356,17 @@ async function chordsUnit() {
   await dismissOverlay()
   await page.screenshot({ path: `${out}/results-space.png`, fullPage: true })
   await back()
+  await playChordArcade('Akor Barmeni', 'game-chord-bar')
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-chord-bar.png`, fullPage: true })
+  await back()
+  await playChords('Kulaktan Akor', 'chord-ear', { ear: true })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-chord-ear.png`, fullPage: true })
+  const earTopics = await page.textContent('.results')
+  if (!earTopics?.includes('Minör akorlar') || !earTopics?.includes('Majör akorlar'))
+    errors.push('Ear chord lesson has no major / minor topics')
+  await back()
   await playChords('Akor Çevrimleri', 'chord-inversions', { shotAfter: 4 })
   await dismissOverlay()
   await page.screenshot({ path: `${out}/results-inversions.png`, fullPage: true })
@@ -394,6 +418,9 @@ async function chordsUnit() {
   await playChords('Yedili Akorlar', 'chord-sevenths', { shotAfter: 4 })
   await dismissOverlay()
   await back()
+  await playChords('Kulaktan Yedililer', 'chord-ear-7', { ear: true })
+  await dismissOverlay()
+  await back()
   await playChords('I – IV – V7 – I', 'progression-v7', { gapMs: 30, shotAfter: 2 })
   await dismissOverlay()
   await back()
@@ -409,6 +436,9 @@ async function chordsUnit() {
   await page.screenshot({ path: `${out}/results-surf-hands.png`, fullPage: true })
   const surfSync = await page.textContent('.sync')
   if (!surfSync?.includes('14 tanesinde')) errors.push(`Two-hand surf sync: ${surfSync}`)
+  await back()
+  await playChordArcade('Barmen: İki El', 'game-chord-bar-hands')
+  await dismissOverlay()
   await back()
   await page.waitForTimeout(400)
   await page
