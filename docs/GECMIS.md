@@ -89,6 +89,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-08 | Test modu ekleri: not paneli oyunu duraklatır, nota ekran görüntüsü, "Dersi bitir" kısayolu, notları .zip olarak indirme                                                                         | PR #13                                 |
 | 2026-10-08 | Haritaya dönüş: ders bitince, başarısız olunca ya da yarıda çıkınca harita o derse kayar ve onu ortalar                                                                                          | Haritaya dönüş PR'ı                    |
 | 2026-10-08 | Ekran klavyesi dersin notalarına göre: tek oktavlık derslerde tek oktav, nota okuma derslerinde hep Do'dan başlar                                                                                | Tek oktav klavye PR'ı                  |
+| 2026-10-08 | Nota Kuşu yeni karakter: Notiş tarzında kuş, kanat çırpma, geçişte sevinç (pırıltı, nota), çarpmada baş dönmesi (yıldızlar, tüyler), yanlış tuşta ter damlası                                    | Nota Kuşu karakter PR'ı                |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                    | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol

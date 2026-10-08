@@ -1138,7 +1138,8 @@ button.chip {
   height: 100%;
   pointer-events: none;
   fill: #2b2f3a;
-  opacity: 0.75;
+  /* Light enough that the bird flying past it stays visible. */
+  opacity: 0.45;
   z-index: 1;
 }
 @media (max-width: 420px) {

@@ -137,6 +137,10 @@ Phase 4 (done on `faz-4-mini-oyunlar`):
   ~90 kB gzip) wires input, HUD, mascot and sfx. The clef is an SVG `<text>` overlay in the Bravura font.
 - Lessons have `kind: 'drill' | 'bird' | 'balloon'`; the treble unit now mixes drills and games (map icons ♪ 🐦 🎈).
 - `window.__dpoArcade` exposes the running game so the smoke test can play it.
+- Nota Kuşu's bird is a character in Notiş's style (`bird/character.ts`, pure): `birdPose(reaction, now, reduced)` gives
+  the pose for `flap | oops | pass | crash` (squash, wing, happy / wide / dizzy eyes, stars, sweat drop), `nextReaction`
+  keeps a stronger reaction from being cut short, `burst` / `stepParticles` make sparkles and a note on a pass, feathers
+  on a crash. `BirdGame.flaps` / `lastFlapCorrect` tell the scene a wrong key was played. Reduced motion keeps the faces.
 
 Phase 5 (done on `faz-5-ritim-5xfbrn`):
 
