@@ -19,3 +19,30 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+
+  # Every game type on a desktop, an upright phone and a sideways phone: layout checks and screenshots.
+  layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start the preview server
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          for i in $(seq 30); do curl -sf http://localhost:4173/ > /dev/null && exit 0; sleep 1; done
+          exit 1
+      - run: npm run layout -- layout-screens
+      - name: Report
+        if: always()
+        run: cat layout-screens/rapor.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: layout-screens
+          path: layout-screens

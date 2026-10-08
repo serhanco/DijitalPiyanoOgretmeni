@@ -150,6 +150,16 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   (tempo, metronom, Başla) tek satır; teori kartlarında resim metnin yanında. Yalnızca CSS değişti, dikey yerleşim
   aynı kaldı.
 
+- **Görünüm test kümesi:** Serhan her oyunlaştırma türü için masaüstü ve mobil görünümü kapsayan bir test kümesi
+  istedi ("Hepsinden önce"). Her oyun türünden bir ders masaüstü penceresinde (1366×700), dikey ve yatay telefonda
+  açılıp biraz oynanıyor, düzen ölçülüyor ve ekran görüntüsü alınıyor; CI'da her PR'da çalışıyor. Masaüstü penceresi
+  1366×768 ekranın tarayıcı çubukları düşülmüş hali, çünkü gerçek tarayıcıda sayfaya kalan yükseklik ekrandan kısa.
+  Bilinen sorunlar raporda görünür ama CI'ı düşürmez, düzeltilince listeden çıkarılır. Serhan raporun önerilerini
+  istedi ("önerilerinle devam edelim"): porteli derslerde ders ekranı pencere yüksekliği kadar ve porte kalan alana
+  göre küçülüyor (masaüstünde klavye artık kaydırmadan görünüyor); Uzay Savunması istilacıları kartları kesik
+  girmesin diye ekranın biraz içinden, solarak beliriyor. İki Oktav derslerinde telefonda iki elin tuşlarını birlikte
+  gösteren özel klavye düzeni yapılmadı: çok efor ve kötü görünme riski.
+
 ## Açık konular
 
 - **Gerçek MIDI testi yapılmadı.** Uygulama tarayıcıda ekran klavyesiyle uçtan uca denendi; gerçek bir Bluetooth/USB

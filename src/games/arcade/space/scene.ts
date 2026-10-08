@@ -3,7 +3,7 @@ import { chordSymbol } from '../../../music/chords'
 import { drawNote, drawStaffLines } from '../draw'
 import type { Scene } from '../PixiStage'
 import { fitStaff, staffStep } from '../staffGeometry'
-import { BASE_Y, type Invader, LINGER_S, SPACE_LANES, type SpaceEvent, type SpaceGame } from './engine'
+import { BASE_Y, type Invader, LINGER_S, SPACE_LANES, type SpaceEvent, type SpaceGame, START_Y } from './engine'
 
 const SKY_TOP = 0x1b1446
 const SKY_BOTTOM = 0x3b2a7a
@@ -13,6 +13,8 @@ const CANNON = 0xff9600
 const LASER = 0x7df9ff
 const SAUCERS = [0xce82ff, 0x1cb0f6, 0xff86c8, 0xffc800]
 const INK = 0x2b2f3a
+/** Share of the height an invader falls while it fades in. */
+const FADE_IN_Y = 0.05
 
 export interface SpaceSceneOptions {
   /** Write the chord's name under the invader (first lessons). */
@@ -48,6 +50,8 @@ export function createSpaceScene(
   root.addChild(bg, world, names)
   let size = { w: 0, h: 0 }
   const nameOf = new Map<number, Text>()
+  /** One drawing layer per invader, so each can fade in on its own. */
+  const layers = new Map<number, Graphics>()
   let cannonX = -1
 
   function background(w: number, h: number) {
@@ -69,7 +73,7 @@ export function createSpaceScene(
     bg.ellipse(w / 2, groundY + h * 0.4, w * 0.9, h * 0.42).stroke({ width: 3, color: GROUND_DARK })
   }
 
-  function drawInvader(inv: Invader, x: number, y: number, unit: number, now: number) {
+  function drawInvader(world: Graphics, inv: Invader, x: number, y: number, unit: number, now: number) {
     const color = SAUCERS[inv.index % SAUCERS.length]
     if (inv.state === 'hit') {
       const t = Math.min(1, inv.since / LINGER_S)
@@ -149,7 +153,16 @@ export function createSpaceScene(
       for (const inv of game.invaders) {
         const x = xOf(inv.lane)
         const y = inv.y * h
-        drawInvader(inv, x, y, unit, now)
+        let layer = layers.get(inv.index)
+        if (!layer) {
+          layer = new Graphics()
+          root.addChild(layer)
+          layers.set(inv.index, layer)
+        }
+        layer.clear()
+        // A new invader fades in over the first stretch of its fall.
+        layer.alpha = Math.min(1, Math.max(0, (inv.y - START_Y) / FADE_IN_Y))
+        drawInvader(layer, inv, x, y, unit, now)
         let text = nameOf.get(inv.index)
         if (showName && inv.state === 'flying') {
           if (!text) {
@@ -159,11 +172,18 @@ export function createSpaceScene(
             nameOf.set(inv.index, text)
           }
           text.position.set(x, y - unit * 0.52)
+          text.alpha = layer.alpha
         } else if (text) {
           text.destroy()
           nameOf.delete(inv.index)
         }
       }
+
+      for (const [index, layer] of layers)
+        if (!game.invaders.some((i) => i.index === index)) {
+          layer.destroy()
+          layers.delete(index)
+        }
 
       // the cannon: glows brighter with every note of the chord held
       world.roundRect(cannonX - unit * 0.12, baseY - unit * 0.55, unit * 0.24, unit * 0.45, unit * 0.08).fill(INK)
@@ -174,6 +194,8 @@ export function createSpaceScene(
     },
     destroy() {
       names.removeChildren().forEach((c) => c.destroy())
+      layers.forEach((l) => l.destroy())
+      layers.clear()
     },
   }
 }

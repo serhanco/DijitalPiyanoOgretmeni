@@ -14,7 +14,8 @@ const FALL_END_S = 9
 const SPAWN_START_S = 4.2
 const SPAWN_END_S = 2.6
 const MAX_FLYING = 3
-export const START_Y = -0.12
+/** Where an invader appears, as a share of the height: low enough that its chord card and name are not cut off by the top edge (the name sits about 0.95 saucer units above it, a unit being at most 0.14 of the height). */
+export const START_Y = 0.14
 /** Where the base is, as a share of the height (y grows downwards). */
 export const BASE_Y = 0.8
 /** Seconds a shot or landed invader stays on screen for its animation. */

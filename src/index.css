@@ -373,6 +373,23 @@ kbd {
   height: auto;
   display: block;
 }
+/* Lessons with a staff: the screen is one window tall and the staff gives up height to the keyboard,
+   so the keyboard never ends up below the fold on a short desktop window. */
+.game:has(> .staff-wrap) {
+  height: calc(100dvh - 32px);
+  min-height: 0;
+}
+.game > .staff-wrap {
+  flex: 1 1 0;
+  min-height: 64px;
+}
+.game > .staff-wrap .staff {
+  display: flex;
+  justify-content: center;
+}
+.game > .staff-wrap .staff svg {
+  height: 100%;
+}
 .shake {
   animation: shake 0.35s;
 }
