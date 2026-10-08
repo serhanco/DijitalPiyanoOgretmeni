@@ -75,13 +75,7 @@ const MIN_AREA_SHARE = 0.25
  * they do not fail the run. Remove an entry when its fix lands, so the problem fails the run if
  * it comes back. `viewports` / `cases` limit an entry; `match` is tested against the error.
  */
-const KNOWN = [
-  {
-    viewports: ['masaustu'],
-    match: /Klavye ekranın altında kalıyor|Ders ekranı kaydırma istiyor/,
-    note: 'masaüstünde porte ve klavye sabit yükseklikte, kısa pencereye sığmıyor (2026-10-08)',
-  },
-]
+const KNOWN = []
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 
