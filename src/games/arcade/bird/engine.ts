@@ -34,6 +34,9 @@ export class BirdGame {
   birdY: number
   hearts: number
   score = 0
+  /** Key presses so far and whether the last one was right, for the bird's reactions. */
+  flaps = 0
+  lastFlapCorrect = true
   private spawned = 0
   private sinceSpawnS = Infinity
   private readonly skill: SkillProvider
@@ -142,6 +145,8 @@ export class BirdGame {
       this.birdStep = staffStep(midi, this.skill.clef)
       if (cur && cur.record.answeredAt === null) cur.record.wrongPresses.push(midi)
     }
+    this.flaps++
+    this.lastFlapCorrect = correct
     return [{ type: 'flap', correct }]
   }
 
