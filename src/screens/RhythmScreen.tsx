@@ -15,10 +15,16 @@ interface Props {
 }
 
 function RhythmField({ spec, bars, track, now }: FieldProps) {
-  const events = layoutRhythm(bars, spec.beatsPerBar).map((e, i) => ({
-    ...e,
-    judgement: track?.records[i].judgement ?? null,
-  }))
+  const events = layoutRhythm(bars, spec.beatsPerBar).map((e, i) => {
+    const r = track?.records[i]
+    // How far through its length the note was (or is being) held.
+    const share = r?.holdShare ?? (r && r.heldKey !== null ? Math.max(0, (now - r.dueAt) / track!.lengthMs(r)) : null)
+    return {
+      ...e,
+      judgement: r?.judgement ?? null,
+      hold: share === null ? null : { share, verdict: r!.holdVerdict },
+    }
+  })
   const beat = track ? track.beatAt(now) : null
   // Turn the page half a beat early so the next bar can be read in time.
   const page = Math.max(0, Math.floor(((beat ?? 0) + 0.5) / (spec.beatsPerBar * BARS_SHOWN)))
@@ -49,11 +55,12 @@ export function RhythmScreen({ lesson, onFinish, onExit }: Props) {
       hearts={relaxedMode ? null : HEARTS_PER_LESSON}
       howTo={
         lesson.rhythm?.anyKey
-          ? 'Notaları metronomla birlikte, herhangi bir tuşla çal. Eslerde sus!'
-          : 'Notaları metronomla birlikte çal.'
+          ? 'Notaları metronomla birlikte, herhangi bir tuşla çal ve süreleri kadar basılı tut. Eslerde sus!'
+          : 'Notaları metronomla birlikte çal ve süreleri kadar basılı tut.'
       }
       onFinish={onFinish}
       onExit={onExit}
+      holds
       renderField={(p) => <RhythmField {...p} />}
     />
   )

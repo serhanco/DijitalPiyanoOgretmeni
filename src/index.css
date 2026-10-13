@@ -1302,6 +1302,28 @@ button.chip {
   background: #ce82ff;
   box-shadow: 0 0 8px #ce82ff;
 }
+/* How long each note was held: its length, filled as far as the key stayed down. */
+.hold-bar {
+  position: absolute;
+  top: 78%;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
+  overflow: hidden;
+}
+.hold-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #ce82ff;
+}
+.hold-bar.ok span {
+  background: #22a559;
+}
+.hold-bar.short span,
+.hold-bar.long span {
+  background: #ff9600;
+}
 .rhythm-legend {
   text-align: center;
 }

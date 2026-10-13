@@ -136,12 +136,13 @@ async function playArcade(lessonTitle, shotName) {
  * Play a rhythm lesson: press Başla, then let the page itself press every
  * note's key on its beat (setTimeout in the page is far more precise than
  * round trips from here). `offsetMs` shifts every press; `lateRound` plays
- * that round of a tempo ladder 150 ms late. Returns the rounds played.
+ * that round of a tempo ladder 150 ms late. Keys are held for 85% of each
+ * note's length, or `tapMs` when set. Returns the rounds played.
  */
 async function playBeat(
   lessonTitle,
   shotName,
-  { offsetMs = 0, shotAt = 0.5, slower = 0, faster = 0, lateRound = 0 } = {},
+  { offsetMs = 0, shotAt = 0.5, slower = 0, faster = 0, lateRound = 0, tapMs = 0 } = {},
 ) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
   await page.waitForSelector('.beat-start')
@@ -154,8 +155,9 @@ async function playBeat(
     await page.waitForFunction(() => window.__dpoBeat && window.__dpoBeat !== window.__dpoPrevBeat)
     rounds++
     const lengthMs = await page.evaluate(
-      (offset) => {
+      ([offset, tap]) => {
         const t = window.__dpoBeat
+        const beats = { h: 2, q: 1, e: 0.5, qd: 1.5, hd: 3 }
         window.__dpoPrevBeat = t
         for (const r of t.records) {
           if (r.rest) continue
@@ -165,14 +167,17 @@ async function playBeat(
             () => {
               const el = document.querySelector(`.key[data-midi="${r.target}"]`)
               el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId, isPrimary: true }))
-              window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId })), 40)
+              window.setTimeout(
+                () => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId })),
+                tap || beats[r.value] * t.beatMs * 0.85,
+              )
             },
             r.dueAt + offset - performance.now(),
           )
         }
         return t.endAt - performance.now()
       },
-      offsetMs + (rounds === lateRound ? 150 : 0),
+      [offsetMs + (rounds === lateRound ? 150 : 0), tapMs],
     )
     if (shotName && rounds === 1) {
       await page.waitForTimeout(lengthMs * shotAt)
@@ -789,6 +794,14 @@ await dismissOverlay()
 await page.screenshot({ path: `${out}/results-rhythm.png`, fullPage: true })
 const rhythmScore = (await page.textContent('.stat-value'))?.trim()
 if (rhythmScore !== '%100') errors.push(`Perfectly timed rhythm lesson scored ${rhythmScore}`)
+await page.getByText('Derslere dön').click()
+// Halves tapped on the beat but let go at once: on time, yet only partly held.
+await playBeat('İkilikler', 'rhythm-halves-tapped', { tapMs: 60 })
+await dismissOverlay()
+await page.screenshot({ path: `${out}/results-halves-tapped.png`, fullPage: true })
+const tappedScore = Number((await page.textContent('.stat-value'))?.replace(/\D/g, ''))
+if (!(tappedScore < 90)) errors.push(`Tapped halves scored ${tappedScore}%, the hold did not count`)
+if (!(await page.getByText(/erken bıraktın/).count())) errors.push('Results do not say the notes were let go early')
 await page.getByText('Derslere dön').click()
 await playBeat('İkilikler')
 await dismissOverlay()

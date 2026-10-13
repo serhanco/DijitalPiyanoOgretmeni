@@ -4,6 +4,7 @@
 // input latency) and draws from the state.
 
 import type { SkillProvider } from '../games/arcade/skill'
+import { holdScore, holdVerdict, type HoldVerdict, judgesHold } from './hold'
 import { isRest, VALUE_BEATS, type RhythmValue } from './rhythm'
 import { beatMs, judge, type Judgement, MAX_WINDOW_MS, onTime } from './timing'
 
@@ -20,6 +21,13 @@ export interface TimingRecord {
   judgement: Judgement | null
   settledAt: number | null
   wrongPresses: number[]
+  /** The key that played the note while its hold is still being judged. */
+  heldKey: number | null
+  /** When the key came up, as a share of the note's length after `dueAt`. */
+  holdShare: number | null
+  /** How well the note was held, 0..1; null when the hold is not judged (see `TrackOptions.holds`). */
+  hold: number | null
+  holdVerdict: HoldVerdict | null
 }
 
 export type TrackEvent =
@@ -28,6 +36,7 @@ export type TrackEvent =
   | { type: 'wrong'; record: TimingRecord; midi: number }
   | { type: 'rest-kept'; record: TimingRecord }
   | { type: 'stray'; midi: number }
+  | { type: 'hold'; record: TimingRecord; verdict: HoldVerdict }
 
 export interface TrackOptions {
   bpm: number
@@ -35,6 +44,8 @@ export interface TrackOptions {
   startAt: number
   /** Lives lost on misses, wrong notes and broken rests. Unlimited when null. */
   hearts?: number | null
+  /** Judge how long notes of a quarter or longer are held (rhythm lessons on the staff). */
+  holds?: boolean
 }
 
 export class BeatTrack {
@@ -51,9 +62,11 @@ export class BeatTrack {
   lastPress: { at: number; event: TrackEvent } | null = null
   private readonly windows: number[]
   private readonly skill: SkillProvider
+  readonly holds: boolean
 
-  constructor(skill: SkillProvider, { bpm, startAt, hearts = null }: TrackOptions) {
+  constructor(skill: SkillProvider, { bpm, startAt, hearts = null, holds = false }: TrackOptions) {
     this.skill = skill
+    this.holds = holds
     this.bpm = bpm
     this.beatMs = beatMs(bpm)
     this.startAt = startAt
@@ -71,6 +84,10 @@ export class BeatTrack {
         judgement: null,
         settledAt: null,
         wrongPresses: [],
+        heldKey: null,
+        holdShare: null,
+        hold: null,
+        holdVerdict: null,
       }
     })
     // A note's window never reaches halfway to its neighbours, so a press
@@ -105,7 +122,7 @@ export class BeatTrack {
   }
 
   get done(): boolean {
-    return this.failed || this.records.every((r) => r.judgement !== null)
+    return this.failed || this.records.every((r) => r.judgement !== null && r.heldKey === null)
   }
 
   get progress(): number {
@@ -137,6 +154,32 @@ export class BeatTrack {
     }
   }
 
+  lengthMs(r: TimingRecord): number {
+    return VALUE_BEATS[r.value] * this.beatMs
+  }
+
+  /** The rest that starts where `r` ends, if any. */
+  private restAfter(r: TimingRecord): TimingRecord | undefined {
+    const end = r.dueAt + this.lengthMs(r)
+    return this.records.find((x) => x.rest && Math.abs(x.dueAt - end) < 1)
+  }
+
+  /** The key of a held note came up (or the hold was settled) at `time`. */
+  private endHold(r: TimingRecord, time: number): TrackEvent {
+    const share = (time - r.dueAt) / this.lengthMs(r)
+    const rest = this.restAfter(r)
+    r.heldKey = null
+    r.holdShare = share
+    r.hold = holdScore(share, r.value, rest ? VALUE_BEATS[rest.value] : 0)
+    r.holdVerdict = holdVerdict(share, r.hold)
+    return { type: 'hold', record: r, verdict: r.holdVerdict }
+  }
+
+  /** A key came up: ends the hold of the note it played. */
+  release(midi: number, time: number): TrackEvent[] {
+    return this.records.filter((r) => r.heldKey === midi).map((r) => this.endHold(r, time))
+  }
+
   private loseHeart() {
     if (this.hearts !== null) this.hearts = Math.max(0, this.hearts - 1)
   }
@@ -144,6 +187,8 @@ export class BeatTrack {
   press(midi: number, time: number): TrackEvent[] {
     // Presses during the count-in are warm-up, not mistakes.
     if (this.done || time < this.startAt - MAX_WINDOW_MS) return []
+    // A key pressed again was let go first, even if its release was not heard.
+    const released = this.release(midi, time)
     let nearest: TimingRecord | null = null
     let matching: TimingRecord | null = null
     for (const r of this.records) {
@@ -162,6 +207,7 @@ export class BeatTrack {
       if (this.skill.matches({ midi: best.target }, midi)) {
         best.offsetMs = time - best.dueAt
         this.settle(best, judge(best.offsetMs), time)
+        if (this.holds && judgesHold(best.value)) best.heldKey = midi
         event = { type: 'hit', record: best, judgement: best.judgement! }
       } else {
         // No heart yet: the note is still open and becomes a miss if it is never played right.
@@ -185,12 +231,21 @@ export class BeatTrack {
       }
     }
     this.lastPress = { at: time, event }
-    return [event]
+    return [event, ...released]
   }
 
   /** Settle notes nobody played and rests nobody broke. */
   update(now: number): TrackEvent[] {
     const events: TrackEvent[] = []
+    // Holds still going: held to the end of the note is enough, unless a rest follows,
+    // then it is settled when the key comes up or the rest is over.
+    for (const r of this.records) {
+      if (r.heldKey === null || this.failed) continue
+      const end = r.dueAt + this.lengthMs(r)
+      const rest = this.restAfter(r)
+      const limit = rest ? end + this.lengthMs(rest) : end
+      if (now >= limit) events.push(this.endHold(r, limit))
+    }
     for (const r of this.records) {
       if (this.done) break
       if (r.judgement !== null) continue

@@ -9,6 +9,7 @@ import {
   type StaffPlacement,
   staffPlacement,
 } from '../../music/notes'
+import type { HoldSummary } from '../../rhythm/hold'
 import type { Judgement } from '../../rhythm/timing'
 import type { TempoLadderSummary } from '../../rhythm/tempoLadder'
 import type { ChordSummary } from '../chords/report'
@@ -107,6 +108,8 @@ export interface TimingSummary {
   stray: number
   bestCombo: number
   bpm: number
+  /** Rhythm lessons on the staff: how long the notes were held. */
+  hold?: HoldSummary
 }
 
 export function avg(values: number[]): number | null {

@@ -161,6 +161,11 @@ Phase 5 (done on `faz-5-ritim-5xfbrn`):
   `RhythmScreen` (VexFlow one-line rhythm notation, playhead, coloured notes, two bars per page) and
   `BeatArcadeScreen` (**Dino Koşusu** `games/arcade/dino/`, **Ritim Davulcusu** `games/arcade/drum/`; engine.ts holds
   the pure geometry, scene.ts draws by reading the track ref every frame) only draw the playfield.
+- Holding notes (`rhythm/hold.ts`, `TrackOptions.holds`, on in `RhythmScreen` only): `BeatTrack.release(midi, time)`
+  ends a note's hold; quarters and longer (not eighths) score `holdScore`: full from 75% of the length (`HOLD_FULL`),
+  proportional below, and a note held past a quarter of the rest after it loses up to all of it. `scoreOf` takes up to
+  half (`HOLD_WEIGHT`) of a note's score for its hold. Live "Kısa tuttun / Uzun tuttun", hold bars under the notes,
+  topic "Notaları basılı tutma" and `timing.hold` on the results card. The smoke test holds keys 85% of each note.
 - `CalibrationScreen` (from the rhythm unit tip and Settings); results show a timing card (distribution, mean
   early/late, offset strip). Rhythm sessions skip the per-note statistics. New badge "Metronom Gibi".
 - The first lesson of every unit is open (`isUnlocked` is per unit); `Unit.review` marks units with a weak-note node.
