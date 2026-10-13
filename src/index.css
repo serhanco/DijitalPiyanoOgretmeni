@@ -1270,12 +1270,22 @@ button.chip {
   flex: 1;
   gap: 8px;
 }
+/* The surface colour, like every other staff: in dark mode `.staff svg` is inverted to light ink. */
 .rhythm-staff {
-  position: relative;
-  background: #fff;
+  background: var(--surface);
   border-radius: var(--radius);
   border: 2px solid var(--border);
   padding: 8px 4px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+/* The playhead is placed in the drawing's own coordinates, so it lives in a box exactly as wide as the SVG. */
+.rhythm-canvas {
+  position: relative;
+}
+.rhythm-staff .staff {
+  max-width: none;
 }
 .rhythm-staff .staff svg {
   width: 100%;
@@ -1284,8 +1294,8 @@ button.chip {
 }
 .playhead {
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: 0;
+  bottom: 0;
   width: 3px;
   margin-left: -1px;
   border-radius: 2px;

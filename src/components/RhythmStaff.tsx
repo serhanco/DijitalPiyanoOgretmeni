@@ -144,8 +144,10 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
 
   return (
     <div className="rhythm-staff">
-      <div ref={ref} className="staff" />
-      {x !== null && <div className="playhead" style={{ left: `${(x / WIDTH) * 100}%` }} />}
+      <div className="rhythm-canvas">
+        <div ref={ref} className="staff" />
+        {x !== null && <div className="playhead" style={{ left: `${(x / WIDTH) * 100}%` }} />}
+      </div>
     </div>
   )
 }

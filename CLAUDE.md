@@ -354,7 +354,8 @@ CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -
 `scripts/layout.mjs` (**layout suite**, in CI) opens one lesson of every game type (theory, drills incl. intro, wide
 keyboard and grand staff, Nota Kuşu, Balon, Nota Barmeni, melody, rhythm, Dino, Davulcu, scales incl. two octaves with
 two hands, Gam Merdiveni, both memory games, chords, Kulaktan Akor, Aşçı, Uzay, Akor Barmeni, arpeggio, Sörf) in test
-mode on a desktop window (1366×700), a phone upright (390×844) and sideways (844×390, touch), plays a little, ends it
+mode on a desktop window (1366×700), a phone upright (390×844) and sideways (844×390, touch), plus the screens with a
+staff once in dark mode (`koyu`: the inverted notation must sit on a dark box), plays a little, ends it
 with "Dersi bitir" and checks the play screen, the start card and the results: nothing sticks out sideways, play area
 and keyboard on screen together without scrolling and not overlapping, white keys ≥ 28 px, the wanted keys in the
 visible part of the keyboard, Pixi canvases fill their stage, Başla buttons on screen; Uzay Savunması measures how long
