@@ -160,7 +160,17 @@ export class BarGame {
     return events
   }
 
+  /** The latest serve or mistake, for the bartender's reaction. */
+  lastPress: { kind: 'serve' | 'wrong'; at: number } | null = null
+
   press(midi: number, now: number): BarEvent[] {
+    const events = this.judge(midi, now)
+    const first = events[0]
+    if (first) this.lastPress = { kind: first.type === 'serve' ? 'serve' : 'wrong', at: now }
+    return events
+  }
+
+  private judge(midi: number, now: number): BarEvent[] {
     if (this.done) return []
     // The customer closest to the bartender is the most urgent one.
     const waiting = this.waiting.sort((a, b) => b.x - a.x)
