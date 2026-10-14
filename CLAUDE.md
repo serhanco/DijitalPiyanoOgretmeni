@@ -340,7 +340,7 @@ Test mode and the progress code (`claude/test-modu-oikwzf`):
   it early (XP unchanged), checks that the balloons stand still behind the panel and move again after it, finishes a
   rhythm lesson mid-round, checks the copied Markdown and the .zip, and moves the progress code to a second page.
 
-Game characters (`claude/oyun-karakterleri-p7k2`):
+Game characters (`claude/project-thread-c81q91`):
 
 - **Dino** (`arcade/dino/character.ts`, pure): `dinoFeeling(track, now)` reads the latest press / settled record into
   `perfect | good | off | stumble | sniff | run`; `dinoLook` gives the pose (backflip on a perfect jump, sweat when
