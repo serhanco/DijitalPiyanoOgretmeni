@@ -51,6 +51,25 @@ const JUDGEMENT_COLORS: Record<Judgement, string> = {
 
 const DURATION: Record<RhythmValue, string> = { h: 'h', q: 'q', e: '8', qr: 'qr', qd: 'qd', hd: 'hd' }
 
+/** The notation sets its own paper and ink for the colour scheme instead of leaning on a CSS filter, so it reads in any browser. */
+const THEMES = {
+  light: { paper: '#ffffff', ink: '#1f2a30' },
+  dark: { paper: '#1b2a31', ink: '#eef3f6' },
+}
+
+function useDark() {
+  const query = '(prefers-color-scheme: dark)'
+  const [dark, setDark] = useState(() => window.matchMedia?.(query).matches ?? false)
+  useEffect(() => {
+    const mq = window.matchMedia?.(query)
+    if (!mq) return
+    const on = () => setDark(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return dark
+}
+
 let fontsReady: Promise<unknown> | null = null
 function waitForFonts() {
   fontsReady ??= document.fonts ? document.fonts.load('30px Bravura').catch(() => undefined) : Promise.resolve()
@@ -60,6 +79,7 @@ function waitForFonts() {
 export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [fontsLoaded, setFontsLoaded] = useState(false)
+  const theme = THEMES[useDark() ? 'dark' : 'light']
   /** (beat, x) pairs to place the playhead between notes. */
   const [anchors, setAnchors] = useState<[number, number][]>([])
   // `events` is a new array every frame; redraw only when what it shows changes.
@@ -82,9 +102,12 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
     if (!el || !fontsLoaded) return
     const events = eventsRef.current
     el.innerHTML = ''
+    const ink = { fillStyle: theme.ink, strokeStyle: theme.ink }
     const renderer = new Renderer(el, Renderer.Backends.SVG)
     renderer.resize(WIDTH, HEIGHT)
     const ctx = renderer.getContext()
+    ctx.setFillStyle(theme.ink)
+    ctx.setStrokeStyle(theme.ink)
     const points: [number, number][] = []
     const barWidth = (WIDTH - 20) / barCount
     for (let b = 0; b < barCount; b++) {
@@ -97,6 +120,7 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
         stave.addClef('percussion')
         if (bar === 0) stave.addTimeSignature(`${beatsPerBar}/4`)
       }
+      stave.setStyle(ink)
       stave.setContext(ctx).draw()
 
       const inBar = events.filter((e) => Math.floor(e.beat / beatsPerBar) === bar)
@@ -107,7 +131,7 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
         if (e.judgement) {
           const color = JUDGEMENT_COLORS[e.judgement]
           n.setStyle({ fillStyle: color, strokeStyle: color })
-        }
+        } else n.setStyle(ink)
         return n
       })
       const voice = new Voice({ numBeats: beatsPerBar, beatValue: 4 }).setStrict(false).addTickables(notes)
@@ -115,7 +139,7 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
       const beams = Beam.generateBeams(notes)
       new Formatter().joinVoices([voice]).format([voice], stave.getNoteEndX() - stave.getNoteStartX() - 10)
       voice.draw(ctx, stave)
-      beams.forEach((beam) => beam.setContext(ctx).draw())
+      beams.forEach((beam) => beam.setStyle(ink).setContext(ctx).draw())
       if (points.length === 0) points.push([bar * beatsPerBar - 0.5, stave.getNoteStartX()])
       inBar.forEach((e, i) => points.push([e.beat, notes[i].getAbsoluteX() + 6]))
       const last = inBar[inBar.length - 1]
@@ -130,11 +154,12 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
       svg.removeAttribute('height')
       svg.style.removeProperty('width')
       svg.style.removeProperty('height')
+      svg.style.filter = 'none'
       svg.setAttribute('role', 'img')
       svg.setAttribute('aria-label', 'Ritim')
     }
     // `key` stands for `events`.
-  }, [key, firstBar, barCount, beatsPerBar, fontsLoaded])
+  }, [key, firstBar, barCount, beatsPerBar, fontsLoaded, theme])
 
   /** x of a beat, between the anchors around it. */
   const xAt = (beat: number): number | null => {
@@ -170,7 +195,7 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
   })
 
   return (
-    <div className="rhythm-staff">
+    <div className="rhythm-staff" style={{ background: theme.paper }}>
       <div className="rhythm-canvas">
         <div ref={ref} className="staff" />
         {holds}
