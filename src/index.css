@@ -1263,9 +1263,42 @@ button.chip {
     transform: translate(-50%, -10px) scale(1);
   }
 }
+/* The notation fills the play area: as wide as the screen allows, and no taller than the room left (the
+   drawing is about five times wider than tall; the playhead is placed by width, so the box keeps that shape). */
+/* Before the start the notes must be readable too: tempo, metronome and the start button share one line. */
+.game:has(.rhythm-field) .beat-ready {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 8px 12px;
+}
+.game:has(.rhythm-field) .beat-ready > .small.muted {
+  display: none;
+}
+.game:has(.rhythm-field) .beat-ready .tempo-ladder {
+  order: 5;
+  flex-basis: 100%;
+  margin: 0;
+}
+.game:has(.rhythm-field) .beat-start {
+  align-self: center;
+  margin-left: auto;
+  padding: 8px 20px;
+}
+/* The game has a definite height so the play area's size is known when the box is sized from it. */
+.game:has(.beat-field > .rhythm-field) {
+  height: calc(100dvh - 32px);
+  min-height: 0;
+}
+.beat-field:has(> .rhythm-field) {
+  min-height: 120px;
+  container-type: size;
+}
 .rhythm-field {
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   flex: 1;
   gap: 8px;
@@ -1276,8 +1309,7 @@ button.chip {
   border-radius: var(--radius);
   border: 2px solid var(--border);
   padding: 8px 4px;
-  width: 100%;
-  max-width: 600px;
+  width: min(100%, (100cqh - 40px) * 4.6);
   margin: 0 auto;
 }
 /* The playhead is placed in the drawing's own coordinates, so it lives in a box exactly as wide as the SVG. */
@@ -1305,7 +1337,7 @@ button.chip {
 /* How long each note was held: its length, filled as far as the key stayed down. */
 .hold-bar {
   position: absolute;
-  top: 78%;
+  bottom: 4px;
   height: 6px;
   border-radius: 3px;
   background: color-mix(in srgb, var(--muted) 25%, transparent);
@@ -2104,7 +2136,6 @@ button.chip {
   }
   .rhythm-staff {
     padding: 2px 4px;
-    width: min(100%, (100cqh - 28px) * 3);
   }
   .rhythm-legend {
     font-size: 0.75rem;

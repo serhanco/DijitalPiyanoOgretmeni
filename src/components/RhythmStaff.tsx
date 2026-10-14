@@ -37,6 +37,9 @@ interface Props {
 const WIDTH = 360
 const HEIGHT = 120
 const STAVE_Y = 15
+/** The visible band of the drawing: the stave reserves four empty lines above the one we show, so the top is cropped. */
+const VIEW_Y = 42
+const VIEW_H = 72
 
 const JUDGEMENT_COLORS: Record<Judgement, string> = {
   perfect: '#22a559',
@@ -122,7 +125,7 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
 
     const svg = el.querySelector('svg')
     if (svg) {
-      svg.setAttribute('viewBox', `0 0 ${WIDTH} ${HEIGHT}`)
+      svg.setAttribute('viewBox', `0 ${VIEW_Y} ${WIDTH} ${VIEW_H}`)
       svg.removeAttribute('width')
       svg.removeAttribute('height')
       svg.style.removeProperty('width')

@@ -186,6 +186,12 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
     if (!svg || !visible(svg)) continue
     const c = canvas.getBoundingClientRect().width
     const w = svg.getBoundingClientRect().width
+    // The notation takes the room it is given: the width of the play area, or what its height allows.
+    const field = canvas.closest('.beat-field')?.getBoundingClientRect()
+    if (field && c < Math.min(field.width, (field.height - 40) * 4.6) * 0.8)
+      errors.push(
+        `Ritim çizgisi alanı doldurmuyor: ${Math.round(c)} px, alan ${Math.round(field.width)}×${Math.round(field.height)}`,
+      )
     if (Math.abs(c - w) > 2)
       errors.push(`Ritim çizgisi kutusunu doldurmuyor: ${Math.round(w)} px, kutu ${Math.round(c)} px`)
   }
