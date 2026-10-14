@@ -340,6 +340,24 @@ Test mode and the progress code (`claude/test-modu-oikwzf`):
   it early (XP unchanged), checks that the balloons stand still behind the panel and move again after it, finishes a
   rhythm lesson mid-round, checks the copied Markdown and the .zip, and moves the progress code to a second page.
 
+Game characters (`claude/project-thread-c81q91`):
+
+- **Dino** (`arcade/dino/character.ts`, pure): `dinoFeeling(track, now)` reads the latest press / settled record into
+  `perfect | good | off | stumble | sniff | run`; `dinoLook` gives the pose (backflip on a perfect jump, sweat when
+  off the beat, dizzy stars on a stumble, sniffing a rest with a "shh" bubble); `outfitLevel(combo)` adds a scarf (5),
+  sunglasses (10) and a crown (20); `cactusFace` gives the cacti faces. Scene: parallax hills and a volcano, footstep
+  dust, turtles for eighths, sky by lesson progress (morning to dusk).
+- **Barmen** (`arcade/bar/character.ts`): `nextMood` / `bartenderLook` (wink and toss a bottle on a serve, slip a glass
+  on a wrong key, facepalm when a customer leaves, juggle three bottles from a streak of 5); six customer kinds
+  (`kindOf(look)`: cat, frog, robot, octopus, bear, bunny) whose `patienceOf` face goes calm, tapping, watching the
+  clock, steaming. `BarGame` / `ChordBarGame` expose `lastPress` (`serve | wrong`) for the scene. Cards are smaller so the
+  customers' heads show.
+- **Balon**: passengers in a basket under each balloon (worried and waving near the top, `rescue.ts` `danger`), a pop
+  sends the passenger down on a parachute to the grass strip where rescued ones stand, a dart streaks to the balloon
+  (grey and past it on a wrong key), sky by progress, balloons narrower so the outer lanes fit. `arcade/critter.ts`
+  draws the shared heads.
+- Pixi v8: an `arc` is joined by a line to the path's last point, so call `moveTo` to the arc's start first.
+
 Next: **phase 9, ear training and memory** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 

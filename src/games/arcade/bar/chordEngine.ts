@@ -187,7 +187,17 @@ export class ChordBarGame {
     return events
   }
 
+  /** The latest serve or mistake, for the bartender's reaction. */
+  lastPress: { kind: 'serve' | 'wrong'; at: number } | null = null
+
   press(midi: number, now: number): ChordBarEvent[] {
+    const events = this.judge(midi, now)
+    const first = events[0]
+    if (first) this.lastPress = { kind: first.type === 'serve' ? 'serve' : 'wrong', at: now }
+    return events
+  }
+
+  private judge(midi: number, now: number): ChordBarEvent[] {
     if (this.done) return []
     const waiting = this.waiting
     if (!waiting.length) return []
