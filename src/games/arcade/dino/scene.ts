@@ -253,7 +253,10 @@ export function createDinoScene(
       case 'dizzy': {
         dino.circle(x, y, r).fill(0xffffff)
         const a = clock / 120
+        // moveTo first: an arc is joined by a line to wherever the path was left
+        dino.moveTo(x + Math.cos(a) * r * 0.62, y + Math.sin(a) * r * 0.62)
         dino.arc(x, y, r * 0.62, a, a + Math.PI * 1.5).stroke({ ...line, width: r * 0.2 })
+        dino.moveTo(x + Math.cos(a + Math.PI) * r * 0.25, y + Math.sin(a + Math.PI) * r * 0.25)
         dino.arc(x, y, r * 0.25, a + Math.PI, a + Math.PI * 2.3).stroke({ ...line, width: r * 0.2 })
         return
       }
