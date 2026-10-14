@@ -161,6 +161,9 @@ Phase 5 (done on `faz-5-ritim-5xfbrn`):
   `RhythmScreen` (VexFlow one-line rhythm notation, playhead, coloured notes, two bars per page) and
   `BeatArcadeScreen` (**Dino Koşusu** `games/arcade/dino/`, **Ritim Davulcusu** `games/arcade/drum/`; engine.ts holds
   the pure geometry, scene.ts draws by reading the track ref every frame) only draw the playfield.
+- `RhythmScreen` shows a window of two bars that moves on one bar at a time (`data-first-bar`): the bar being played is
+  on the left and the next one is already on the right, so a new bar never appears just as it must be played; the last
+  two bars stay put. The notation fills the play area (`.rhythm-staff` sized from `cqh`, the game has a definite height).
 - Holding notes (`rhythm/hold.ts`, `TrackOptions.holds`, on in `RhythmScreen` only): `BeatTrack.release(midi, time)`
   ends a note's hold; quarters and longer (not eighths) score `holdScore`: full from 75% of the length (`HOLD_FULL`),
   proportional below, and a note held past a quarter of the rest after it loses up to all of it. `scoreOf` takes up to

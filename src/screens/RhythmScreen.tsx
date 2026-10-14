@@ -26,12 +26,13 @@ function RhythmField({ spec, bars, track, now }: FieldProps) {
     }
   })
   const beat = track ? track.beatAt(now) : null
-  // Turn the page half a beat early so the next bar can be read in time.
-  const page = Math.max(0, Math.floor(((beat ?? 0) + 0.5) / (spec.beatsPerBar * BARS_SHOWN)))
-  const firstBar = Math.min(page * BARS_SHOWN, Math.max(0, spec.bars - BARS_SHOWN))
+  // A window of two bars that moves on one bar at a time: the bar being played is on the left and the next one
+  // is already there to read, so a new bar never appears just as it has to be played. The last window stays put.
+  const bar = Math.max(0, Math.floor((beat ?? 0) / spec.beatsPerBar))
+  const firstBar = Math.min(bar, Math.max(0, spec.bars - BARS_SHOWN))
   const barCount = Math.min(BARS_SHOWN, spec.bars)
   return (
-    <div className="rhythm-field" data-page={page}>
+    <div className="rhythm-field" data-first-bar={firstBar}>
       <RhythmStaff
         events={events.filter((e) => e.bar >= firstBar && e.bar < firstBar + barCount)}
         firstBar={firstBar}

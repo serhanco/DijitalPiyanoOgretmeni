@@ -67,6 +67,30 @@ export function PianoKeyboard({ low, high, marks = {}, showLabels = true, focus 
   for (let n = low; n <= high; n++) if (!isBlackKey(n)) whites.push(n)
   const whiteWidth = 100 / whites.length
 
+  // A finger that lifts outside the keyboard, or a keyboard that goes away while a key is down (the lesson ended on
+  // that very press), would leave the note held for good, and the next lesson's keyboard would start with it pressed.
+  useEffect(() => {
+    const held = pointers.current
+    const releaseWhere = (match: (pointerId: number) => boolean) => {
+      for (const [pointerId, midi] of [...held]) {
+        if (!match(pointerId)) continue
+        held.delete(pointerId)
+        noteOff(midi, 'screen')
+      }
+    }
+    const lifted = (e: PointerEvent) => releaseWhere((id) => id === e.pointerId)
+    const all = () => releaseWhere(() => true)
+    window.addEventListener('pointerup', lifted)
+    window.addEventListener('pointercancel', lifted)
+    window.addEventListener('blur', all)
+    return () => {
+      window.removeEventListener('pointerup', lifted)
+      window.removeEventListener('pointercancel', lifted)
+      window.removeEventListener('blur', all)
+      all()
+    }
+  }, [])
+
   const press = (midi: number, pointerId: number) => {
     const prev = pointers.current.get(pointerId)
     if (prev === midi) return
