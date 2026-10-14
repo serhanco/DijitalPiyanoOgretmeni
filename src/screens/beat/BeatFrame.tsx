@@ -28,6 +28,7 @@ import {
 } from '../../rhythm/tempoLadder'
 import { beatMs, clampBpm, JUDGEMENT_LABELS, type Judgement, MAX_BPM, MIN_BPM, onTime } from '../../rhythm/timing'
 import { BeatTrack, type TrackEvent } from '../../rhythm/track'
+import { VALUE_LENGTH } from '../../rhythm/hold'
 import { useSettings } from '../../state/settings'
 
 const LEAD_MS = 500
@@ -63,6 +64,8 @@ interface Props {
   report?: (tracks: BeatTrack[], summary: SessionSummary) => SessionSummary
   /** Note names for messages (a scale says Si♭, not La#). */
   nameOf?: (midi: number) => string
+  /** Judge how long notes are held, not only when they start. */
+  holds?: boolean
 }
 
 interface Popup {
@@ -122,6 +125,7 @@ export function BeatFrame({
   plan,
   report,
   nameOf = solfegeName,
+  holds = false,
 }: Props) {
   const spec = lesson.rhythm!
   const { ignoreOctave, showKeyLabels, metronome, latency, deviceLatency, set } = useSettings()
@@ -181,7 +185,7 @@ export function BeatFrame({
       const b = beatMs(roundBpm)
       const countIn = spec.beatsPerBar * COUNT_IN_BARS
       const startAt = gameNow() + LEAD_MS + countIn * b
-      const t = new BeatTrack(skill, { bpm: roundBpm, startAt, hearts: heartsLeft })
+      const t = new BeatTrack(skill, { bpm: roundBpm, startAt, hearts: heartsLeft, holds })
       trackRef.current = t
       ;(window as unknown as { __dpoBeat?: BeatTrack }).__dpoBeat = t
       setTrack(t)
@@ -196,7 +200,7 @@ export function BeatFrame({
       // The game may have ended (or been left) while the metronome was loading.
       if (finished.current || trackRef.current !== t) metronomeRef.current.stop()
     },
-    [spec, skill, bars, howTo, tempos],
+    [spec, skill, bars, howTo, tempos, holds],
   )
 
   const start = useCallback(async () => {
@@ -269,6 +273,15 @@ export function BeatFrame({
           setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
           setMessage(ev.record.rest ? 'Es sırasında sus!' : 'Bu vuruşu kaçırdın.')
           vibrate(60)
+        } else if (ev.type === 'hold' && ev.verdict !== 'ok') {
+          const short = ev.verdict === 'short'
+          setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: 'early', text: short ? 'Kısa tuttun' : 'Uzun tuttun' }))
+          const length = VALUE_LENGTH[ev.record.value]
+          setMessage(
+            short
+              ? `${length ? `${length} sürer: ` : ''}tuşu sonuna kadar basılı tut.`
+              : 'Es gelince parmağını kaldır.',
+          )
         } else if (ev.type === 'wrong') {
           setPopup((p) => ({ id: (p?.id ?? 0) + 1, judgement: 'wrong', text: 'Yanlış nota' }))
           setMessage(`${nameOf(ev.midi)} değil, ${nameOf(ev.record.target)} çal!`)
@@ -284,9 +297,14 @@ export function BeatFrame({
     () =>
       subscribe((e) => {
         const t = trackRef.current
-        if (e.type !== 'on' || !t) return
+        if (!t) return
         const { latency, deviceLatency } = useSettings.getState()
-        const events = t.press(e.midi, correctedTime(e.time, e.source, latency, e.device, deviceLatency))
+        const time = correctedTime(e.time, e.source, latency, e.device, deviceLatency)
+        if (e.type === 'off') {
+          react(t.release(e.midi, time))
+          return
+        }
+        const events = t.press(e.midi, time)
         const ev = events[0]
         if (ev?.type === 'hit') setFlash({ midi: e.midi, mark: onTime(ev.judgement) ? 'correct' : 'hint' })
         else if (ev?.type === 'wrong' || ev?.type === 'miss') setFlash({ midi: e.midi, mark: 'wrong' })

@@ -16,6 +16,14 @@ const VIEWPORTS = [
   { id: 'masaustu', name: 'Masaüstü 1366×700', viewport: { width: 1366, height: 700 } },
   { id: 'telefon', name: 'Telefon dikey 390×844', viewport: { width: 390, height: 844 }, mobile: true },
   { id: 'yatay', name: 'Telefon yatay 844×390', viewport: { width: 844, height: 390 }, mobile: true },
+  // Dark mode inverts the notation to light ink: every screen with a staff, once.
+  {
+    id: 'koyu',
+    name: 'Masaüstü koyu tema',
+    viewport: { width: 1366, height: 700 },
+    dark: true,
+    cases: ['theory', 'intro', 'grand', 'melody', 'rhythm', 'scale', 'chord', 'arpeggio'],
+  },
 ].filter((v) => !process.env.LAYOUT_VIEWPORTS || process.env.LAYOUT_VIEWPORTS.split(',').includes(v.id))
 
 /**
@@ -147,6 +155,39 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
     if (!visible(el)) continue
     const r = el.getBoundingClientRect()
     if (r.bottom > vh + 1 || r.top < 0) errors.push(`Başla düğmesi ekranın dışında (${Math.round(r.top)} px)`)
+  }
+
+  // Notation is readable: VexFlow draws black ink, and `.staff svg` is inverted to light ink in dark
+  // mode, so the box behind the staff must be light in light mode and dark in dark mode.
+  const luminance = (color) => {
+    const [r, g, b] = (color.match(/[\d.]+/g) ?? []).map(Number)
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+  }
+  const backdrop = (el) => {
+    for (let p = el; p; p = p.parentElement) {
+      const c = getComputedStyle(p).backgroundColor
+      const alpha = Number((c.match(/[\d.]+/g) ?? [])[3] ?? 1)
+      if (c !== 'transparent' && alpha > 0.5) return { el: p, lum: luminance(c) }
+    }
+    return { el: document.body, lum: luminance(getComputedStyle(document.body).backgroundColor) }
+  }
+  for (const svg of document.querySelectorAll('.staff svg')) {
+    if (!visible(svg)) continue
+    const lightInk = /invert\(1\)/.test(getComputedStyle(svg).filter)
+    const bg = backdrop(svg.parentElement)
+    if (lightInk ? bg.lum > 0.6 : bg.lum < 0.4)
+      errors.push(
+        `Porte okunmuyor: ${lightInk ? 'açık' : 'koyu'} mürekkep, ${lightInk ? 'açık' : 'koyu'} zemin (.${[...bg.el.classList].join('.') || bg.el.tagName.toLowerCase()})`,
+      )
+  }
+  // The rhythm playhead is placed in the drawing's coordinates: its box must be as wide as the drawing.
+  for (const canvas of document.querySelectorAll('.rhythm-canvas')) {
+    const svg = canvas.querySelector('svg')
+    if (!svg || !visible(svg)) continue
+    const c = canvas.getBoundingClientRect().width
+    const w = svg.getBoundingClientRect().width
+    if (Math.abs(c - w) > 2)
+      errors.push(`Ritim çizgisi kutusunu doldurmuyor: ${Math.round(w)} px, kutu ${Math.round(c)} px`)
   }
 
   if (!play) return { errors, warnings, facts }
@@ -606,6 +647,7 @@ async function runViewport(vp) {
     isMobile: !!vp.mobile,
     hasTouch: !!vp.mobile,
     deviceScaleFactor: 1,
+    colorScheme: vp.dark ? 'dark' : 'light',
   })
   const page = await context.newPage()
   page.setDefaultTimeout(10000)
@@ -646,7 +688,7 @@ async function runViewport(vp) {
     await page.waitForTimeout(800)
   }
 
-  for (const c of CASES) {
+  for (const c of CASES.filter((c) => !vp.cases || vp.cases.includes(c.id))) {
     const before = pageErrors.length
     const entry = { id: c.id, name: c.name, title: c.title, checks: [] }
     results.push(entry)
@@ -741,6 +783,7 @@ const lines = [
 for (const id of ids) {
   const cells = runs.map((run) => {
     const r = run.results.find((x) => x.id === id)
+    if (!r) return '–'
     const e = count(r, 'errors')
     const k = count(r, 'known')
     const w = count(r, 'warnings')

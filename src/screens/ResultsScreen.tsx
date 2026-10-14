@@ -90,6 +90,14 @@ function TimingCard({ timing }: { timing: TimingSummary }) {
             · {timing.rests} esin {timing.restsKept} tanesinde sustun
           </>
         )}
+        {timing.hold && (
+          <>
+            {' '}
+            · {timing.hold.judged} notanın {timing.hold.ok} tanesini süresi kadar tuttun
+            {timing.hold.short > 0 && <>, {timing.hold.short} tanesini erken bıraktın</>}
+            {timing.hold.long > 0 && <>, {timing.hold.long} tanesini esin içine taşırdın</>}
+          </>
+        )}
         {timing.stray > 0 && <> · {timing.stray} fazladan basış</>}
         {timing.bestCombo >= 3 && <> · en uzun seri {timing.bestCombo}</>}
       </p>

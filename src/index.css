@@ -1270,12 +1270,22 @@ button.chip {
   flex: 1;
   gap: 8px;
 }
+/* The surface colour, like every other staff: in dark mode `.staff svg` is inverted to light ink. */
 .rhythm-staff {
-  position: relative;
-  background: #fff;
+  background: var(--surface);
   border-radius: var(--radius);
   border: 2px solid var(--border);
   padding: 8px 4px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+/* The playhead is placed in the drawing's own coordinates, so it lives in a box exactly as wide as the SVG. */
+.rhythm-canvas {
+  position: relative;
+}
+.rhythm-staff .staff {
+  max-width: none;
 }
 .rhythm-staff .staff svg {
   width: 100%;
@@ -1284,13 +1294,35 @@ button.chip {
 }
 .playhead {
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: 0;
+  bottom: 0;
   width: 3px;
   margin-left: -1px;
   border-radius: 2px;
   background: #ce82ff;
   box-shadow: 0 0 8px #ce82ff;
+}
+/* How long each note was held: its length, filled as far as the key stayed down. */
+.hold-bar {
+  position: absolute;
+  top: 78%;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
+  overflow: hidden;
+}
+.hold-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #ce82ff;
+}
+.hold-bar.ok span {
+  background: #22a559;
+}
+.hold-bar.short span,
+.hold-bar.long span {
+  background: #ff9600;
 }
 .rhythm-legend {
   text-align: center;

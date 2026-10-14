@@ -2,7 +2,8 @@
 // and success per rhythm value (quarters, halves, eighths, rests).
 
 import { avg, type CategoryStat, type NoteStat, type SessionSummary, starsFor } from '../games/noteHunter/summary'
-import { type RhythmTopic, TOPIC_LABELS, TOPIC_ORDER, VALUE_TOPIC } from './rhythm'
+import { HOLD_OK, HOLD_WEIGHT, type HoldSummary, VALUE_LENGTH } from './hold'
+import { type RhythmTopic, type RhythmValue, TOPIC_LABELS, TOPIC_ORDER, VALUE_TOPIC } from './rhythm'
 import { describeOffset, JUDGEMENT_SCORE, JUDGEMENTS, type Judgement, onTime } from './timing'
 import type { TimingRecord } from './track'
 
@@ -15,18 +16,52 @@ export interface RhythmSummaryOptions {
   bpm: number
 }
 
-/** Score of one settled target, 0..1. A wrong key first costs half. */
+/** Score of one settled target, 0..1. A wrong key first costs half; a note let go too soon (or held into a rest) costs up to `HOLD_WEIGHT`. */
 export function scoreOf(r: TimingRecord): number {
   const s = r.judgement ? JUDGEMENT_SCORE[r.judgement] : 0
-  return r.wrongPresses.length && !r.rest ? s / 2 : s
+  const timed = r.wrongPresses.length && !r.rest ? s / 2 : s
+  return r.hold === null ? timed : timed * (1 - HOLD_WEIGHT * (1 - r.hold))
+}
+
+export function summarizeHolds(records: TimingRecord[]): HoldSummary | undefined {
+  const judged = records.filter((r) => r.hold !== null)
+  if (!judged.length) return undefined
+  const short = judged.filter((r) => r.holdVerdict === 'short')
+  const byValue = new Map<RhythmValue, number>()
+  for (const r of short) byValue.set(r.value, (byValue.get(r.value) ?? 0) + 1)
+  return {
+    judged: judged.length,
+    ok: judged.filter((r) => r.holdVerdict === 'ok').length,
+    short: short.length,
+    long: judged.filter((r) => r.holdVerdict === 'long').length,
+    mean: judged.reduce((n, r) => n + r.hold!, 0) / judged.length,
+    shortShare: avg(short.map((r) => r.holdShare!)),
+    shortest: [...byValue.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
+  }
+}
+
+function holdMessage(h: HoldSummary): string | null {
+  if (h.mean >= HOLD_OK) return null
+  if (h.short >= h.long) {
+    const length = h.shortest ? VALUE_LENGTH[h.shortest] : null
+    return `Notaları erken bırakıyorsun.${length ? ` ${length} sürer:` : ''} tuşu bir sonraki notaya kadar basılı tut.`
+  }
+  return 'Notayı esin içine taşırıyorsun. Es gelince parmağını kaldır.'
 }
 
 /** On the beat with the right key at once (or a rest kept). */
 export const clean = (r: TimingRecord) => onTime(r.judgement) && r.wrongPresses.length === 0
 
-function messageFor(accuracy: number, meanOffset: number | null, counts: Record<Judgement, number>): string {
+function messageFor(
+  accuracy: number,
+  meanOffset: number | null,
+  counts: Record<Judgement, number>,
+  hold: HoldSummary | undefined,
+): string {
   const played = counts.perfect + counts.good + counts.early + counts.late
   if (counts.miss > played / 2) return 'Metronomu dinle ve her vuruşta bir kez bas. Önce tempoyu düşürmeyi dene.'
+  const holding = hold && hold.mean < 0.75 ? holdMessage(hold) : null
+  if (holding) return holding
   if (meanOffset !== null && Math.abs(meanOffset) >= 35) {
     return meanOffset < 0
       ? `Genelde ${describeOffset(meanOffset)} basıyorsun. Vuruşu biraz bekle, acele etme.`
@@ -66,6 +101,15 @@ export function summarizeRhythm(
       accuracy: rs.reduce((n, r) => n + scoreOf(r), 0) / rs.length,
     }
   })
+  const hold = summarizeHolds(records)
+  if (hold)
+    perCategory.push({
+      id: 'hold',
+      label: 'Notaları basılı tutma',
+      shown: hold.judged,
+      firstTry: hold.ok,
+      accuracy: hold.mean,
+    })
 
   let perNote: NoteStat[] = []
   if (pitched) {
@@ -108,7 +152,7 @@ export function summarizeRhythm(
       .slice(0, 3),
     message: failed
       ? 'Kalpler bitti ama ritim pratikle oturur. Tempoyu düşürüp tekrar dene.'
-      : messageFor(accuracy, meanOffsetMs, counts),
+      : messageFor(accuracy, meanOffsetMs, counts, hold),
     timing: {
       counts,
       notes: notes.length,
@@ -120,6 +164,7 @@ export function summarizeRhythm(
       stray,
       bestCombo,
       bpm,
+      hold,
     },
   }
 }

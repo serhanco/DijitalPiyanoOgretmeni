@@ -13,12 +13,15 @@ import {
   Voice,
 } from 'vexflow/bravura'
 import { VALUE_BEATS, type RhythmValue } from '../rhythm/rhythm'
+import type { HoldVerdict } from '../rhythm/hold'
 import type { Judgement } from '../rhythm/timing'
 
 export interface StaffEvent {
   value: RhythmValue
   beat: number
   judgement: Judgement | null
+  /** How long the note was held, as a share of its length; `verdict` is null while the key is down. */
+  hold?: { share: number; verdict: HoldVerdict | null } | null
 }
 
 interface Props {
@@ -130,22 +133,46 @@ export function RhythmStaff({ events, firstBar, barCount, beatsPerBar, playhead 
     // `key` stands for `events`.
   }, [key, firstBar, barCount, beatsPerBar, fontsLoaded])
 
-  let x: number | null = null
-  if (playhead !== null && anchors.length > 1) {
-    const i = anchors.findIndex(([beat]) => beat > playhead)
+  /** x of a beat, between the anchors around it. */
+  const xAt = (beat: number): number | null => {
+    if (anchors.length < 2) return null
+    const i = anchors.findIndex(([b]) => b > beat)
     if (i > 0) {
       const [b0, x0] = anchors[i - 1]
       const [b1, x1] = anchors[i]
-      x = x0 + ((playhead - b0) / (b1 - b0)) * (x1 - x0)
-    } else if (i === -1) {
-      x = anchors[anchors.length - 1][1]
+      return x0 + ((beat - b0) / (b1 - b0)) * (x1 - x0)
     }
+    return i === -1 ? anchors[anchors.length - 1][1] : null
   }
+  const x = playhead === null ? null : xAt(playhead)
+  const pct = (v: number) => `${(v / WIDTH) * 100}%`
+  // Hold bars under the notes: the note's length, filled as far as the key was held.
+  const holds = events.flatMap((e, i) => {
+    if (!e.hold) return []
+    const len = VALUE_BEATS[e.value]
+    const from = xAt(e.beat)
+    const to = xAt(e.beat + len)
+    if (from === null || to === null || to <= from) return []
+    const fill = Math.min(1, e.hold.share)
+    return [
+      <div
+        key={i}
+        className={`hold-bar ${e.hold.verdict ?? 'down'}`}
+        data-verdict={e.hold.verdict ?? 'down'}
+        style={{ left: pct(from - 4), width: pct(to - from) }}
+      >
+        <span style={{ width: `${fill * 100}%` }} />
+      </div>,
+    ]
+  })
 
   return (
     <div className="rhythm-staff">
-      <div ref={ref} className="staff" />
-      {x !== null && <div className="playhead" style={{ left: `${(x / WIDTH) * 100}%` }} />}
+      <div className="rhythm-canvas">
+        <div ref={ref} className="staff" />
+        {holds}
+        {x !== null && <div className="playhead" style={{ left: pct(x) }} />}
+      </div>
     </div>
   )
 }

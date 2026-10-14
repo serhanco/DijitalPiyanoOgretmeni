@@ -161,6 +161,11 @@ Phase 5 (done on `faz-5-ritim-5xfbrn`):
   `RhythmScreen` (VexFlow one-line rhythm notation, playhead, coloured notes, two bars per page) and
   `BeatArcadeScreen` (**Dino Koşusu** `games/arcade/dino/`, **Ritim Davulcusu** `games/arcade/drum/`; engine.ts holds
   the pure geometry, scene.ts draws by reading the track ref every frame) only draw the playfield.
+- Holding notes (`rhythm/hold.ts`, `TrackOptions.holds`, on in `RhythmScreen` only): `BeatTrack.release(midi, time)`
+  ends a note's hold; quarters and longer (not eighths) score `holdScore`: full from 75% of the length (`HOLD_FULL`),
+  proportional below, and a note held past a quarter of the rest after it loses up to all of it. `scoreOf` takes up to
+  half (`HOLD_WEIGHT`) of a note's score for its hold. Live "Kısa tuttun / Uzun tuttun", hold bars under the notes,
+  topic "Notaları basılı tutma" and `timing.hold` on the results card. The smoke test holds keys 85% of each note.
 - `CalibrationScreen` (from the rhythm unit tip and Settings); results show a timing card (distribution, mean
   early/late, offset strip). Rhythm sessions skip the per-note statistics. New badge "Metronom Gibi".
 - The first lesson of every unit is open (`isUnlocked` is per unit); `Unit.review` marks units with a weak-note node.
@@ -354,7 +359,8 @@ CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -
 `scripts/layout.mjs` (**layout suite**, in CI) opens one lesson of every game type (theory, drills incl. intro, wide
 keyboard and grand staff, Nota Kuşu, Balon, Nota Barmeni, melody, rhythm, Dino, Davulcu, scales incl. two octaves with
 two hands, Gam Merdiveni, both memory games, chords, Kulaktan Akor, Aşçı, Uzay, Akor Barmeni, arpeggio, Sörf) in test
-mode on a desktop window (1366×700), a phone upright (390×844) and sideways (844×390, touch), plays a little, ends it
+mode on a desktop window (1366×700), a phone upright (390×844) and sideways (844×390, touch), plus the screens with a
+staff once in dark mode (`koyu`: the inverted notation must sit on a dark box), plays a little, ends it
 with "Dersi bitir" and checks the play screen, the start card and the results: nothing sticks out sideways, play area
 and keyboard on screen together without scrolling and not overlapping, white keys ≥ 28 px, the wanted keys in the
 visible part of the keyboard, Pixi canvases fill their stage, Başla buttons on screen; Uzay Savunması measures how long

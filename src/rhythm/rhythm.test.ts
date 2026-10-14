@@ -6,6 +6,7 @@ import { calibrate, correctedTime, offsetFromBeat } from './calibration'
 import { generateBars, layoutRhythm, parseRhythm, rhythmBeats, VALUE_BEATS } from './rhythm'
 import { summarizeRhythm } from './summary'
 import { describeOffset, judge } from './timing'
+import { HOLD_WEIGHT, holdScore } from './hold'
 import { BeatTrack } from './track'
 
 function seeded(seed = 1) {
@@ -269,5 +270,92 @@ describe('game geometry', () => {
     )
     expect(lanesFor(t, false).every((m, i, a) => i === 0 || a[i - 1] < m)).toBe(true)
     expect(lanesFor(t, true)).toHaveLength(1)
+  })
+})
+
+describe('holding notes', () => {
+  // 120 bpm: a beat is 500 ms; beat 0 at t = 1000.
+  const track = (text: string, holds = true) =>
+    new BeatTrack(
+      rhythmSkill({ clef: 'treble', bars: parseRhythm(text), notes: [C4], anyKey: true, random: seeded(2) }),
+      {
+        bpm: 120,
+        startAt: 1000,
+        holds,
+      },
+    )
+
+  it('scores a hold by the share of the note it lasted, full from 75%', () => {
+    expect(holdScore(0.75, 'h')).toBe(1)
+    expect(holdScore(0.375, 'h')).toBeCloseTo(0.5)
+    expect(holdScore(1.4, 'h')).toBe(1) // held on into the next note: no rest to break
+    // Into a quarter rest after a half: a quarter of the rest is allowed, all of it scores 0.
+    expect(holdScore(1 + 0.125, 'h', 1)).toBe(1)
+    expect(holdScore(1.5, 'h', 1)).toBe(0)
+  })
+
+  it('judges the release of halves and quarters, not of eighths', () => {
+    const t = track('h q e e')
+    t.press(C4, 1000)
+    expect(t.release(C4, 1200)).toEqual([{ type: 'hold', record: t.records[0], verdict: 'short' }])
+    expect(t.records[0].holdShare).toBeCloseTo(0.2)
+    expect(t.records[0].hold).toBeCloseTo(0.2 / 0.75)
+    t.press(C4, 2000)
+    t.release(C4, 2420)
+    expect(t.records[1].holdVerdict).toBe('ok')
+    t.press(C4, 2500)
+    t.release(C4, 2550)
+    expect(t.records[2].hold).toBeNull()
+  })
+
+  it('settles a note still held at its end, and waits for a rest that follows', () => {
+    const t = track('h qr q')
+    t.press(C4, 1000)
+    expect(t.update(1900)).toEqual([])
+    expect(t.records[0].heldKey).toBe(C4)
+    // Held a quarter of the rest too long: still fine.
+    const ev = t.release(C4, 2125)
+    expect(ev[0]).toMatchObject({ type: 'hold', verdict: 'ok' })
+    const u = track('h qr q')
+    u.press(C4, 1000)
+    const evs = u.update(2500) // held through the whole rest
+    expect(evs.find((e) => e.type === 'hold')).toMatchObject({ verdict: 'long' })
+    expect(u.records[0].hold).toBe(0)
+  })
+
+  it('ends a hold when the same key is pressed again, and waits for the last hold before finishing', () => {
+    const t = track('q q')
+    t.press(C4, 1000)
+    const ev = t.press(C4, 1500)
+    expect(ev[1]).toMatchObject({ type: 'hold', record: t.records[0], verdict: 'ok' })
+    expect(t.done).toBe(false) // the second quarter is still held
+    t.update(2000)
+    expect(t.done).toBe(true)
+    expect(t.records[1].holdVerdict).toBe('ok')
+  })
+
+  it('takes up to half of a note score for a short hold and says which value to hold', () => {
+    const t = track('h h')
+    t.press(C4, 1000)
+    t.release(C4, 1100) // a tap: 10% of the half
+    t.press(C4, 2000)
+    t.release(C4, 2900)
+    t.update(4000)
+    const s = summarizeRhythm(t.attempted, { bpm: 120 })
+    const tap = 1 - HOLD_WEIGHT * (1 - 0.1 / 0.75)
+    expect(s.accuracy).toBeCloseTo((tap + 1) / 2)
+    expect(s.timing?.hold).toMatchObject({ judged: 2, ok: 1, short: 1, long: 0, shortest: 'h' })
+    expect(s.perCategory.find((c) => c.id === 'hold')).toMatchObject({ shown: 2, firstTry: 1 })
+    expect(s.message).toMatch(/İkilik iki vuruş sürer/)
+  })
+
+  it('leaves holds alone when the activity does not judge them', () => {
+    const t = track('h h', false)
+    t.press(C4, 1000)
+    t.release(C4, 1100)
+    t.press(C4, 2000)
+    expect(t.records[0].hold).toBeNull()
+    expect(t.done).toBe(true)
+    expect(summarizeRhythm(t.attempted, { bpm: 120 }).timing?.hold).toBeUndefined()
   })
 })
