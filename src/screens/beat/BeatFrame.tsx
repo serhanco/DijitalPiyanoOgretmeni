@@ -16,7 +16,8 @@ import type { SessionSummary } from '../../games/noteHunter/summary'
 import { subscribe } from '../../input/inputBus'
 import { solfegeName } from '../../music/notes'
 import { correctedTime } from '../../rhythm/calibration'
-import { generateBars, rhythmBeats, type RhythmValue } from '../../rhythm/rhythm'
+import { rhythmPlan } from '../../rhythm/plan'
+import { isRest, rhythmBeats, type RhythmValue, VALUE_BEATS } from '../../rhythm/rhythm'
 import { summarizeRhythm } from '../../rhythm/summary'
 import {
   ladderTempos,
@@ -79,17 +80,23 @@ function BeatHud({
   now,
   spec,
   round,
+  listen,
 }: {
   track: BeatTrack | null
   now: number
   spec: RhythmSpec
   round: string | null
+  /** Yankı: the bars the app plays. */
+  listen: boolean[]
 }) {
   const beat = track ? track.beatAt(now) : null
   const whole = beat === null ? null : Math.floor(beat)
   const inBar = whole === null ? -1 : ((whole % spec.beatsPerBar) + spec.beatsPerBar) % spec.beatsPerBar
   const countIn = whole !== null && whole < 0 ? -whole : null
   const bar = whole !== null && whole >= 0 ? Math.min(spec.bars, Math.floor(whole / spec.beatsPerBar) + 1) : 0
+  const echo = listen.some(Boolean)
+  // Yankı counts calls (a listen bar and its answer), not bars.
+  const turn = echo && whole !== null && whole >= 0 ? (listen[bar - 1] ? 'listen' : 'play') : null
   return (
     <div className="beat-hud" aria-live="off">
       <span className="beat-tempo">
@@ -105,6 +112,10 @@ function BeatHud({
         {countIn !== null ? (
           <b className="count-in" key={countIn}>
             {countIn}
+          </b>
+        ) : turn ? (
+          <b className={`echo-turn ${turn}`} data-turn={turn}>
+            {turn === 'listen' ? '🎧 Dinle' : '🎹 Sen çal'} {Math.ceil(bar / 2)}/{spec.bars / 2}
           </b>
         ) : (
           `Ölçü ${bar}/${spec.bars}`
@@ -127,12 +138,15 @@ export function BeatFrame({
   nameOf = solfegeName,
   holds = false,
 }: Props) {
-  const spec = lesson.rhythm!
+  const lessonSpec = lesson.rhythm!
   const { ignoreOctave, showKeyLabels, metronome, latency, deviceLatency, set } = useSettings()
-  const bars = useMemo(
-    () => plan?.bars ?? generateBars({ values: spec.values, bars: spec.bars, beatsPerBar: spec.beatsPerBar }),
-    [spec, plan],
-  )
+  // A pattern, a Yankı or a song; random bars otherwise.
+  const lessonPlan = useMemo(() => (plan ? null : rhythmPlan(lessonSpec)), [lessonSpec, plan])
+  const bars = plan?.bars ?? lessonPlan!.bars
+  const listen = useMemo(() => lessonPlan?.listen ?? bars.map(() => false), [lessonPlan, bars])
+  /** The lesson's spec with the number of bars actually played (a song or a Yankı sets its own). */
+  const spec = useMemo(() => ({ ...lessonSpec, bars: bars.length }), [lessonSpec, bars])
+  const tune = lessonSpec.tune
   const skill = useMemo(
     () =>
       plan?.skill ??
@@ -143,8 +157,10 @@ export function BeatFrame({
         anyKey: spec.anyKey,
         ignoreOctave,
         beatsPerBar: spec.beatsPerBar,
+        pitches: lessonPlan?.pitches,
+        listen,
       }),
-    [lesson, bars, spec, ignoreOctave, plan],
+    [lesson, bars, spec, ignoreOctave, plan, lessonPlan, listen],
   )
 
   // The tempo the player chose last time in this lesson.
@@ -196,6 +212,10 @@ export function BeatFrame({
         firstClickAt: startAt - countIn * b,
         fromBeat: -countIn,
         toBeat: Math.ceil(rhythmBeats(bars)) - 1,
+        // Yankı: the app plays its bars on the piano.
+        cues: t.records
+          .filter((r) => r.demo && !r.rest)
+          .map((r) => ({ beat: r.beat, midi: r.target, beats: VALUE_BEATS[r.value] })),
       })
       // The game may have ended (or been left) while the metronome was loading.
       if (finished.current || trackRef.current !== t) metronomeRef.current.stop()
@@ -357,7 +377,14 @@ export function BeatFrame({
     return () => clearTimeout(t)
   }, [flash])
 
-  const marks: Partial<Record<number, KeyMark>> = flash ? { [flash.midi]: flash.mark } : {}
+  const marks: Partial<Record<number, KeyMark>> = {}
+  // A song with its notes: the next key is lit, until the learner can play it by heart.
+  if (spec.guide) {
+    const next = track ? track.next : (skill.targets.find((t) => !t.demo && !isRest(t.value ?? 'q')) ?? null)
+    const midi = next && ('target' in next ? next.target : next.midi)
+    if (midi !== null && midi !== undefined) marks[midi] = 'hint'
+  }
+  if (flash) marks[flash.midi] = flash.mark
   const roundLabel = ladder ? `Tur ${roundIndex + 1}/${tempos.length}` : null
   const progress = (roundIndex + (track?.progress ?? 0)) / tempos.length
   const noLatency = Object.values(latency).every((v) => v === 0) && Object.keys(deviceLatency).length === 0
@@ -387,9 +414,19 @@ export function BeatFrame({
       </div>
 
       {track ? (
-        <BeatHud track={track} now={now} spec={spec} round={roundLabel} />
+        <BeatHud track={track} now={now} spec={spec} round={roundLabel} listen={listen} />
       ) : (
         <div className="card beat-ready">
+          {tune && (
+            <div className="tune-info" data-tune={tune.original}>
+              <p>
+                🎵 <b>{tune.title}</b> · <i lang="und">{tune.original}</i>
+              </p>
+              <p className="small muted">
+                {tune.origin}. {tune.fact}
+              </p>
+            </div>
+          )}
           <div className="tempo-row">
             <span>Tempo</span>
             <button

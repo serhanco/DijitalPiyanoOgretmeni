@@ -13,6 +13,8 @@ export interface TimingRecord {
   beat: number
   value: RhythmValue
   rest: boolean
+  /** Yankı: a note the app plays for the learner to hear; never judged. */
+  demo: boolean
   /** When the note should be played (start of the rest). */
   dueAt: number
   /** Press time minus `dueAt`, for notes that were played. */
@@ -79,6 +81,7 @@ export class BeatTrack {
         beat,
         value,
         rest: isRest(value),
+        demo: t.demo ?? false,
         dueAt: startAt + beat * this.beatMs,
         offsetMs: null,
         judgement: null,
@@ -93,17 +96,22 @@ export class BeatTrack {
     // A note's window never reaches halfway to its neighbours, so a press
     // always belongs to the closest note. Notes due together (both hands)
     // share a window.
-    const times = [...new Set(this.records.filter((r) => !r.rest).map((r) => r.dueAt))].sort((a, b) => a - b)
+    const times = [...new Set(this.played.filter((r) => !r.rest).map((r) => r.dueAt))].sort((a, b) => a - b)
     this.windows = this.records.map((r) => {
-      if (r.rest) return 0
+      if (r.rest || r.demo) return 0
       const i = times.indexOf(r.dueAt)
       const gaps = [times[i - 1], times[i + 1]].filter((t) => t !== undefined).map((t) => Math.abs(t - r.dueAt) / 2)
       return Math.min(MAX_WINDOW_MS, ...gaps)
     })
   }
 
+  /** The targets the learner plays (Yankı's demo notes left out). */
+  get played(): TimingRecord[] {
+    return this.records.filter((r) => !r.demo)
+  }
+
   get total(): number {
-    return this.records.length
+    return this.played.length
   }
 
   /** Time the last note or rest ends. */
@@ -122,21 +130,21 @@ export class BeatTrack {
   }
 
   get done(): boolean {
-    return this.failed || this.records.every((r) => r.judgement !== null && r.heldKey === null)
+    return this.failed || this.played.every((r) => r.judgement !== null && r.heldKey === null)
   }
 
   get progress(): number {
-    return this.records.filter((r) => r.judgement !== null).length / Math.max(1, this.total)
+    return this.played.filter((r) => r.judgement !== null).length / Math.max(1, this.total)
   }
 
   /** Settled targets: the basis of the report. */
   get attempted(): TimingRecord[] {
-    return this.records.filter((r) => r.judgement !== null)
+    return this.played.filter((r) => r.judgement !== null)
   }
 
   /** The next note still to be played, for hints and tests. */
   get next(): TimingRecord | null {
-    return this.records.find((r) => !r.rest && r.judgement === null) ?? null
+    return this.played.find((r) => !r.rest && r.judgement === null) ?? null
   }
 
   windowOf(record: TimingRecord): number {
@@ -161,7 +169,7 @@ export class BeatTrack {
   /** The rest that starts where `r` ends, if any. */
   private restAfter(r: TimingRecord): TimingRecord | undefined {
     const end = r.dueAt + this.lengthMs(r)
-    return this.records.find((x) => x.rest && Math.abs(x.dueAt - end) < 1)
+    return this.records.find((x) => x.rest && !x.demo && Math.abs(x.dueAt - end) < 1)
   }
 
   /** The key of a held note came up (or the hold was settled) at `time`. */
@@ -192,7 +200,7 @@ export class BeatTrack {
     let nearest: TimingRecord | null = null
     let matching: TimingRecord | null = null
     for (const r of this.records) {
-      if (r.rest || r.judgement !== null) continue
+      if (r.rest || r.demo || r.judgement !== null) continue
       const off = Math.abs(time - r.dueAt)
       if (off > this.windowOf(r)) continue
       if (!nearest || off < Math.abs(time - nearest.dueAt)) nearest = r
@@ -217,7 +225,7 @@ export class BeatTrack {
       }
     } else {
       // Playing during a rest breaks it; the next note's early window is checked above first.
-      const rest = this.records.find(
+      const rest = this.played.find(
         (r) => r.rest && r.judgement === null && time >= r.dueAt && time < r.dueAt + VALUE_BEATS[r.value] * this.beatMs,
       )
       if (rest) {
@@ -248,7 +256,7 @@ export class BeatTrack {
     }
     for (const r of this.records) {
       if (this.done) break
-      if (r.judgement !== null) continue
+      if (r.demo || r.judgement !== null) continue
       if (r.rest) {
         if (now >= r.dueAt + VALUE_BEATS[r.value] * this.beatMs) {
           this.settle(r, 'perfect', now)

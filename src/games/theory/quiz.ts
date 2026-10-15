@@ -40,6 +40,8 @@ export type Illustration =
   | { kind: 'hand'; hand: 'right' | 'left'; highlight?: number; hideNumbers?: boolean }
   /** Whole, half and quarter notes, optionally with their beats. */
   | { kind: 'durations'; beats?: boolean }
+  /** A rhythm pattern ("q q h | w") on one line, counted under the notes ("1 ve 2"). */
+  | { kind: 'rhythm'; pattern: string; beatsPerBar?: number }
 
 export interface TheoryCard {
   title: string

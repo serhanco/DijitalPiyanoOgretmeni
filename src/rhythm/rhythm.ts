@@ -1,13 +1,14 @@
 // Rhythm values and patterns. Beats are quarter notes; bars are 4/4 or 3/4.
 
-/** h = half, q = quarter, e = eighth, qr = quarter rest, qd = dotted quarter, hd = dotted half. */
-export type RhythmValue = 'h' | 'q' | 'e' | 'qr' | 'qd' | 'hd'
+/** w = whole, h = half, q = quarter, e = eighth, qr = quarter rest, qd = dotted quarter, hd = dotted half. */
+export type RhythmValue = 'w' | 'h' | 'q' | 'e' | 'qr' | 'qd' | 'hd'
 
-export const VALUE_BEATS: Record<RhythmValue, number> = { h: 2, q: 1, e: 0.5, qr: 1, qd: 1.5, hd: 3 }
+export const VALUE_BEATS: Record<RhythmValue, number> = { w: 4, h: 2, q: 1, e: 0.5, qr: 1, qd: 1.5, hd: 3 }
 
-export type RhythmTopic = 'quarter' | 'half' | 'eighth' | 'rest' | 'dotted'
+export type RhythmTopic = 'quarter' | 'half' | 'whole' | 'eighth' | 'rest' | 'dotted'
 
 export const VALUE_TOPIC: Record<RhythmValue, RhythmTopic> = {
+  w: 'whole',
   h: 'half',
   q: 'quarter',
   e: 'eighth',
@@ -19,13 +20,14 @@ export const VALUE_TOPIC: Record<RhythmValue, RhythmTopic> = {
 export const TOPIC_LABELS: Record<RhythmTopic, string> = {
   quarter: 'Dörtlükler',
   half: 'İkilikler',
+  whole: 'Birlikler',
   eighth: 'Sekizlikler',
   rest: 'Esler',
   dotted: 'Noktalı notalar',
 }
 
 /** Order of topics in reports. */
-export const TOPIC_ORDER: RhythmTopic[] = ['quarter', 'half', 'eighth', 'dotted', 'rest']
+export const TOPIC_ORDER: RhythmTopic[] = ['quarter', 'half', 'whole', 'eighth', 'dotted', 'rest']
 
 export const isRest = (v: RhythmValue) => v === 'qr'
 
@@ -68,6 +70,8 @@ function fits(v: RhythmValue, pos: number, beatsPerBar: number): boolean {
   if (pos + VALUE_BEATS[v] > beatsPerBar) return false
   // Halves start on a strong beat: 1 or 3 in 4/4, 1 in 3/4.
   if (v === 'h') return pos % 2 === 0
+  // A whole note fills a 4/4 bar.
+  if (v === 'w') return pos === 0 && beatsPerBar === 4
   // A dotted half fills a 3/4 bar or the first three beats of a 4/4 one.
   if (v === 'hd') return pos === 0
   // A dotted quarter and its eighth take two beats; in 4/4 they start on beat 1 or 3.

@@ -36,6 +36,7 @@ export function holdVerdict(share: number, score: number): HoldVerdict {
 
 /** How long each value lasts, for the messages. */
 export const VALUE_LENGTH: Partial<Record<RhythmValue, string>> = {
+  w: 'Birlik dört vuruş',
   q: 'Dörtlük bir vuruş',
   h: 'İkilik iki vuruş',
   qd: 'Noktalı dörtlük bir buçuk vuruş',

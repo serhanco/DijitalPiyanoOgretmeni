@@ -15,6 +15,8 @@ export interface SkillTarget {
   value?: RhythmValue
   /** Grand-staff skills: the staff the note is written on (otherwise the provider's clef). */
   clef?: Clef
+  /** Yankı: the app plays this note for the learner to hear; it is not judged. */
+  demo?: boolean
 }
 
 export interface SkillProvider {
@@ -66,6 +68,10 @@ export interface RhythmSkillOptions {
   ignoreOctave?: boolean
   beatsPerBar?: number
   random?: () => number
+  /** A song: the note of each event, in order (rests get null). Otherwise the notes are drawn from `notes`. */
+  pitches?: (number | null)[]
+  /** Yankı: bars the app plays for the learner to hear (`listen[bar]`). */
+  listen?: boolean[]
 }
 
 /** Timed targets: every note and rest of the bars gets a beat. */
@@ -77,15 +83,18 @@ export function rhythmSkill({
   ignoreOctave = false,
   beatsPerBar = 4,
   random = Math.random,
+  pitches,
+  listen,
 }: RhythmSkillOptions): SkillProvider {
   const events = layoutRhythm(bars, beatsPerBar)
   const played = events.filter((e) => !isRest(e.value)).length
-  const pitches = anyKey ? [] : buildSequence(notes, Math.max(1, played), random)
+  const drawn = anyKey || pitches ? [] : buildSequence(notes, Math.max(1, played), random)
   let i = 0
-  const targets = events.map((e) => ({
-    midi: anyKey || isRest(e.value) ? notes[0] : pitches[i++],
+  const targets = events.map((e, k) => ({
+    midi: pitches ? (pitches[k] ?? notes[0]) : anyKey || isRest(e.value) ? notes[0] : drawn[i++],
     beat: e.beat,
     value: e.value,
+    ...(listen?.[e.bar] && { demo: true }),
   }))
   const match = matcher(ignoreOctave)
   return {

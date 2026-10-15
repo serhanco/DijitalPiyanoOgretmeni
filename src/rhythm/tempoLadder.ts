@@ -41,7 +41,7 @@ export function ladderTempos(base: number, spec: TempoLadderSpec): number[] {
 }
 
 export function scoreRound(track: BeatTrack): TempoRound {
-  const score = track.total ? track.records.reduce((n, r) => n + scoreOf(r), 0) / track.total : 0
+  const score = track.total ? track.played.reduce((n, r) => n + scoreOf(r), 0) / track.total : 0
   return { bpm: track.bpm, score, passed: !track.failed && score >= ROUND_PASS }
 }
 
