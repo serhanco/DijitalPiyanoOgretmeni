@@ -47,7 +47,9 @@ export function createBalloonScene(
   const world = new Graphics()
   const grass = new Graphics()
   const clefs = new Container()
-  root.addChild(bg, world, clefs, grass)
+  // Parachutes fall in front of the balloons' clefs.
+  const fall = new Graphics()
+  root.addChild(bg, world, clefs, fall, grass)
   /** Per balloon: the clef drawn at the left of its staff, so it is clear which staff the note is on. */
   const clefOf = new Map<number, Text>()
 
@@ -95,19 +97,19 @@ export function createBalloonScene(
     if (!c.landed) {
       // canopy, lines and a happy passenger
       const cy = y - pr * 2.6
-      world.moveTo(x - pr * 1.5, cy)
-      world
+      fall.moveTo(x - pr * 1.5, cy)
+      fall
         .arc(x, cy, pr * 1.5, Math.PI, 0)
         .closePath()
         .fill(c.color)
-      world.moveTo(x - pr * 1.5, cy)
-      world.arc(x, cy, pr * 1.5, Math.PI, 0).stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 })
+      fall.moveTo(x - pr * 1.5, cy)
+      fall.arc(x, cy, pr * 1.5, Math.PI, 0).stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 })
       for (const d of [-1, 0, 1])
-        world
+        fall
           .moveTo(x + d * pr * 1.5, cy)
           .lineTo(x, y - pr * 0.9)
           .stroke({ width: 1, color: 0x8a94a6 })
-      drawCritter(world, kindOf(c.kind), x, y, pr, 'happy')
+      drawCritter(fall, kindOf(c.kind), x, y, pr, 'happy')
     }
   }
 
@@ -132,6 +134,7 @@ export function createBalloonScene(
       const grassTop = h * 0.93
       const dt = dtMs / 1000
       world.clear()
+      fall.clear()
       grass.clear()
 
       // slow clouds
@@ -244,8 +247,10 @@ export function createBalloonScene(
           glyph = new Text({
             text: CLEF_GLYPH[clef].glyph,
             // Bravura glyphs reach far outside the measured line box: pad the texture so they are not cut.
-            style: { fontFamily: 'Bravura', fontSize: 10, fill: 0x2b2f3a, padding: 10 },
+            style: { fontFamily: 'Bravura', fontSize: 10, fill: 0x8a94a6, padding: 10 },
           })
+          // Softer than the note, so the clef reads as a label and not as part of the drawing.
+          glyph.alpha = 0.75
           clefs.addChild(glyph)
           clefOf.set(b.index, glyph)
         }
