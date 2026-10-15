@@ -1315,6 +1315,27 @@ button.chip {
 /* The playhead is placed in the drawing's own coordinates, so it lives in a box exactly as wide as the SVG. */
 .rhythm-canvas {
   position: relative;
+  overflow: hidden;
+}
+/* The clef box stays; the strip of bars slides left under it and the playhead stays put. */
+.rhythm-fixed {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+.rhythm-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  z-index: 1;
+  will-change: transform;
+}
+.rhythm-staff .rhythm-strip .staff,
+.rhythm-staff .rhythm-strip .staff svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .rhythm-staff .staff {
   max-width: none;
