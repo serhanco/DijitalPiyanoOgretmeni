@@ -1,7 +1,8 @@
-import { type Application, CanvasTextMetrics, Container, Graphics, Text } from 'pixi.js'
+import { type Application, Container, Graphics, type Sprite } from 'pixi.js'
 import type { Clef } from '../../../music/notes'
 import { kindOf } from '../bar/character'
 import { drawCritter } from '../critter'
+import { clefSprite, placeClef } from '../clef'
 import { drawNote, drawStaffLines } from '../draw'
 import type { Scene } from '../PixiStage'
 import { staffStep } from '../staffGeometry'
@@ -10,11 +11,6 @@ import { type Chute, danger, standX, startChute, stepChute, sway } from './rescu
 
 /** Sky by lesson progress: morning, noon, late afternoon, dusk. */
 const SKIES = [0xe8f6ff, 0xdff4ff, 0xffe9d1, 0xd9d3ff]
-/** SMuFL clef glyphs (Bravura) and the staff step their origin sits on. */
-const CLEF_GLYPH: Record<Clef, { glyph: string; step: number }> = {
-  treble: { glyph: '\uE050', step: 2 },
-  bass: { glyph: '\uE062', step: 6 },
-}
 const GRASS = 0x7bd35a
 const GRASS_DARK = 0x58b23c
 const INK = 0x2b1a5c
@@ -51,7 +47,7 @@ export function createBalloonScene(
   const fall = new Graphics()
   root.addChild(bg, world, clefs, fall, grass)
   /** Per balloon: the clef drawn at the left of its staff, so it is clear which staff the note is on. */
-  const clefOf = new Map<number, Text>()
+  const clefOf = new Map<number, Sprite>()
 
   const steps = range.map((m) => staffStep(m, clef))
   const minStep = Math.min(...steps)
@@ -244,23 +240,17 @@ export function createBalloonScene(
         drawNote(world, x + cardW * 0.14, staffStep(b.record.target, clef), layout)
         let glyph = clefOf.get(b.index)
         if (!glyph) {
-          glyph = new Text({
-            text: CLEF_GLYPH[clef].glyph,
-            // Bravura glyphs reach far outside the measured line box: pad the texture so they are not cut.
-            style: { fontFamily: 'Bravura', fontSize: 10, fill: 0x8a94a6, padding: 10 },
-          })
-          // Softer than the note, so the clef reads as a label and not as part of the drawing.
-          glyph.alpha = 0.75
-          clefs.addChild(glyph)
-          clefOf.set(b.index, glyph)
+          // Null until Bravura is loaded; the clef then appears on a later frame.
+          glyph = clefSprite(clef) ?? undefined
+          if (glyph) {
+            // Soft and see-through, so the clef reads as a label and not as part of the drawing.
+            glyph.tint = 0x6b7a90
+            glyph.alpha = 0.5
+            clefs.addChild(glyph)
+            clefOf.set(b.index, glyph)
+          }
         }
-        if (glyph.style.fontSize !== gap * 4) {
-          glyph.style.fontSize = gap * 4
-          glyph.style.padding = gap * 4
-        }
-        // The glyph's baseline sits on its reference line (G or F); Text is placed by its top.
-        const ascent = CanvasTextMetrics.measureText(glyph.text, glyph.style).fontProperties.ascent
-        glyph.position.set(x - cardW * 0.43, layout.bottomY - CLEF_GLYPH[clef].step * (gap / 2) - ascent + gap)
+        if (glyph) placeClef(glyph, clef, x - cardW * 0.43, layout.bottomY, gap)
       }
       const flying = new Set(game.balloons.filter((b) => b.state !== 'popped').map((b) => b.index))
       for (const [index, glyph] of clefOf) {
