@@ -1,4 +1,4 @@
-import { type Application, Container, Graphics } from 'pixi.js'
+import { type Application, CanvasTextMetrics, Container, Graphics, Text } from 'pixi.js'
 import type { Clef } from '../../../music/notes'
 import { kindOf } from '../bar/character'
 import { drawCritter } from '../critter'
@@ -10,6 +10,11 @@ import { type Chute, danger, standX, startChute, stepChute, sway } from './rescu
 
 /** Sky by lesson progress: morning, noon, late afternoon, dusk. */
 const SKIES = [0xe8f6ff, 0xdff4ff, 0xffe9d1, 0xd9d3ff]
+/** SMuFL clef glyphs (Bravura) and the staff step their origin sits on. */
+const CLEF_GLYPH: Record<Clef, { glyph: string; step: number }> = {
+  treble: { glyph: '\uE050', step: 2 },
+  bass: { glyph: '\uE062', step: 6 },
+}
 const GRASS = 0x7bd35a
 const GRASS_DARK = 0x58b23c
 const INK = 0x2b1a5c
@@ -41,7 +46,10 @@ export function createBalloonScene(
   const bg = new Graphics()
   const world = new Graphics()
   const grass = new Graphics()
-  root.addChild(bg, world, grass)
+  const clefs = new Container()
+  root.addChild(bg, world, clefs, grass)
+  /** Per balloon: the clef drawn at the left of its staff, so it is clear which staff the note is on. */
+  const clefOf = new Map<number, Text>()
 
   const steps = range.map((m) => staffStep(m, clef))
   const minStep = Math.min(...steps)
@@ -230,7 +238,30 @@ export function createBalloonScene(
         const gap = (cardH / span) * 2 * 0.95
         const layout = { gap, bottomY: cy + cardH / 2 - (0 - (Math.min(minStep, 0) - 1)) * (gap / 2) }
         drawStaffLines(world, x - cardW * 0.42, x + cardW * 0.42, layout, 0x2b2f3a, 0.7)
-        drawNote(world, x, staffStep(b.record.target, clef), layout)
+        drawNote(world, x + cardW * 0.14, staffStep(b.record.target, clef), layout)
+        let glyph = clefOf.get(b.index)
+        if (!glyph) {
+          glyph = new Text({
+            text: CLEF_GLYPH[clef].glyph,
+            // Bravura glyphs reach far outside the measured line box: pad the texture so they are not cut.
+            style: { fontFamily: 'Bravura', fontSize: 10, fill: 0x2b2f3a, padding: 10 },
+          })
+          clefs.addChild(glyph)
+          clefOf.set(b.index, glyph)
+        }
+        if (glyph.style.fontSize !== gap * 4) {
+          glyph.style.fontSize = gap * 4
+          glyph.style.padding = gap * 4
+        }
+        // The glyph's baseline sits on its reference line (G or F); Text is placed by its top.
+        const ascent = CanvasTextMetrics.measureText(glyph.text, glyph.style).fontProperties.ascent
+        glyph.position.set(x - cardW * 0.43, layout.bottomY - CLEF_GLYPH[clef].step * (gap / 2) - ascent + gap)
+      }
+      const flying = new Set(game.balloons.filter((b) => b.state !== 'popped').map((b) => b.index))
+      for (const [index, glyph] of clefOf) {
+        if (flying.has(index)) continue
+        glyph.destroy()
+        clefOf.delete(index)
       }
 
       // parachutes
@@ -274,6 +305,10 @@ export function createBalloonScene(
         const hop = reduced ? 0 : Math.max(0, Math.sin(now / 260 + n * 1.3)) * pr * 0.25
         drawCritter(grass, kindOf(kind), standX(n, rescued.length) * w, grassTop + pr * 0.7 - hop, pr, 'happy')
       })
+    },
+    destroy() {
+      for (const glyph of clefOf.values()) glyph.destroy()
+      clefOf.clear()
     },
   }
 }
