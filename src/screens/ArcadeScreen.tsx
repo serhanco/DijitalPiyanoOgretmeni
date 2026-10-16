@@ -197,7 +197,10 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
           ✕
         </button>
         <div className="progress" role="progressbar" aria-valuenow={Math.round(hud.progress * 100)}>
-          <div className="progress-fill" style={{ width: `${hud.progress * 100}%` }} />
+          <div className="progress-fill" style={{ width: `${hud.progress * 100}%` }}>
+            {/* A highlight sweeps along the bar each time it grows (a new key per step restarts it). */}
+            {hud.progress > 0 && <span className="progress-shine" key={hud.progress} />}
+          </div>
         </div>
         <span className="hearts" aria-label={`${hud.hearts} can`}>
           ❤️ {hud.hearts}

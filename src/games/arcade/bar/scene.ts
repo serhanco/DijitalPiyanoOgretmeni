@@ -1,5 +1,6 @@
-import { type Application, CanvasTextMetrics, Container, Graphics, Text } from 'pixi.js'
+import { type Application, Container, Graphics, type Sprite, Text } from 'pixi.js'
 import { type Clef, naturalClef } from '../../../music/notes'
+import { clefSprite, placeClef } from '../clef'
 import { drawNote, drawStaffLines, INK } from '../draw'
 import type { Scene } from '../PixiStage'
 import { staffStep } from '../staffGeometry'
@@ -130,7 +131,7 @@ export function createBarScene<C extends BarCustomer, E extends { type: string }
   root.addChild(signs)
 
   /** Per customer: its card container (white card, staff, notes, clef, name). */
-  const cardOf = new Map<number, { box: Container; g: Graphics; clef: Text; name: Text | null }>()
+  const cardOf = new Map<number, { box: Container; g: Graphics; clef: Sprite | null; name: Text | null }>()
   let size = { w: 0, h: 0 }
   let bartenderRow = (COUNTERS - 1) / 2
   let shakeT = 0
@@ -377,15 +378,14 @@ export function createBarScene<C extends BarCustomer, E extends { type: string }
     if (!card) {
       const box = new Container()
       const g = new Graphics()
-      const glyph = clefText(clef, 10)
-      box.addChild(g, glyph)
+      box.addChild(g)
       const text = name ? label(name, 10) : null
       if (text) {
         text.anchor.set(0.5, 0.5)
         box.addChild(text)
       }
       cards.addChild(box)
-      card = { box, g, clef: glyph, name: text }
+      card = { box, g, clef: null, name: text }
       cardOf.set(c.index, card)
     }
     // Never taller than on four counters: with three, the card would cover its customer.
@@ -408,14 +408,17 @@ export function createBarScene<C extends BarCustomer, E extends { type: string }
       card.name.style.fontSize = Math.max(10, cardH * 0.26)
       card.name.position.set(cardW * 0.81, cardH / 2)
     }
-    if (card.clef.style.fontSize !== gap * 4) {
-      card.clef.style.fontSize = gap * 4
-      card.clef.style.padding = gap * 4
+    if (!card.clef) {
+      // null until Bravura has loaded; the next frame tries again
+      const glyph = clefSprite(clef)
+      if (glyph) {
+        glyph.tint = 0x3a3f4b
+        glyph.alpha = 0.85
+        card.box.addChild(glyph)
+        card.clef = glyph
+      }
     }
-    // The glyph's baseline sits on its reference line (G or F); Text is placed by its top.
-    const ascent = CanvasTextMetrics.measureText(card.clef.text, card.clef.style).fontProperties.ascent
-    // (+1 gap: Pixi's measured ascent comes from fallback metrics, checked against screenshots.)
-    card.clef.position.set(cardW * 0.08, layout.bottomY - CLEF_GLYPH[clef].step * (gap / 2) - ascent + gap)
+    if (card.clef) placeClef(card.clef, clef, cardW * 0.06, layout.bottomY, gap)
     const x = xOf(c.x) + (c.state === 'served' ? -c.leftFor * rh * 1.4 : 0)
     card.box.position.set(x - cardW / 2, c.counter * rh + rh * 0.02)
     card.box.alpha = c.state === 'waiting' ? 1 : Math.max(0, 1 - c.leftFor / 0.8)
