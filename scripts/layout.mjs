@@ -174,7 +174,7 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
   for (const svg of document.querySelectorAll('.staff svg')) {
     if (!visible(svg)) continue
     // The ink is whatever the drawing paints (black by default, or a colour the component sets), flipped by the filter.
-    const paint = [...svg.querySelectorAll('path, rect, line')]
+    const paint = [...svg.querySelectorAll('path, rect:not([data-paper]), line')]
       .map((n) => getComputedStyle(n))
       .find((c) => c.fill !== 'none' || c.stroke !== 'none')
     const inkColor = paint ? (paint.fill !== 'none' ? paint.fill : paint.stroke) : 'rgb(0, 0, 0)'

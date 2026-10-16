@@ -6,8 +6,6 @@ import { layoutRhythm } from '../rhythm/rhythm'
 import { useSettings } from '../state/settings'
 import { BeatFrame, type FieldProps } from './beat/BeatFrame'
 
-const BARS_SHOWN = 2
-
 interface Props {
   lesson: NoteLesson
   onFinish: (summary: SessionSummary) => void
@@ -26,20 +24,9 @@ function RhythmField({ spec, bars, track, now }: FieldProps) {
     }
   })
   const beat = track ? track.beatAt(now) : null
-  // A window of two bars that moves on one bar at a time: the bar being played is on the left and the next one
-  // is already there to read, so a new bar never appears just as it has to be played. The last window stays put.
-  const bar = Math.max(0, Math.floor((beat ?? 0) / spec.beatsPerBar))
-  const firstBar = Math.min(bar, Math.max(0, spec.bars - BARS_SHOWN))
-  const barCount = Math.min(BARS_SHOWN, spec.bars)
   return (
-    <div className="rhythm-field" data-first-bar={firstBar}>
-      <RhythmStaff
-        events={events.filter((e) => e.bar >= firstBar && e.bar < firstBar + barCount)}
-        firstBar={firstBar}
-        barCount={barCount}
-        beatsPerBar={spec.beatsPerBar}
-        playhead={beat}
-      />
+    <div className="rhythm-field">
+      <RhythmStaff events={events} bars={spec.bars} beatsPerBar={spec.beatsPerBar} playhead={beat} />
       <p className="rhythm-legend small muted">
         <span className="dot perfect" /> Mükemmel <span className="dot good" /> İyi <span className="dot early" />{' '}
         Erken/Geç <span className="dot miss" /> Kaçırıldı
