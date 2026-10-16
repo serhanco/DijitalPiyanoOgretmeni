@@ -82,6 +82,7 @@ export default function App() {
       chords: summary.chords !== undefined,
       quiz: summary.quiz !== undefined,
       ear: summary.ear !== undefined,
+      songLearned: !!summary.memory?.song?.lastClean,
       allTogether: !!summary.chords && summary.chords.played >= 5 && summary.chords.together === summary.chords.played,
       noneMissed: !!summary.chords && summary.chords.played === summary.total,
       tempoRaised: !!summary.tempoLadder?.raisedTo,

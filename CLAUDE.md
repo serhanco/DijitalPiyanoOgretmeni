@@ -406,7 +406,8 @@ Phase 9 (ear training and memory, `claude/project-thread-ytjjkw`, unit 8 = 24 le
 - `MemoryGame`: `reverse`, `leaps` (report labels), `song` (`songMemory(tune)`: two-bar phrases, runs A, B, A+B per
   pair, the whole song last when ≤ 32 notes; played in the tune's rhythm; `listenEnd`). `MemorySpec.tune` / `reverse`
   / `leaps`; the song's card on the board; `MemorySummary.song` → "Şarkı Hafızası" results card.
-- Results "Kulak" card; badges Keskin Kulak, Baş Dedektif, Şarkı Hafızası; XP line "İlk cevapta çözülen vakalar"
+- Results "Kulak" card; badges Keskin Kulak, Baş Dedektif, Şarkı Hafızası (`LessonOutcome.songLearned`: the last run
+  played clean); XP line "İlk cevapta çözülen vakalar"
   (`LessonOutcome.ear`). `SMOKE_ONLY=ear` plays Başlangıç then unit 8; layout cases `theory-ear`, `detective`,
   `detective-keys`, `song-memory`.
 

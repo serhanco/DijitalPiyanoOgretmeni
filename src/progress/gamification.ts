@@ -28,6 +28,8 @@ export interface LessonOutcome {
   chords?: boolean
   /** Kulak Dedektifi: `firstTry` counts cases solved at the first answer. */
   ear?: boolean
+  /** Şarkı Hafızası: the last run (the joined phrases or the whole song) was played without a mistake. */
+  songLearned?: boolean
   /** Chord lessons: every chord played had its notes within TOGETHER_MS (at least five chords). */
   allTogether?: boolean
   /** Arcade games: no target got away (no invader landed, no dish burnt). */
@@ -286,9 +288,9 @@ export const BADGES: Badge[] = [
   {
     id: 'song-memory',
     title: 'Şarkı Hafızası',
-    description: 'Bir şarkıyı Melodi Hafızası’nda 3 yıldızla ezberden çal',
+    description: 'Şarkı Hafızası’nda bir şarkının son dizisini hatasız, ezberden çal',
     icon: '🎶',
-    earned: (c) => c.outcome.lessonId.startsWith('ear-song') && !c.outcome.failed && c.outcome.stars >= 3,
+    earned: (c) => !c.outcome.failed && !!c.outcome.songLearned,
   },
 ]
 

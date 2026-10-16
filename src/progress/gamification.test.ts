@@ -102,6 +102,15 @@ describe('badges', () => {
     expect(newlyEarnedBadges(ctx, ids)).toEqual([])
   })
 
+  it('awards the ear badges for their lessons only', () => {
+    const ids = (o: Partial<ReturnType<typeof outcome>>) =>
+      newlyEarnedBadges({ ...ctx, outcome: { ...outcome(), ...o } }, []).map((b) => b.id)
+    expect(ids({ lessonId: 'ear-int-2', stars: 3 })).toContain('sharp-ear')
+    expect(ids({ lessonId: 'ear-final', stars: 3 })).toContain('detective')
+    expect(ids({ lessonId: 'ear-song-1', stars: 3 })).not.toContain('song-memory')
+    expect(ids({ lessonId: 'ear-song-1', stars: 2, songLearned: true })).toContain('song-memory')
+  })
+
   it('awards the treble master badge when every lesson has 3 stars', () => {
     const ids = newlyEarnedBadges({ ...ctx, threeStarLessons: ['a', 'b'] }, []).map((b) => b.id)
     expect(ids).toContain('treble-master')
