@@ -1,7 +1,8 @@
-import { type Application, Container, Graphics } from 'pixi.js'
+import { type Application, Container, Graphics, type Sprite } from 'pixi.js'
 import type { Clef } from '../../../music/notes'
 import { kindOf } from '../bar/character'
 import { drawCritter } from '../critter'
+import { clefSprite, placeClef } from '../clef'
 import { drawNote, drawStaffLines } from '../draw'
 import type { Scene } from '../PixiStage'
 import { staffStep } from '../staffGeometry'
@@ -41,7 +42,12 @@ export function createBalloonScene(
   const bg = new Graphics()
   const world = new Graphics()
   const grass = new Graphics()
-  root.addChild(bg, world, grass)
+  const clefs = new Container()
+  // Parachutes fall in front of the balloons' clefs.
+  const fall = new Graphics()
+  root.addChild(bg, world, clefs, fall, grass)
+  /** Per balloon: the clef drawn at the left of its staff, so it is clear which staff the note is on. */
+  const clefOf = new Map<number, Sprite>()
 
   const steps = range.map((m) => staffStep(m, clef))
   const minStep = Math.min(...steps)
@@ -87,19 +93,19 @@ export function createBalloonScene(
     if (!c.landed) {
       // canopy, lines and a happy passenger
       const cy = y - pr * 2.6
-      world.moveTo(x - pr * 1.5, cy)
-      world
+      fall.moveTo(x - pr * 1.5, cy)
+      fall
         .arc(x, cy, pr * 1.5, Math.PI, 0)
         .closePath()
         .fill(c.color)
-      world.moveTo(x - pr * 1.5, cy)
-      world.arc(x, cy, pr * 1.5, Math.PI, 0).stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 })
+      fall.moveTo(x - pr * 1.5, cy)
+      fall.arc(x, cy, pr * 1.5, Math.PI, 0).stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 })
       for (const d of [-1, 0, 1])
-        world
+        fall
           .moveTo(x + d * pr * 1.5, cy)
           .lineTo(x, y - pr * 0.9)
           .stroke({ width: 1, color: 0x8a94a6 })
-      drawCritter(world, kindOf(c.kind), x, y, pr, 'happy')
+      drawCritter(fall, kindOf(c.kind), x, y, pr, 'happy')
     }
   }
 
@@ -124,6 +130,7 @@ export function createBalloonScene(
       const grassTop = h * 0.93
       const dt = dtMs / 1000
       world.clear()
+      fall.clear()
       grass.clear()
 
       // slow clouds
@@ -230,7 +237,26 @@ export function createBalloonScene(
         const gap = (cardH / span) * 2 * 0.95
         const layout = { gap, bottomY: cy + cardH / 2 - (0 - (Math.min(minStep, 0) - 1)) * (gap / 2) }
         drawStaffLines(world, x - cardW * 0.42, x + cardW * 0.42, layout, 0x2b2f3a, 0.7)
-        drawNote(world, x, staffStep(b.record.target, clef), layout)
+        drawNote(world, x + cardW * 0.14, staffStep(b.record.target, clef), layout)
+        let glyph = clefOf.get(b.index)
+        if (!glyph) {
+          // Null until Bravura is loaded; the clef then appears on a later frame.
+          glyph = clefSprite(clef) ?? undefined
+          if (glyph) {
+            // Soft and see-through, so the clef reads as a label and not as part of the drawing.
+            glyph.tint = 0x6b7a90
+            glyph.alpha = 0.5
+            clefs.addChild(glyph)
+            clefOf.set(b.index, glyph)
+          }
+        }
+        if (glyph) placeClef(glyph, clef, x - cardW * 0.43, layout.bottomY, gap)
+      }
+      const flying = new Set(game.balloons.filter((b) => b.state !== 'popped').map((b) => b.index))
+      for (const [index, glyph] of clefOf) {
+        if (flying.has(index)) continue
+        glyph.destroy()
+        clefOf.delete(index)
       }
 
       // parachutes
@@ -274,6 +300,10 @@ export function createBalloonScene(
         const hop = reduced ? 0 : Math.max(0, Math.sin(now / 260 + n * 1.3)) * pr * 0.25
         drawCritter(grass, kindOf(kind), standX(n, rescued.length) * w, grassTop + pr * 0.7 - hop, pr, 'happy')
       })
+    },
+    destroy() {
+      for (const glyph of clefOf.values()) glyph.destroy()
+      clefOf.clear()
     },
   }
 }
