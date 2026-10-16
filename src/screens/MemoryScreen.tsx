@@ -9,7 +9,7 @@ import { initPiano, isPianoReady, pianoAttack, pianoRelease } from '../audio/pia
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
-import { MemoryGame, type MemoryEvent, memoryReport } from '../games/memory/engine'
+import { MemoryGame, type MemoryEvent, memoryReport, songMemory } from '../games/memory/engine'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { type SessionSummary, summarize } from '../games/noteHunter/summary'
 import { subscribe } from '../input/inputBus'
@@ -27,7 +27,11 @@ interface Props {
   onExit: () => void
 }
 
-function messageFor(longestClean: number, maxLength: number, failed: boolean): string {
+function messageFor(longestClean: number, maxLength: number, failed: boolean, song?: string): string {
+  if (song && !failed)
+    return longestClean >= maxLength
+      ? `“${song}” artık ezberinde: son diziyi hatasız çaldın!`
+      : `“${song}” şarkısını cümle cümle öğrendin. Uzun dizide takıldığın yeri bir kez daha dinle.`
   if (failed) return 'Hafıza da bir kas gibi çalıştıkça güçlenir. Notaları içinden söyleyerek dinle ve tekrar dene.'
   if (longestClean >= maxLength) return `${maxLength} notalık diziyi hatasız hatırladın, fil hafızası!`
   if (longestClean >= maxLength - 2) return 'Uzun dizileri de hatırlıyorsun. Biraz daha pratikle hepsi oturur.'
@@ -37,6 +41,7 @@ function messageFor(longestClean: number, maxLength: number, failed: boolean): s
 export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
   const { ignoreOctave, showKeyLabels, relaxedMode } = useSettings()
   const spec = lesson.memory ?? { startLength: 3, maxLength: 7 }
+  const tune = spec.tune
   const game = useMemo(
     () =>
       new MemoryGame({
@@ -47,8 +52,22 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
         ignoreOctave,
         // By ear, every run starts on the tonic, the one note that is shown.
         firstPosition: spec.listenOnly ? 0 : undefined,
+        reverse: spec.reverse,
+        leaps: spec.leaps,
+        // Songs are played a little quicker than single runs, in their own rhythm.
+        ...(tune && { song: songMemory(tune), noteMs: 520 }),
       }),
-    [lesson.notes, spec.startLength, spec.maxLength, spec.listenOnly, relaxedMode, ignoreOctave],
+    [
+      lesson.notes,
+      spec.startLength,
+      spec.maxLength,
+      spec.listenOnly,
+      spec.reverse,
+      spec.leaps,
+      tune,
+      relaxedMode,
+      ignoreOctave,
+    ],
   )
   const [, setTick] = useState(0)
   const rerender = useCallback(() => setTick((n) => n + 1), [])
@@ -60,6 +79,8 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
   /** Ear mode, unless the piano sound could not load: then the keys light up after all. */
   const [byEar, setByEar] = useState(!!spec.listenOnly)
   const byEarRef = useRef(byEar)
+  /** Start time of the note lit last, so releasing a repeated note does not unlight its repeat. */
+  const litAt = useRef(0)
   const timers = useRef<(() => void)[]>([])
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
@@ -86,7 +107,7 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
       ...base,
       perCategory,
       memory,
-      message: messageFor(memory.longestClean, memory.maxLength, game.failed),
+      message: messageFor(memory.longestClean, memory.maxLength, game.failed, game.song?.title),
     })
   }, [game, lesson.clef])
   useFinishRequest(finish)
@@ -98,25 +119,27 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
     const hidden = byEarRef.current
     schedule.forEach((n, i) => {
       later(() => {
-        if (!hidden || i === 0) setLit(n.midi)
+        if (!hidden || i === 0) {
+          litAt.current = n.at
+          setLit(n.midi)
+        }
         setLitIndex(i)
         pianoAttack(n.midi, 0.7)
       }, n.at - gameNow())
       later(
         () => {
           pianoRelease(n.midi)
-          setLit((m) => (m === n.midi ? null : m))
+          setLit((m) => (m === n.midi && litAt.current === n.at ? null : m))
         },
         n.at + n.durationMs - gameNow(),
       )
     })
-    const end = schedule[schedule.length - 1]
     later(
       () => {
         setLitIndex(-1)
         if (game.update(gameNow()).length) rerender()
       },
-      end.at + game.noteMs - gameNow() + 5,
+      game.listenEnd - gameNow() + 5,
     )
   }, [game, later, rerender])
 
@@ -184,13 +207,18 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
     if (flash.expected !== undefined) marks[flash.expected] = 'hint'
   }
 
-  const rounds = spec.maxLength - spec.startLength + 1
+  const rounds = game.totalRounds
   const roundIndex = game.rounds.length - (game.phase === 'ready' && game.rounds.length ? 0 : 1)
   const progress = Math.max(0, roundIndex) / rounds
+  const backwards = spec.reverse ? ' Ama dikkat: sondan başa doğru!' : ''
   const prompt = !started
-    ? byEar
-      ? 'Notiş bir dizi çalacak; yalnızca ilk nota yanar. Kulağınla dinle, sonra aynısını çal!'
-      : 'Notiş bir dizi çalacak. Dinle, izle, sonra aynısını çal!'
+    ? tune
+      ? byEar
+        ? 'Notiş şarkıyı cümle cümle çalacak; yalnızca ilk nota yanar. Dinle ve ezberden çal!'
+        : 'Notiş şarkıyı cümle cümle çalacak. Her cümleyi dinle, izle ve aynısını çal; sonunda cümleleri birleştireceksin!'
+      : byEar
+        ? 'Notiş bir dizi çalacak; yalnızca ilk nota yanar. Kulağınla dinle, sonra aynısını çal!'
+        : `Notiş bir dizi çalacak. Dinle, izle, sonra aynısını çal!${backwards}`
     : game.phase === 'listen'
       ? byEar
         ? `👂 Yalnızca dinle… İlk nota ${solfegeName(game.sequence[0], false)}.`
@@ -198,12 +226,16 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
           ? '👂 Piyano sesi yüklenemedi, bu kez tuşlar da yanıyor. Dinle ve izle…'
           : '👂 Dinle ve izle…'
       : game.phase === 'play'
-        ? 'Sıra sende! Aynı notaları aynı sırayla çal.'
+        ? spec.reverse
+          ? 'Sıra sende! Şimdi aynı notaları sondan başa doğru çal.'
+          : 'Sıra sende! Aynı notaları aynı sırayla çal.'
         : game.done
           ? game.failed
             ? 'Kalpler bitti.'
             : 'Hepsini hatırladın!'
-          : 'Harika! Dizi bir nota uzuyor…'
+          : tune
+            ? 'Harika! Sıradaki cümle geliyor…'
+            : 'Harika! Dizi bir nota uzuyor…'
 
   return (
     <div className="game memory">
@@ -231,11 +263,30 @@ export function MemoryScreen({ lesson, onFinish, onExit }: Props) {
         </div>
       </div>
 
-      <div className="memory-board" data-phase={game.phase} data-length={game.length} data-ear={byEar}>
-        <p className="memory-round">Dizi: {game.length} nota</p>
-        <div className="memory-dots">
+      <div
+        className="memory-board"
+        data-phase={game.phase}
+        data-length={game.length}
+        data-ear={byEar}
+        data-reverse={!!spec.reverse}
+      >
+        {tune && !started && (
+          <div className="song-info">
+            <p>
+              🎼 <b>{tune.title}</b> · <i>{tune.original}</i>
+            </p>
+            <p className="small muted">{tune.origin}</p>
+            <p className="small">{tune.fact}</p>
+          </div>
+        )}
+        <p className="memory-round">
+          {game.segmentLabel ? `${game.segmentLabel}: ${game.length} nota` : `Dizi: ${game.length} nota`}
+          {spec.reverse && ' · ↩ tersten'}
+        </p>
+        <div className={`memory-dots ${game.length > 12 ? 'many' : ''}`}>
           {game.sequence.map((midi, i) => {
-            const played = game.phase === 'play' ? i < game.played : game.phase !== 'listen' && started
+            const done = spec.reverse ? i >= game.length - game.played : i < game.played
+            const played = game.phase === 'play' ? done : game.phase !== 'listen' && started
             const on = game.phase === 'listen' && i === litIndex
             return (
               <span key={i} className={`memory-dot ${played ? 'played' : ''} ${on ? 'on' : ''}`}>

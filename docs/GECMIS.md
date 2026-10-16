@@ -99,6 +99,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-08 | Ekran klavyesi dersin notalarına göre: tek oktavlık derslerde tek oktav, nota okuma derslerinde hep Do'dan başlar                                                                                                                                  | Tek oktav klavye PR'ı                  |
 | 2026-10-08 | Nota Kuşu yeni karakter: Notiş tarzında kuş, kanat çırpma, geçişte sevinç (pırıltı, nota), çarpmada baş dönmesi (yıldızlar, tüyler), yanlış tuşta ter damlası                                                                                      | Nota Kuşu karakter PR'ı                |
 | 2026-10-15 | Ritim müfredatı: ritim iki üniteye bölündü (Temel Vuruş 28 ders; Sekizlikler ve Noktalılar 25 ders). Her kalıp: teori, Yankı, tekrar, oyun, şarkının ritmi, şarkı. Telifsiz şarkılar orijinal adları ve kökenleriyle; eski ders kimlikleri korundu | dal `claude/project-thread-wprkex`     |
+| 2026-10-16 | Faz 9: Kulak Eğitimi ünitesi (24 ders), Kulak Dedektifi (yön, nota, aralık, akor rengi vakaları), aralıklar telifsiz şarkılarla, Melodi Hafızası'nda atlamalı, ters ve şarkı modları, Kulak raporu kartı, 3 yeni rozet                             | dal `claude/project-thread-ytjjkw`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -182,6 +183,16 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   Aynı işte Serhan ayarların sayfanın en altında değil üst menüde olmasını, üst menünün de yapışkan olmasını istedi:
   üst menü (seri, XP, günlük hedef, seviye) harita kaydırılırken ekranın üstünde kalıyor; ayarlar menüdeki ⚙️
   düğmesiyle haritanın üstünde bir panel olarak açılıyor, ✕, Esc ya da panelin dışına dokunmak kapatıyor.
+
+- **Kulak eğitimi (Faz 9):** Serhan Faz 9'a "evet, merge ve devam" dedi; plan konuya yazılıp onay beklemeden
+  önerilen haliyle yapıldı. Kulak dersleri ses ister: piyano örnekleri yüklenemezse (çevrimdışı) yerine küçük bir
+  sentez ses çalar, böylece ders hiç sessiz kalmaz. Nota bulmada önce referans Do çalar, çünkü mutlak kulak
+  beklenmez. Vakalarda süre yok (kulak acele istemez), can var; ilk cevap sayılır, yanlışta seçilen ve doğru ses art
+  arda çalınır, sonra yeniden denenir. Aralıklar yarım sesle ölçülür; akor renkleri kök durumda, kök rastgele. Akor
+  türleri yalnızca duyulduğu için yazımsız yarım ses kalıplarıdır (`games/ear/intervals.ts`), `music/chords.ts`'e
+  artık akor eklenmedi. Şarkı Hafızası iki ölçülük cümlelerle çalışır ve ritimdeki şarkıları (Ritim ünitelerinin
+  `tunes.ts`'i) kullanır; orijinal adı, kökeni ve kısa bilgisi başta gösterilir. Şarkının tamamı yalnızca 32
+  notadan kısaysa en son dizi olur.
 
 ## Açık konular
 

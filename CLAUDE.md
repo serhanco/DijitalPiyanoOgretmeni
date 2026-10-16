@@ -388,7 +388,29 @@ Rhythm curriculum (`claude/project-thread-wprkex`): the rhythm unit became two u
 - `SMOKE_ONLY=rhythm` plays Başlangıç and every lesson of both rhythm units (Yankı turns, the original title on each
   song's start card, perfect scores, the remembered tempo, tempo ladders). Layout cases `echo`, `song`, `theory-rhythm`.
 
-Next: **phase 9, ear training and memory** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+Phase 9 (ear training and memory, `claude/project-thread-ytjjkw`, unit 8 = 24 lessons):
+
+- `games/ear/intervals.ts`: interval names with a copyright-free song per interval (`song.way` when it goes down or
+  sounds together), chord colours as plain semitone shapes (`CHORD_SHAPES`, incl. `aug`; heard only, so not in
+  `music/chords.ts`), `COLOUR_HINTS`.
+- `games/ear/session.ts` (**Kulak Dedektifi**, pure): `EarPrompt` tasks `direction | pitch | interval | sing | chord`;
+  choice tasks have `options`, key tasks are answered on the keys (`sing` ignores its shown first note). `EarSession`
+  (`markShown` once heard, `choose` / `press`, `replay` counted, a wrong answer costs a heart), `contrastOf` (the chosen
+  sound, then the right one), builders and `buildCases(EarSpec)` (`balanced` draws, `mix` for Büyük Vaka), `earReport`
+  (topics per direction / note / interval / way / colour, `SessionSummary.ear`: replays, top confusions and tips).
+- `audio/earSound.ts`: `playParts` plays notes in turn or together on the piano samples, or on a synthesized tone when
+  they are not loaded; game-clock timers. `TheoryCard.sound` / question `sound`: "🔊 Dinle" in `TheoryScreen`
+  (questions play theirs as they open).
+- `EarScreen` (`kind: 'ear'`): Notiş with `outfit="detective"` (hat, magnifier that fogs / glints), case board of pins,
+  "ÇÖZÜLDÜ" stamp, `.ear-case[data-heard]`, `window.__dpoEar = { session, heard() }`.
+- `MemoryGame`: `reverse`, `leaps` (report labels), `song` (`songMemory(tune)`: two-bar phrases, runs A, B, A+B per
+  pair, the whole song last when ≤ 32 notes; played in the tune's rhythm; `listenEnd`). `MemorySpec.tune` / `reverse`
+  / `leaps`; the song's card on the board; `MemorySummary.song` → "Şarkı Hafızası" results card.
+- Results "Kulak" card; badges Keskin Kulak, Baş Dedektif, Şarkı Hafızası; XP line "İlk cevapta çözülen vakalar"
+  (`LessonOutcome.ear`). `SMOKE_ONLY=ear` plays Başlangıç then unit 8; layout cases `theory-ear`, `detective`,
+  `detective-keys`, `song-memory`.
+
+Next: **phase 10, songs** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser

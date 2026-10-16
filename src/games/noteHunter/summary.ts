@@ -13,6 +13,7 @@ import type { HoldSummary } from '../../rhythm/hold'
 import type { Judgement } from '../../rhythm/timing'
 import type { TempoLadderSummary } from '../../rhythm/tempoLadder'
 import type { ChordSummary } from '../chords/report'
+import type { EarSummary } from '../ear/session'
 import type { MemorySummary } from '../memory/engine'
 import type { ScaleSummary } from '../scales/steps'
 import { firstTryOk, type PromptRecord } from './session'
@@ -67,6 +68,8 @@ export interface SessionSummary {
   tempoLadder?: TempoLadderSummary
   /** Chord lessons: how together the notes came down, the late note, the weakest chords. */
   chords?: ChordSummary
+  /** Kulak Dedektifi: cases solved, replays and the answers most often confused. */
+  ear?: EarSummary
   /** Theory quizzes: the explanations of the questions missed on the first try. */
   quiz?: { missed: string[] }
   /** Written names of black keys when they differ from the sharp name (Si♭, not La#). */

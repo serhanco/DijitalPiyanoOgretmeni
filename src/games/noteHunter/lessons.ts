@@ -4,6 +4,7 @@ import type { Tune } from '../../rhythm/plan'
 import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
 import type { ArpeggioPart } from '../chords/arpeggio'
 import type { ChordSpec } from '../chords/lessons'
+import type { EarSpec } from '../ear/session'
 import type { MemorySpec } from '../memory/engine'
 import type { ScalePart } from '../scales/steps'
 import type { TheorySpec } from '../theory/quiz'
@@ -32,6 +33,7 @@ export type LessonKind =
   | 'chordbar'
   | 'arpeggio'
   | 'surf'
+  | 'ear'
 
 /** Kinds played against a metronome. */
 export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'surf']
@@ -51,6 +53,7 @@ export const PATTERN_KINDS: LessonKind[] = [
   'chordbar',
   'arpeggio',
   'surf',
+  'ear',
 ]
 
 /** Chord kinds: judged per chord, reported with the chord card. */
@@ -103,6 +106,8 @@ export interface NoteLesson {
   chords?: ChordSpec
   /** Arpeggio and Arpej Sörfü lessons: the arpeggios, played in order. */
   arpeggios?: ArpeggioPart[]
+  /** Kulak Dedektifi: the cases to solve by ear. */
+  ear?: EarSpec
   /** Theory lessons: the explanation cards and the quiz. */
   theory?: TheorySpec
   /** Drill: new notes shown one by one (staff, key, where it sits) before the drill starts. */

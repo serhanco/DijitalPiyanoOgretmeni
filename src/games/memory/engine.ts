@@ -2,8 +2,14 @@
 // plays a short run of scale notes, the player repeats it; every round the
 // run grows by one note. Pure: time is passed in, the screen plays the
 // notes and lights the keys from the returned schedule.
+//
+// Further modes (phase 9): runs over chord tones (`leaps`), runs played back
+// in reverse, and songs learnt phrase by phrase (`song`): each phrase alone,
+// then two phrases together, and at the end the whole song when it is short.
 
 import { pitchClass } from '../../music/notes'
+import { parseTune, type Tune } from '../../rhythm/plan'
+import { VALUE_BEATS } from '../../rhythm/rhythm'
 import { firstTryOk, type PromptRecord } from '../noteHunter/session'
 import type { CategoryStat } from '../noteHunter/summary'
 
@@ -20,6 +26,75 @@ export interface MemoryOptions {
   noteMs?: number
   /** Index in `pool` of the first note of every run; random when not given. */
   firstPosition?: number
+  /** The player repeats every run backwards. */
+  reverse?: boolean
+  /** The pool is chord tones: neighbours are leaps, not scale steps (only the report labels change). */
+  leaps?: boolean
+  /** Learn a song phrase by phrase instead of random runs; `pool`, `startLength` and `maxLength` are then unused. */
+  song?: SongMemory
+}
+
+export interface SongNote {
+  midi: number
+  /** Start, in beats from the song's start. */
+  beat: number
+  beats: number
+}
+
+/** A song cut into phrases, and the runs it is learnt in. */
+export interface SongMemory {
+  title: string
+  notes: SongNote[]
+  segments: SongSegment[]
+}
+
+export interface SongSegment {
+  /** Note indices: `start` included, `end` excluded. */
+  start: number
+  end: number
+  label: string
+}
+
+/** Bars per phrase when a song is cut up. */
+const PHRASE_BARS = 2
+/** A whole song is played as the last run only when it has at most this many notes. */
+const WHOLE_SONG_MAX = 32
+
+/**
+ * Cut a song into two-bar phrases and plan its runs: each pair of phrases is
+ * learnt as the first, the second, then both together; a short song ends with
+ * the whole of it.
+ */
+export function songMemory(tune: Tune, beatsPerBar = 4): SongMemory {
+  const { bars, pitches } = parseTune(tune, beatsPerBar)
+  const notes: SongNote[] = []
+  const phraseStarts: number[] = []
+  let beat = 0
+  let event = 0
+  bars.forEach((bar, b) => {
+    if (b % PHRASE_BARS === 0) phraseStarts.push(notes.length)
+    for (const value of bar) {
+      const midi = pitches[event++]
+      if (midi !== null) notes.push({ midi, beat, beats: VALUE_BEATS[value] })
+      beat += VALUE_BEATS[value]
+    }
+  })
+  const phrases = phraseStarts
+    .map((start, i) => ({ start, end: phraseStarts[i + 1] ?? notes.length }))
+    .filter((p) => p.end > p.start)
+  const segments: SongSegment[] = []
+  for (let i = 0; i < phrases.length; i += 2) {
+    const a = phrases[i]
+    const b = phrases[i + 1]
+    segments.push({ ...a, label: `${i + 1}. cümle` })
+    if (b) {
+      segments.push({ ...b, label: `${i + 2}. cümle` })
+      segments.push({ start: a.start, end: b.end, label: `${i + 1}. ve ${i + 2}. cümle birlikte` })
+    }
+  }
+  if (phrases.length > 2 && notes.length <= WHOLE_SONG_MAX)
+    segments.push({ start: 0, end: notes.length, label: 'Şarkının tamamı' })
+  return { title: tune.title, notes, segments }
 }
 
 /** A Melodi Hafızası lesson: run lengths, and whether the run is only heard. */
@@ -31,6 +106,12 @@ export interface MemorySpec {
    * note is shown, so the rest is found by ear from there.
    */
   listenOnly?: boolean
+  /** Play every run back from its last note to its first. */
+  reverse?: boolean
+  /** The lesson's notes are chord tones: runs leap. */
+  leaps?: boolean
+  /** Şarkı Hafızası: learn this song phrase by phrase; the lengths are then unused. */
+  tune?: Tune
 }
 
 export type MemoryPhase = 'ready' | 'listen' | 'play' | 'done'
@@ -63,8 +144,15 @@ export class MemoryGame {
   readonly maxLength: number
   readonly hearts: number | null
   readonly noteMs: number
-  /** Positions in `pool` of the run, which grows every round. */
+  readonly reverse: boolean
+  readonly leaps: boolean
+  readonly song: SongMemory | null
+  /** Positions in `pool` of the run, which grows every round (random runs). */
   readonly positions: number[] = []
+  /** Song mode: the segment being learnt. */
+  private segment = 0
+  /** What each round was: its run length, or the song segment's label. */
+  readonly roundLabels: string[] = []
   /** One list of records per round played, one record per note of the run. */
   readonly rounds: PromptRecord[][] = []
   phase: MemoryPhase = 'ready'
@@ -83,26 +171,54 @@ export class MemoryGame {
     random = Math.random,
     noteMs = 650,
     firstPosition,
+    reverse = false,
+    leaps = false,
+    song,
   }: MemoryOptions) {
+    this.song = song ?? null
+    this.reverse = reverse
+    this.leaps = leaps
+    // A song's pool is its notes, low to high, so moves are measured the same way.
+    if (song) pool = [...new Set(song.notes.map((n) => n.midi))].sort((a, b) => a - b)
     if (pool.length < 2) throw new Error('Melodi Hafızası needs at least two notes')
     this.pool = pool
-    this.startLength = startLength
-    this.maxLength = Math.max(startLength, maxLength)
+    this.startLength = song ? song.segments[0].end - song.segments[0].start : startLength
+    this.maxLength = song ? Math.max(...song.segments.map((g) => g.end - g.start)) : Math.max(startLength, maxLength)
     this.hearts = hearts
     this.noteMs = noteMs
     this.random = random
     this.ignoreOctave = ignoreOctave
+    if (song) return
     this.positions.push(firstPosition ?? Math.floor(random() * pool.length))
     while (this.positions.length < startLength) this.grow()
   }
 
-  /** The notes of the current run. */
+  /** The notes of the current run, as they are played to the player. */
   get sequence(): number[] {
+    if (this.song) {
+      const g = this.song.segments[this.segment]
+      return this.song.notes.slice(g.start, g.end).map((n) => n.midi)
+    }
     return this.positions.map((p) => this.pool[p])
   }
 
+  /** The notes to play back, in the order the player plays them. */
+  get answer(): number[] {
+    return this.reverse ? [...this.sequence].reverse() : this.sequence
+  }
+
+  /** Rounds in the whole game. */
+  get totalRounds(): number {
+    return this.song ? this.song.segments.length : this.maxLength - this.startLength + 1
+  }
+
+  /** Song mode: what the current run is ("1. cümle"). */
+  get segmentLabel(): string | null {
+    return this.song ? this.song.segments[this.segment].label : null
+  }
+
   get length(): number {
-    return this.positions.length
+    return this.song ? this.sequence.length : this.positions.length
   }
 
   /** Notes of the current run already repeated. */
@@ -124,7 +240,7 @@ export class MemoryGame {
 
   /** The next note to play, for hints and tests. */
   get expected(): number | null {
-    return this.phase === 'play' ? this.pool[this.positions[this.input]] : null
+    return this.phase === 'play' ? this.answer[this.input] : null
   }
 
   /** Records of the notes the player was asked to repeat: the basis of the report. */
@@ -132,10 +248,9 @@ export class MemoryGame {
     return this.rounds.flat().filter((r) => r.shownAt !== null)
   }
 
-  /** Move kind leading to note `i` of the run (the first note of a run has none). */
-  moveAt(i: number): MoveKind | null {
-    if (i === 0) return null
-    const d = Math.abs(this.positions[i] - this.positions[i - 1])
+  /** Move kind from one note of a run to the next, measured in places of the pool. */
+  moveBetween(from: number, to: number): MoveKind {
+    const d = Math.abs(this.pool.indexOf(to) - this.pool.indexOf(from))
     return d === 0 ? 'repeat' : d === 1 ? 'step' : 'skip'
   }
 
@@ -155,12 +270,29 @@ export class MemoryGame {
     if (this.phase !== 'ready') return []
     this.phase = 'listen'
     this.input = 0
-    this.rounds.push(
-      this.positions.map((p) => ({ target: this.pool[p], shownAt: null, answeredAt: null, wrongPresses: [] })),
-    )
+    this.rounds.push(this.answer.map((target) => ({ target, shownAt: null, answeredAt: null, wrongPresses: [] })))
+    this.roundLabels.push(this.segmentLabel ?? `${this.length}`)
     const start = now + LEAD_MS
+    if (this.song) {
+      const g = this.song.segments[this.segment]
+      const notes = this.song.notes.slice(g.start, g.end)
+      const first = notes[0].beat
+      const last = notes[notes.length - 1]
+      // Long notes are held for their length, but never more than two beats.
+      this.listenEndsAt = start + (last.beat - first + Math.min(last.beats, 2)) * this.noteMs
+      return notes.map((n) => ({
+        midi: n.midi,
+        at: start + (n.beat - first) * this.noteMs,
+        durationMs: Math.min(n.beats, 2) * this.noteMs * 0.85,
+      }))
+    }
     this.listenEndsAt = start + this.length * this.noteMs
     return this.sequence.map((midi, i) => ({ midi, at: start + i * this.noteMs, durationMs: this.noteMs * 0.8 }))
+  }
+
+  /** When the run being played ends and the player takes over. */
+  get listenEnd(): number {
+    return this.listenEndsAt
   }
 
   /** Hand over to the player once the run has been played. */
@@ -199,11 +331,12 @@ export class MemoryGame {
       return [{ type: 'hit', index }]
     }
     const length = this.length
-    if (length >= this.maxLength) {
+    if (this.song ? this.segment >= this.song.segments.length - 1 : length >= this.maxLength) {
       this.phase = 'done'
       return [{ type: 'hit', index }, { type: 'round', length }, { type: 'complete' }]
     }
-    this.grow()
+    if (this.song) this.segment++
+    else this.grow()
     this.phase = 'ready'
     return [
       { type: 'hit', index },
@@ -213,6 +346,8 @@ export class MemoryGame {
 }
 
 export interface MemorySummary {
+  /** Song mode: the song, its runs remembered without a mistake, and whether the last run was played clean. */
+  song?: { title: string; clean: number; runs: number; lastClean: boolean; lastLabel: string }
   /** Longest run repeated without a single wrong key (0 if none). */
   longestClean: number
   /** Longest run repeated to the end. */
@@ -226,7 +361,17 @@ const MOVE_LABELS: Record<MoveKind, string> = {
   repeat: 'Tekrar eden notalar',
 }
 
-/** Topics of the report: by the move into each note and by the length of the run. */
+/** Over chord tones every move is a leap: by how far it goes instead. */
+const LEAP_LABELS: Record<MoveKind, string> = {
+  step: 'Komşu akor notasına sıçrama',
+  skip: 'Uzak akor notasına sıçrama',
+  repeat: 'Tekrar eden notalar',
+}
+
+/**
+ * Topics of the report: by the move into each note and by the length of the
+ * run (song mode: by the phrase), plus "Tersten çalma" in reverse mode.
+ */
 export function memoryReport(game: MemoryGame): { perCategory: CategoryStat[]; memory: MemorySummary } {
   const groups = new Map<string, { label: string; shown: number; firstTry: number }>()
   const add = (id: string, label: string, r: PromptRecord) => {
@@ -235,31 +380,55 @@ export function memoryReport(game: MemoryGame): { perCategory: CategoryStat[]; m
     if (firstTryOk(r)) g.firstTry++
     groups.set(id, g)
   }
+  const labels = game.leaps ? LEAP_LABELS : MOVE_LABELS
+  const segmentIds: string[] = []
   let longest = 0
   let longestClean = 0
-  for (const round of game.rounds) {
+  let clean = 0
+  game.rounds.forEach((round, k) => {
     const n = round.length
     round.forEach((r, i) => {
       if (r.shownAt === null) return
-      const move = game.moveAt(i)
-      add(move ?? 'first', move ? MOVE_LABELS[move] : 'Dizinin ilk notası', r)
-      add(
-        n <= 4 ? 'short' : n <= 6 ? 'mid' : 'long',
-        n <= 4 ? 'Kısa diziler (3–4 nota)' : n <= 6 ? 'Orta diziler (5–6 nota)' : 'Uzun diziler (7+ nota)',
-        r,
-      )
+      const move = i === 0 ? null : game.moveBetween(round[i - 1].target, r.target)
+      add(move ?? 'first', move ? labels[move] : 'Dizinin ilk notası', r)
+      if (game.song) {
+        const id = `seg:${game.roundLabels[k]}`
+        if (!segmentIds.includes(id)) segmentIds.push(id)
+        add(id, game.roundLabels[k], r)
+      } else
+        add(
+          n <= 4 ? 'short' : n <= 6 ? 'mid' : 'long',
+          n <= 4 ? 'Kısa diziler (3–4 nota)' : n <= 6 ? 'Orta diziler (5–6 nota)' : 'Uzun diziler (7+ nota)',
+          r,
+        )
+      if (game.reverse) add('reverse', 'Tersten çalma', r)
     })
     if (round.every((r) => r.answeredAt !== null)) {
       longest = Math.max(longest, n)
-      if (round.every(firstTryOk)) longestClean = Math.max(longestClean, n)
+      if (round.every(firstTryOk)) {
+        longestClean = Math.max(longestClean, n)
+        clean++
+      }
     }
-  }
-  const order = ['first', 'step', 'skip', 'repeat', 'short', 'mid', 'long']
+  })
+  const order = ['first', 'step', 'skip', 'repeat', 'short', 'mid', 'long', ...segmentIds, 'reverse']
   const perCategory = order
     .filter((id) => groups.has(id))
     .map((id) => {
       const g = groups.get(id)!
       return { id, label: g.label, shown: g.shown, firstTry: g.firstTry, accuracy: g.firstTry / g.shown }
     })
-  return { perCategory, memory: { longest, longestClean, maxLength: game.maxLength } }
+  const memory: MemorySummary = { longest, longestClean, maxLength: game.maxLength }
+  if (game.song) {
+    const last = game.rounds[game.rounds.length - 1]
+    const lastDone = game.rounds.length === game.totalRounds && !!last?.every((r) => r.answeredAt !== null)
+    memory.song = {
+      title: game.song.title,
+      clean,
+      runs: game.totalRounds,
+      lastClean: lastDone && last.every(firstTryOk),
+      lastLabel: game.song.segments[game.song.segments.length - 1].label,
+    }
+  }
+  return { perCategory, memory }
 }

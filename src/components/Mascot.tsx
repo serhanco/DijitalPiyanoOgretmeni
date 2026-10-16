@@ -13,6 +13,8 @@ interface Props {
   /** Speech bubble text. */
   say?: string | null
   className?: string
+  /** Dress-up: the detective hat and magnifier of Kulak Dedektifi. */
+  outfit?: 'detective'
 }
 
 const BODY = '#7c4dff'
@@ -86,7 +88,34 @@ function Mouth({ mood }: { mood: MascotMood }) {
   }
 }
 
-export function Mascot({ mood = 'idle', pulse = 0, size = 120, say, className }: Props) {
+/** Deerstalker hat and a magnifying glass; the lens fogs up on a sad mood and glints on a happy one. */
+function DetectiveOutfit({ mood }: { mood: MascotMood }) {
+  const fog = mood === 'sad'
+  const glint = mood === 'happy' || mood === 'cheer'
+  return (
+    <g>
+      {/* hat: crown, brim peaks front and back, ear flap and a bow on top */}
+      <path d="M28 46 q4 -22 30 -24 q24 0 28 20 z" fill="#a0703c" transform="rotate(-10 58 40)" />
+      <path d="M24 47 q-10 2 -12 8 q12 2 22 -4 z" fill="#7d5328" transform="rotate(-10 58 40)" />
+      <path d="M84 41 q10 -2 14 3 q-10 4 -18 1 z" fill="#7d5328" transform="rotate(-10 58 40)" />
+      <path d="M36 30 q20 -6 42 4" stroke="#7d5328" strokeWidth={3} fill="none" transform="rotate(-10 58 40)" />
+      <circle cx={56} cy={22} r={3.5} fill="#7d5328" />
+      {/* magnifier in the right hand */}
+      <line x1={99} y1={92} x2={107} y2={78} stroke="#5a3a1a" strokeWidth={5} strokeLinecap="round" />
+      <circle cx={110} cy={70} r={11} fill={fog ? '#e6e9ee' : '#dff4ff'} opacity={fog ? 0.95 : 0.7} />
+      <circle cx={110} cy={70} r={11} fill="none" stroke="#5a3a1a" strokeWidth={3.5} />
+      {glint && <path d="M104 66 q3 -5 8 -5" stroke="#fff" strokeWidth={2.5} fill="none" strokeLinecap="round" />}
+      {fog && (
+        <g fill="#b9c0cc">
+          <circle cx={107} cy={68} r={2} />
+          <circle cx={113} cy={73} r={1.6} />
+        </g>
+      )}
+    </g>
+  )
+}
+
+export function Mascot({ mood = 'idle', pulse = 0, size = 120, say, className, outfit }: Props) {
   const [blink, setBlink] = useState(false)
 
   // Blink now and then while idle.
@@ -162,6 +191,7 @@ export function Mascot({ mood = 'idle', pulse = 0, size = 120, say, className }:
           <circle cx={33} cy={80} r={5} fill="#ff8fb1" opacity={0.7} />
           <circle cx={84} cy={78} r={5} fill="#ff8fb1" opacity={0.7} />
           <Mouth mood={mood} />
+          {outfit === 'detective' && <DetectiveOutfit mood={mood} />}
         </motion.g>
         {mood === 'sleep' && (
           <motion.text

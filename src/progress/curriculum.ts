@@ -1,4 +1,5 @@
 import { CHORD_LESSONS } from '../games/chords/lessons'
+import { EAR_LESSONS } from '../games/ear/lessons'
 import { BASS_LESSONS } from '../games/noteHunter/bassLessons'
 import { HANDS_LESSONS } from '../games/noteHunter/handsLessons'
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
@@ -89,6 +90,14 @@ export const UNITS: Unit[] = [
     subtitle: 'Üçlüler, çevrimler, arpejler',
     color: '#ff9600',
     lessons: CHORD_LESSONS,
+  },
+  {
+    id: 'ear',
+    requires: AFTER_BASICS,
+    title: 'Ünite 8: Kulak Eğitimi',
+    subtitle: 'Kulak Dedektifi: notalar, aralıklar, akor renkleri; şarkıları ezberden çal',
+    color: '#8a5cf6',
+    lessons: EAR_LESSONS,
   },
 ]
 

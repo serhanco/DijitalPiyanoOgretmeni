@@ -69,6 +69,7 @@ const KIND_ICON: Record<LessonKind, string> = {
   chordbar: '🍸',
   arpeggio: '〰️',
   surf: '🏄',
+  ear: '🔍',
 }
 
 export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
