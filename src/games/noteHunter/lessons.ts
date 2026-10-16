@@ -2,6 +2,7 @@ import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 import type { RhythmValue } from '../../rhythm/rhythm'
 import type { Tune } from '../../rhythm/plan'
 import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
+import type { BossSpec } from '../boss/bosses'
 import type { ArpeggioPart } from '../chords/arpeggio'
 import type { ChordSpec } from '../chords/lessons'
 import type { EarSpec } from '../ear/session'
@@ -36,6 +37,7 @@ export type LessonKind =
   | 'surf'
   | 'ear'
   | 'waterfall'
+  | 'boss'
 
 /** Kinds played against a metronome. */
 export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'surf']
@@ -45,6 +47,7 @@ export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'su
  * that are judged per chord: kept out of the note-reading statistics.
  */
 export const PATTERN_KINDS: LessonKind[] = [
+  'boss',
   'waterfall',
   'theory',
   'scale',
@@ -113,6 +116,8 @@ export interface NoteLesson {
   ear?: EarSpec
   /** Nota Şelalesi: the song, the hands and the mode. Rhythm mode also has `rhythm` (tempo, metronome). */
   song?: SongSpec
+  /** Unit boss: the boss and its phases (lessons of the unit, shortened). */
+  boss?: BossSpec
   /** Theory lessons: the explanation cards and the quiz. */
   theory?: TheorySpec
   /** Drill: new notes shown one by one (staff, key, where it sits) before the drill starts. */

@@ -1,4 +1,6 @@
 import { type ChordSummary, LATE_VOICE_TEXT } from '../games/chords/report'
+import type { BossLook } from '../games/boss/bosses'
+import type { BossSummary } from '../games/boss/report'
 import type { SongSummary } from '../games/songs/report'
 import type { EarSummary } from '../games/ear/session'
 import type { MemorySummary } from '../games/memory/engine'
@@ -10,6 +12,7 @@ import { ROUND_PASS, type TempoLadderSummary } from '../rhythm/tempoLadder'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { sfx } from '../audio/sfx'
+import { BossMonster } from '../components/BossMonster'
 import { CountUp } from '../components/Celebration'
 import { burstConfetti } from '../components/confetti'
 import { Mascot, type MascotMood } from '../components/Mascot'
@@ -311,6 +314,65 @@ function SongCard({ song }: { song: SongSummary }) {
   )
 }
 
+/** The boss fight: the hit of every phase and whether the boss fell. */
+function BossCard({ boss, look }: { boss: BossSummary; look?: BossLook }) {
+  return (
+    <section className="card boss-card" data-defeated={boss.defeated || undefined}>
+      <h2>Boss</h2>
+      {look && (
+        <div className="boss-card-monster">
+          <BossMonster look={look} name={boss.name} mood={boss.defeated ? 'defeated' : 'laugh'} size={84} />
+        </div>
+      )}
+      <p>
+        👾 <b>{boss.name}</b> {boss.defeated ? 'yenildi! 🏆' : `kazandı: ${Math.round(boss.hp)} canı kaldı.`}
+      </p>
+      <ul className="boss-phases">
+        {boss.phases.map((p, i) => (
+          <li key={p.label} data-failed={p.failed || undefined}>
+            <span>
+              {i + 1}. {p.label} <span className="small muted">({p.title})</span>
+            </span>
+            <b>%{Math.round(p.accuracy * 100)}</b>
+            <span className="small">{p.failed ? '💔 canlar bitti' : `⚔️ ${Math.round(p.damage)} hasar`}</span>
+          </li>
+        ))}
+        {boss.skipped.map((label, i) => (
+          <li key={label} className="muted">
+            <span>
+              {boss.phases.length + i + 1}. {label}
+            </span>
+            <span className="small">oynanmadı</span>
+          </li>
+        ))}
+      </ul>
+      <p className="small">💡 {boss.tip}</p>
+    </section>
+  )
+}
+
+/** Quests this lesson moved on, the chest and the weekly challenge. */
+function QuestCard({ quests }: { quests: Reward['quests'] }) {
+  if (!quests.steps.length) return null
+  return (
+    <section className="card quest-card">
+      <h2>Görevler</h2>
+      <ul className="quest-steps">
+        {quests.steps.map((s) => (
+          <li key={s.def.id} data-done={s.completed || undefined}>
+            <span aria-hidden>{s.completed ? '✅' : s.def.icon}</span> {s.def.title}{' '}
+            <b>
+              {s.after}/{s.def.target}
+            </b>
+          </li>
+        ))}
+      </ul>
+      {quests.chestOpened && <p className="quest-chest-open">🎁 Bugünün üç görevi tamam: sandık açıldı!</p>}
+      {quests.weeklyDone && <p className="quest-chest-open">🏵️ Haftalık meydan okuma tamam!</p>}
+    </section>
+  )
+}
+
 /** The longest runs remembered in Melodi Hafızası. */
 function MemoryCard({ memory }: { memory: MemorySummary }) {
   if (memory.song)
@@ -426,7 +488,15 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
           </span>
         ))}
       </div>
-      <h1>{summary.failed ? 'Kalplerin bitti' : `${lesson.title} tamamlandı!`}</h1>
+      <h1>
+        {summary.boss
+          ? summary.boss.defeated
+            ? `${summary.boss.name} yenildi!`
+            : `${summary.boss.name} kazandı`
+          : summary.failed
+            ? 'Kalplerin bitti'
+            : `${lesson.title} tamamlandı!`}
+      </h1>
       {!summary.failed && <Comparison before={reward.previousBestAccuracy} now={summary.accuracy} />}
 
       {/* A test finish keeps nothing, so it shows no reward. */}
@@ -462,6 +532,8 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
           </section>
         </>
       )}
+
+      {!trial && <QuestCard quests={reward.quests} />}
 
       {reward.newBadges.length > 0 && (
         <section className="card badges-new">
@@ -558,6 +630,7 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
       )}
       {summary.ear && <EarCard ear={summary.ear} />}
       {summary.memory && <MemoryCard memory={summary.memory} />}
+      {summary.boss && <BossCard boss={summary.boss} look={lesson.boss?.look} />}
       {summary.song && <SongCard song={summary.song} />}
       {summary.tempoLadder && <TempoLadderCard ladder={summary.tempoLadder} />}
 

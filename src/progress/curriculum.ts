@@ -8,6 +8,8 @@ import { SCALE_LESSONS } from '../games/scales/lessons'
 import { SONG_LESSONS } from '../games/songs/lessons'
 import { RHYTHM2_LESSONS, RHYTHM_LESSONS } from '../rhythm/lessons'
 import { BASICS_LESSONS } from '../games/theory/lessons'
+import { BOSS_LESSONS } from '../games/boss/bosses'
+import type { QuestDef } from './quests'
 
 export interface Unit {
   id: string
@@ -110,16 +112,21 @@ export const UNITS: Unit[] = [
   },
 ]
 
+// Every unit ends with its boss.
+for (const unit of UNITS) if (BOSS_LESSONS[unit.id]) unit.lessons = [...unit.lessons, BOSS_LESSONS[unit.id]]
+
+export const BOSS_LESSON_IDS: string[] = Object.values(BOSS_LESSONS).map((l) => l.id)
+
 export const ALL_LESSONS: NoteLesson[] = UNITS.flatMap((u) => u.lessons)
 
 export function findLesson(id: string): NoteLesson | undefined {
   return ALL_LESSONS.find((l) => l.id === id)
 }
 
-/** True when every lesson of the unit has at least one star. */
+/** True when every lesson of the unit has at least one star. The boss is a bonus: it opens nothing. */
 export function unitDone(unitId: string, bestStars: (id: string) => number): boolean {
   const unit = UNITS.find((u) => u.id === unitId)
-  return !!unit && unit.lessons.every((l) => bestStars(l.id) >= 1)
+  return !!unit && unit.lessons.every((l) => l.kind === 'boss' || bestStars(l.id) >= 1)
 }
 
 /**
@@ -177,4 +184,14 @@ export function buildReviewLesson(clef: Clef | 'grand', notes: number[]): NoteLe
 /** The map node a lesson is started from; the weak-notes lessons share an id, so their clef tells them apart. */
 export function mapNodeOf(lesson: NoteLesson): string {
   return lesson.id === REVIEW_LESSON_ID ? `review-${lesson.grand ? 'grand' : lesson.clef}` : lesson.id
+}
+
+/** Quests are only picked for what the learner can play: a unit's quest needs the unit open, the boss quest a boss. */
+export function questEligible(bestStars: (id: string) => number): (q: QuestDef) => boolean {
+  return (q) => {
+    if (!q.needs) return true
+    if (q.needs === 'boss') return BOSS_LESSON_IDS.some((id) => isUnlocked(id, bestStars))
+    const unit = UNITS.find((u) => u.id === q.needs)
+    return !!unit && isUnlocked(unit.lessons[0].id, bestStars)
+  }
 }

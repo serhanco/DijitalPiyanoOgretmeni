@@ -28,8 +28,9 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Tek oktav ekran klavyesi                      | Birleşti (PR #14) |
 | Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Birleşti (PR #30) |
 | 9 Kulak eğitimi ve hafıza                     | Birleşti (PR #31) |
-| 10 Şarkılar                                   | Bu dal            |
-| 11 ve sonrası                                 | Başlanmadı        |
+| 10 Şarkılar                                   | Birleşti (PR #32) |
+| 11 Boss'lar, günlük görevler, haftalık        | Bu dal            |
+| 12 ve sonrası                                 | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -229,6 +230,15 @@ el, iki el; uzun şarkılar yarı yarıya. Rapor: bölüm bölüm ve el el başa
 - Önce tek el, sonra iki el; yavaşlatma ve bölüm tekrarı
 
 ### Faz 11 — Ünite boss'ları ve etkinlikler
+
+Yapıldı: Her ünitenin sonunda bir **boss** (10 boss: Karışık Kedi, Sol Ejderhası, Ritim Hırsızı, Kalın Ses Devi,
+Hızlı Sincap, Dört Gözlü Ejder, Merdiven Cini, Akor Ahtapotu, Fısıltı Hayaleti, Sessizlik Kralı). Boss üç aşamadır;
+her aşama ünitenin kısaltılmış bir dersidir ve kendi ekranında oynanır. Her aşama boss'a başarısı kadar hasar verir
+(can çubuğu), aralarda boss sarsılır, kızar, yenilince yere serilir; bir aşamada canlar biterse boss kazanır.
+Ortalama %75 ile boss yenilir; boss ünitelerin kilidini tutmaz. Rapor: aşama aşama başarı ve hasar ("Boss" kartı),
+altında aşamaların konuları. **Günlük görevler**: haritada her gün 3 görev (açık ünitelere göre seçilir; "bugün 3
+mükemmel ders" dahil), her biri +10 XP, üçü bitince sandık +20 XP. **Haftalık meydan okuma**: haftada bir hedef, +50
+XP. Rozetler: Boss Avcısı, Boss Ustası, Haftanın Yıldızı.
 
 - Her ünitenin sonunda boss bölümü
 - Haftalık meydan okumalar, günlük görevler ("bugün 3 mükemmel ders")

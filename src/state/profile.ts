@@ -18,7 +18,16 @@ import {
   xpFor,
   type XpLine,
 } from '../progress/gamification'
-import { REVIEW_LESSON_ID } from '../progress/curriculum'
+import { BOSS_LESSON_IDS, questEligible, REVIEW_LESSON_ID } from '../progress/curriculum'
+import {
+  advanceQuests,
+  dailyFor,
+  type DailyQuests,
+  type QuestStep,
+  weeklyFor,
+  type WeeklyQuest,
+  weekKey,
+} from '../progress/quests'
 
 export interface LessonProgress {
   bestStars: number
@@ -40,6 +49,10 @@ export interface Reward {
   goalJustReached: boolean
   newBadges: Badge[]
   previousBestAccuracy: number | null
+  /** XP of the lesson itself (the quest rewards are in `xpLines` and `xpGained` too). */
+  lessonXp: number
+  /** Quests this lesson moved on, the chest and the weekly challenge. */
+  quests: { steps: QuestStep[]; chestOpened: boolean; weeklyDone: boolean }
 }
 
 interface ProfileState {
@@ -50,6 +63,11 @@ interface ProfileState {
   lessonsCompleted: number
   lessons: Record<string, LessonProgress>
   badges: Record<string, number>
+  /** Today's quests and this week's challenge (picked when first needed). */
+  quests: DailyQuests | null
+  weekly: WeeklyQuest | null
+  /** Picks today's quests and this week's challenge when they are not picked yet. */
+  ensureQuests: (now?: Date) => void
   /** `save: false` (a test finish) works the reward out without keeping it. */
   completeLesson: (outcome: LessonOutcome, now?: Date, save?: boolean) => Reward
   setDailyGoal: (xp: number) => void
@@ -76,17 +94,25 @@ export const useProfile = create<ProfileState>()(
       lessonsCompleted: 0,
       lessons: {},
       badges: {},
+      quests: null,
+      weekly: null,
+
+      ensureQuests(now = new Date()) {
+        const s = get()
+        const eligible = questEligible((id) => s.lessons[id]?.bestStars ?? 0)
+        const quests = dailyFor(s.quests, dayKey(now), eligible)
+        const weekly = weeklyFor(s.weekly, weekKey(now), eligible)
+        if (quests !== s.quests || weekly !== s.weekly) set({ quests, weekly })
+      },
 
       completeLesson(outcome, now = new Date(), save = true) {
         const s = get()
         const today = dayKey(now)
-        const xpLines = xpFor(outcome)
-        const xpGained = sumXp(xpLines)
-        const totalXp = s.totalXp + xpGained
+        const lessonLines = xpFor(outcome)
+        const lessonXp = sumXp(lessonLines)
 
         const streak = extendStreak(s.streak, today)
         const dailyBefore = s.daily.day === today ? s.daily.xp : 0
-        const dailyXp = dailyBefore + xpGained
 
         const prev = s.lessons[outcome.lessonId]
         const lessons = { ...s.lessons }
@@ -101,6 +127,22 @@ export const useProfile = create<ProfileState>()(
         }
         const lessonsCompleted = s.lessonsCompleted + (outcome.failed ? 0 : 1)
 
+        // Quests are picked for what was open before this lesson.
+        const eligible = questEligible((id) => s.lessons[id]?.bestStars ?? 0)
+        const q = advanceQuests(dailyFor(s.quests, today, eligible), weeklyFor(s.weekly, weekKey(now), eligible), {
+          outcome,
+          kind: outcome.kind ?? 'drill',
+          xp: lessonXp,
+          isNew: !prev && outcome.lessonId !== REVIEW_LESSON_ID,
+          beatBest: !!prev && prev.plays > 0 && outcome.accuracy > prev.bestAccuracy,
+          starsGained: Math.max(0, (lessons[outcome.lessonId]?.bestStars ?? 0) - (prev?.bestStars ?? 0)),
+          firstOfDay: s.streak.lastDay !== today,
+        })
+        const xpLines = [...lessonLines, ...q.xpLines]
+        const xpGained = sumXp(xpLines)
+        const totalXp = s.totalXp + xpGained
+        const dailyXp = dailyBefore + xpGained
+
         const newBadges = newlyEarnedBadges(
           {
             totalXp,
@@ -114,13 +156,26 @@ export const useProfile = create<ProfileState>()(
             allBassLessonIds: BASS_LESSONS.map((l) => l.id),
             allScaleLessonIds: SCALE_LESSONS.map((l) => l.id),
             allChordLessonIds: CHORD_LESSONS.map((l) => l.id),
+            bossesDefeated: BOSS_LESSON_IDS.filter((id) => (lessons[id]?.bestStars ?? 0) >= 1).length,
+            bossCount: BOSS_LESSON_IDS.length,
+            weeklyDone: q.weeklyDone,
           },
           Object.keys(s.badges),
         )
         const badges = { ...s.badges }
         for (const b of newBadges) badges[b.id] = now.getTime()
 
-        if (save) set({ totalXp, streak, daily: { day: today, xp: dailyXp }, lessons, lessonsCompleted, badges })
+        if (save)
+          set({
+            totalXp,
+            streak,
+            daily: { day: today, xp: dailyXp },
+            lessons,
+            lessonsCompleted,
+            badges,
+            quests: q.daily,
+            weekly: q.weekly,
+          })
 
         return {
           xpLines,
@@ -134,6 +189,8 @@ export const useProfile = create<ProfileState>()(
           goalJustReached: dailyBefore < s.dailyGoal && dailyXp >= s.dailyGoal,
           newBadges,
           previousBestAccuracy: prev && prev.plays > 0 ? prev.bestAccuracy : null,
+          lessonXp,
+          quests: { steps: q.steps, chestOpened: q.chestOpened, weeklyDone: q.weeklyDone },
         }
       },
 
@@ -142,7 +199,7 @@ export const useProfile = create<ProfileState>()(
     {
       name: 'profile',
       storage: createJSONStorage(() => idbStorage),
-      partialize: ({ completeLesson: _c, setDailyGoal: _s, ...data }) => data,
+      partialize: ({ completeLesson: _c, setDailyGoal: _s, ensureQuests: _e, ...data }) => data,
     },
   ),
 )

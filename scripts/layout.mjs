@@ -117,6 +117,8 @@ const CASES = [
     area: '.beat-field',
   },
   { id: 'waterfall', name: 'Nota Şelalesi (ritimli)', title: 'Azizler Yürürken', drive: 'beat', area: '.beat-field' },
+  // Unit boss: the boss stage before and between the phases, and a phase (a lesson of the unit) on its own screen.
+  { id: 'boss', name: 'Ünite boss’u', title: 'Boss: Sol Ejderhası', drive: 'boss', area: '.staff-wrap' },
 ].filter((c) => !process.env.LAYOUT_ONLY || process.env.LAYOUT_ONLY.split(',').includes(c.id))
 
 /** Smallest white key the keyboard may draw (MIN_WHITE_KEY_PX in PianoKeyboard). */
@@ -646,6 +648,27 @@ const DRIVERS = {
     }
     return [await shot(), ...extra]
   },
+  async boss(page, shot) {
+    await page.waitForSelector('.boss-arena .boss-go')
+    const checks = [await shot('arena', '.boss-arena')]
+    await page.click('.boss-go')
+    // Phase 1 is a note drill: play it to the end.
+    await page.waitForSelector('.staff-wrap[data-note]')
+    checks.push(await shot())
+    for (let i = 0; i < 40 && !(await page.$('.boss-arena')); i++) {
+      const target = await page.getAttribute('.staff-wrap', 'data-note', { timeout: 1500 }).catch(() => null)
+      if (target) await page.click(`.key[data-midi="${target}"]`)
+      await page.waitForTimeout(450)
+    }
+    await page.waitForSelector('.game.boss[data-stage="between"]')
+    await page.waitForTimeout(1200)
+    checks.push(await shot('arena-arasi', '.boss-arena'))
+    // Phase 2 (Balon Patlatma) starts; "Dersi bitir" then ends the whole fight.
+    await page.click('.boss-go')
+    await page.waitForSelector('.pixi-stage canvas')
+    await page.waitForTimeout(600)
+    return checks
+  },
   async waterfall(page, shot) {
     await page.waitForSelector('.song-start')
     const checks = [await shot('hazir')]
@@ -791,8 +814,8 @@ async function runViewport(vp) {
       const shot = async (suffix = '', area = c.area) => {
         const file = `${c.id}${suffix ? `-${suffix}` : ''}`
         await snap(file)
-        // Before the lesson starts (ready cards) only the page itself is checked.
-        const play = suffix !== 'hazir'
+        // Before the lesson starts (ready cards, the boss stage) only the page itself is checked.
+        const play = suffix !== 'hazir' && !suffix.startsWith('arena')
         // Theory cards have no keyboard; the quiz has one only for "press the key" questions.
         const keyboard = c.keyboard ?? c.drive !== 'theory'
         const minShare = c.minShare ?? MIN_AREA_SHARE

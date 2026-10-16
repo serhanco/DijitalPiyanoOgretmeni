@@ -2461,3 +2461,331 @@ button.chip {
     margin-top: -4px;
   }
 }
+
+/* Unit bosses (phase 11) */
+.node.boss {
+  width: 92px;
+  height: 84px;
+  font-size: 2.4rem;
+}
+.node.boss.open:not(.gold) {
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--node) 70%, #fff), var(--node) 70%);
+}
+.start-bubble.boss {
+  color: #d42a68;
+}
+.game.boss .boss-steps {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.boss-step {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  background: var(--border);
+  color: var(--muted);
+}
+.boss-step.now {
+  background: var(--warn);
+  color: #3c3c3c;
+}
+.boss-step.done {
+  background: var(--primary);
+  color: #fff;
+}
+.boss-step.lost {
+  background: var(--danger);
+  color: #fff;
+}
+.boss-arena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+}
+.boss-name {
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+.boss-hp {
+  position: relative;
+  width: min(320px, 100%);
+  height: 22px;
+  border-radius: 11px;
+  background: var(--border);
+  overflow: hidden;
+}
+.boss-hp-fill {
+  height: 100%;
+  background: linear-gradient(#ff7a7a, var(--danger));
+  transition: width 0.7s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+.boss-hp-fill.low {
+  animation: hp-blink 0.8s ease-in-out infinite;
+}
+@keyframes hp-blink {
+  50% {
+    opacity: 0.55;
+  }
+}
+.boss-hp span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 0.8rem;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+}
+.boss-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.boss-say {
+  position: relative;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-weight: 800;
+  max-width: min(340px, calc(100vw - 48px));
+  animation: boss-say-in 0.3s ease-out;
+}
+@keyframes boss-say-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.boss-say::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 14px;
+  height: 14px;
+  background: var(--surface);
+  border-right: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  transform: translateX(-50%) rotate(45deg);
+}
+.boss-damage {
+  position: absolute;
+  right: -24px;
+  top: 30%;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--danger);
+  text-shadow:
+    0 2px 0 #fff,
+    0 0 6px #fff;
+  animation: boss-damage 1.8s ease-out 0.15s both;
+  pointer-events: none;
+}
+@keyframes boss-damage {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(1);
+  }
+}
+.boss-plan {
+  text-align: left;
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.boss-result {
+  font-weight: 800;
+}
+.boss-go {
+  min-width: 220px;
+}
+.boss-card {
+  position: relative;
+}
+.boss-card-monster {
+  position: absolute;
+  right: 10px;
+  top: 6px;
+}
+.boss-card > p:first-of-type {
+  padding-right: 90px;
+  min-height: 48px;
+}
+.boss-phases,
+.quest-steps {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.boss-phases li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+.boss-phases li > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.boss-phases li[data-failed] b {
+  color: var(--danger);
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .boss-arena {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'stage name'
+      'stage hp'
+      'stage rest';
+    max-width: none;
+    align-items: center;
+    gap: 6px 16px;
+  }
+  .boss-stage {
+    grid-area: stage;
+  }
+  .boss-name {
+    grid-area: name;
+  }
+  .boss-hp {
+    grid-area: hp;
+  }
+  .boss-arena > :not(.boss-stage, .boss-name, .boss-hp) {
+    grid-column: 2;
+  }
+  .boss-arena .boss-hp,
+  .boss-arena .boss-go {
+    justify-self: center;
+  }
+  .boss-go {
+    min-width: 0;
+  }
+  .boss-monster svg {
+    width: 110px;
+    height: 110px;
+  }
+}
+
+/* Quests (phase 11) */
+.quest-board {
+  margin-top: 16px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.quest-board header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.quest-board h2 {
+  font-size: 1rem;
+  font-weight: 900;
+}
+.quest-board h3 {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+.quest-board ul {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.quest-icon {
+  font-size: 1.3rem;
+  width: 28px;
+  text-align: center;
+}
+.quest-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.quest-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.quest.done .quest-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.quest-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.quest-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--warn);
+  transition: width 0.5s;
+}
+.quest.done .quest-bar > span {
+  background: var(--primary);
+}
+.quest-count {
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.quest.done .quest-count {
+  color: var(--primary);
+}
+.quest-chest {
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.quest-chest.open {
+  color: var(--primary-dark);
+}
+.quest-steps li[data-done] b {
+  color: var(--primary);
+}
+.quest-chest-open {
+  font-weight: 900;
+  animation: pop 0.3s ease-out;
+}
