@@ -5,6 +5,7 @@ import { HANDS_LESSONS } from '../games/noteHunter/handsLessons'
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import { type Clef, fitKeyboard } from '../music/notes'
 import { SCALE_LESSONS } from '../games/scales/lessons'
+import { SONG_LESSONS } from '../games/songs/lessons'
 import { RHYTHM2_LESSONS, RHYTHM_LESSONS } from '../rhythm/lessons'
 import { BASICS_LESSONS } from '../games/theory/lessons'
 
@@ -98,6 +99,14 @@ export const UNITS: Unit[] = [
     subtitle: 'Kulak Dedektifi: notalar, aralıklar, akor renkleri; şarkıları ezberden çal',
     color: '#8a5cf6',
     lessons: EAR_LESSONS,
+  },
+  {
+    id: 'songs',
+    requires: AFTER_BASICS,
+    title: 'Ünite 9: Şarkılar',
+    subtitle: 'Nota Şelalesi: önce tek el, sonra iki el; bekleyen mod ve ritimli mod',
+    color: '#00a6a6',
+    lessons: SONG_LESSONS,
   },
 ]
 

@@ -100,6 +100,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-08 | Nota Kuşu yeni karakter: Notiş tarzında kuş, kanat çırpma, geçişte sevinç (pırıltı, nota), çarpmada baş dönmesi (yıldızlar, tüyler), yanlış tuşta ter damlası                                                                                      | Nota Kuşu karakter PR'ı                |
 | 2026-10-15 | Ritim müfredatı: ritim iki üniteye bölündü (Temel Vuruş 28 ders; Sekizlikler ve Noktalılar 25 ders). Her kalıp: teori, Yankı, tekrar, oyun, şarkının ritmi, şarkı. Telifsiz şarkılar orijinal adları ve kökenleriyle; eski ders kimlikleri korundu | dal `claude/project-thread-wprkex`     |
 | 2026-10-16 | Faz 9: Kulak Eğitimi ünitesi (24 ders), Kulak Dedektifi (yön, nota, aralık, akor rengi vakaları), aralıklar telifsiz şarkılarla, Melodi Hafızası'nda atlamalı, ters ve şarkı modları, Kulak raporu kartı, 3 yeni rozet                             | dal `claude/project-thread-ytjjkw`     |
+| 2026-10-16 | Faz 10: Şarkılar ünitesi (22 ders), Nota Şelalesi (bekleyen ve ritimli mod, bölüm tekrarı, yavaşlatma), 9 telifsiz şarkı ve Konser, tek elden iki ele, Şarkı kartı, 3 rozet                                                                        | dal `claude/project-thread-ytjjkw`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -193,6 +194,14 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   artık akor eklenmedi. Şarkı Hafızası iki ölçülük cümlelerle çalışır ve ritimdeki şarkıları (Ritim ünitelerinin
   `tunes.ts`'i) kullanır; orijinal adı, kökeni ve kısa bilgisi başta gösterilir. Şarkının tamamı yalnızca 32
   notadan kısaysa en son dizi olur.
+
+- **Şarkılar (Faz 10):** Serhan Faz 9'un birleşmesinin ardından "kaldığımız yerden devam" dedi; plan konuya yazılıp
+  onay beklemeden yapıldı. Şelale nota yerine klavyenin üstüne çizilir (porte yok): nota okumayı değil şarkı çalmayı
+  çalıştırır, porte okuma diğer ünitelerde. Bekleyen modda süre ve can yoktur, ilk denemede doğru basılan adımlar
+  sayılır; hatalı bölüm yalnızca bir kez tekrar eder ki ders uzamasın. Bölüm tekrarı da puana sayılır (düzeltmek
+  ödüllendirilir); kartta "tekrarda düzeldi" yazar. Ritimli modda notalar ritim derslerindeki gibi basılı tutulur.
+  Şarkılar Do majöre taşındı, sol el ilk şarkılarda ölçü başına bir ya da iki uzun bas notasıdır (Do, Fa, Sol).
+  Türkçe halk şarkısı eklenmedi: notalarından emin olunan, telifsiz bir kaynak gerekiyor (öneri olarak soruldu).
 
 ## Açık konular
 

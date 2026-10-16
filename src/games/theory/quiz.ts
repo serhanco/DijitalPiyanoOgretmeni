@@ -43,6 +43,8 @@ export type Illustration =
   | { kind: 'durations'; beats?: boolean }
   /** A rhythm pattern ("q q h | w") on one line, counted under the notes ("1 ve 2"). */
   | { kind: 'rhythm'; pattern: string; beatsPerBar?: number }
+  /** Nota Şelalesi: notes ("E4/q") falling onto a white-key keyboard; `left` marks the left hand's notes. */
+  | { kind: 'waterfall'; low: number; high: number; notes: string; left?: string }
 
 export interface TheoryCard {
   title: string

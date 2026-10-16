@@ -96,10 +96,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                                  |
-| ------ | ------------------------------------------------------------------------------------------------------ |
-| `main` | Phases 0–8, Başlangıç, test mode, the rhythm curriculum (PR #30) and the polish PRs, live              |
-| This   | Phase 9: ear training unit 8, Kulak Dedektifi, harder Melodi Hafızası (`claude/project-thread-ytjjkw`) |
+| Branch | State                                                                                     |
+| ------ | ----------------------------------------------------------------------------------------- |
+| `main` | Phases 0–9, Başlangıç, test mode, the rhythm curriculum (PR #30) and the polish PRs, live |
+| This   | Phase 10: songs unit 9, Nota Şelalesi (`claude/project-thread-ytjjkw`)                    |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -411,7 +411,31 @@ Phase 9 (ear training and memory, `claude/project-thread-ytjjkw`, unit 8 = 24 le
   (`LessonOutcome.ear`). `SMOKE_ONLY=ear` plays Başlangıç then unit 8; layout cases `theory-ear`, `detective`,
   `detective-keys`, `song-memory`.
 
-Next: **phase 10, songs** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+Phase 10 (songs, `claude/project-thread-ytjjkw`, unit 9 = 22 lessons):
+
+- `games/songs/song.ts`: `Song` (a `Tune` whose `notes` is the right hand, plus `left`, `beatsPerBar`, `bpm`,
+  `sections` = bars per section); bars of `pitch/value` tokens, `C3+G3/h` for two keys, rests `er qr hr wr` only keep
+  time. `parseSong` (both hands sorted, every bar checked full, hands of equal length), `songPart` (one hand or both,
+  a bar range; labels keep the song's bar numbers), `concatSongs` (Konser: each song a section), `SongSpec` (songs,
+  hands, mode wait or tempo, bars), `lessonPart`. `catalog.ts`: nine songs in Do majör, all public domain.
+- `wait.ts` (**`WaitSession`**, Bekleyen mod, pure): steps = notes starting together (both hands); `update(now)` moves
+  `position` (the beat at the line) at the fall tempo and stops at the next step (`waiting`, `arrivedAt`); `press`
+  gives `hit | wrong | step | repeat | done`; playing ahead is allowed (the song catches up); a section ending with
+  mistakes falls once more (`repeats`, rewound `REPEAT_LEAD_BEATS`). Records per step and pass: wrong keys, wait
+  time, spread.
+- `tempo.ts`: `tempoPlan` = the notes as `BeatTrack` targets (bars as one `w`/`hd` each, only counted by BeatFrame).
+  `report.ts`: `waitReport` / `tempoReport` (topics per section, per hand, "İki el birlikte"; `hands`, `sync`;
+  `SessionSummary.song` with section results, repeats, a tip). Sections not reached are left out.
+- `components/Waterfall.tsx`: a canvas redrawn every frame; key positions from `keySpans` (`components/keyLayout.ts`,
+  same geometry as `PianoKeyboard`) measured against the `.keyboard` of the same `.game`, so it follows a scrolling
+  keyboard. States `pending | active | hit | off | miss | held`. `.game.song` has a definite height.
+- `SongScreen` (`kind: 'waterfall'`): `WaitSong` (own frame: Akış hızı, `.song-start`, section banner "🔁 … bir
+  daha", pending keys lit) and `TempoSong` (BeatFrame with `plan`, `report`, `holds`; 5 hearts). `window.__dpoSong`
+  (mode, song, session). Theory art `{ kind: 'waterfall' }`. Results "Şarkı" card. Badges İlk Şarkım, İki Elle
+  Şarkı, Konser Piyanisti (`LessonOutcome.song`, `songHands`). `SMOKE_ONLY=songs`; layout cases `theory-song`,
+  `waterfall-wait`, `waterfall`.
+
+Next: **phase 11, unit bosses and events** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
@@ -432,7 +456,7 @@ CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -
 
 `scripts/layout.mjs` (**layout suite**, in CI) opens one lesson of every game type (theory, drills incl. intro, wide
 keyboard and grand staff, Nota Kuşu, Balon, Nota Barmeni, melody, rhythm, Dino, Davulcu, scales incl. two octaves with
-two hands, Gam Merdiveni, both memory games, chords, Kulaktan Akor, Aşçı, Uzay, Akor Barmeni, arpeggio, Sörf) in test
+two hands, Gam Merdiveni, both memory games, chords, Kulaktan Akor, Aşçı, Uzay, Akor Barmeni, arpeggio, Sörf, Nota Şelalesi in both modes) in test
 mode on a desktop window (1366×700), a phone upright (390×844) and sideways (844×390, touch), plus the screens with a
 staff once in dark mode (`koyu`: the inverted notation must sit on a dark box), plays a little, ends it
 with "Dersi bitir" and checks the play screen, the start card and the results: nothing sticks out sideways, play area
@@ -445,7 +469,7 @@ It writes `rapor.md` / `rapor.json` and screenshots. Warnings (⚠️) and
 `KNOWN` problems (🟠, already reported) do not fail the run; remove a `KNOWN` entry when its fix lands. `LAYOUT_ONLY=space,bird`
 and `LAYOUT_VIEWPORTS=yatay` narrow a run.
 
-`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=test` checks test mode and the progress code. Look at the screenshots after UI
+`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=songs` plays Başlangıç and unit 9 (a section repeat, both hands, the Kanon tempo ladder, Konser); `SMOKE_ONLY=test` checks test mode and the progress code. Look at the screenshots after UI
 changes. Piano samples fail to load in a sandbox without network; the script ignores
 that error.
 

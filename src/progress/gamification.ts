@@ -30,6 +30,9 @@ export interface LessonOutcome {
   ear?: boolean
   /** Şarkı Hafızası: the last run (the joined phrases or the whole song) was played without a mistake. */
   songLearned?: boolean
+  /** Nota Şelalesi: the mode played and the hands. */
+  song?: 'wait' | 'tempo'
+  songHands?: 'right' | 'left' | 'both'
   /** Chord lessons: every chord played had its notes within TOGETHER_MS (at least five chords). */
   allTogether?: boolean
   /** Arcade games: no target got away (no invader landed, no dish burnt). */
@@ -50,7 +53,9 @@ export function xpFor(outcome: LessonOutcome): XpLine[] {
         ? 'İlk cevapta çözülen vakalar'
         : outcome.quiz
           ? 'İlk denemede doğru cevaplar'
-          : 'İlk denemede doğru notalar'
+          : outcome.song === 'wait'
+            ? 'Şelalede ilk denemede doğru basılanlar'
+            : 'İlk denemede doğru notalar'
   const lines: XpLine[] = [{ label, xp: outcome.firstTry * XP_PER_FIRST_TRY }]
   if (outcome.failed) return lines
   lines.push({ label: 'Ders tamamlandı', xp: XP_LESSON_COMPLETE })
@@ -291,6 +296,28 @@ export const BADGES: Badge[] = [
     description: 'Şarkı Hafızası’nda bir şarkının son dizisini hatasız, ezberden çal',
     icon: '🎶',
     earned: (c) => !c.outcome.failed && !!c.outcome.songLearned,
+  },
+  {
+    id: 'first-song',
+    title: 'İlk Şarkım',
+    description: 'Nota Şelalesi’nde bir şarkıyı baştan sona çal',
+    icon: '🌊',
+    earned: (c) => !!c.outcome.song && !c.outcome.failed && c.outcome.stars >= 1,
+  },
+  {
+    id: 'two-hand-song',
+    title: 'İki Elle Şarkı',
+    description: 'Bir şarkıyı iki elle, ritimli modda 3 yıldızla çal',
+    icon: '🙌',
+    earned: (c) =>
+      c.outcome.song === 'tempo' && c.outcome.songHands === 'both' && !c.outcome.failed && c.outcome.stars >= 3,
+  },
+  {
+    id: 'concert',
+    title: 'Konser Piyanisti',
+    description: 'Konser’i 3 yıldızla bitir',
+    icon: '🎹',
+    earned: (c) => c.outcome.lessonId === 'song-concert' && !c.outcome.failed && c.outcome.stars >= 3,
   },
 ]
 

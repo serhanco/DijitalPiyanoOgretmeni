@@ -412,6 +412,76 @@ function RhythmArt({ pattern, beatsPerBar = 4 }: Extract<Illustration, { kind: '
   )
 }
 
+const FALL_COLOUR = { right: '#5b8def', left: '#f06fa4' }
+
+/** Coloured bars falling onto the keys, each as long as its note lasts, and the yellow line where they are played. */
+function WaterfallArt({ low, high, notes, left }: Extract<Illustration, { kind: 'waterfall' }>) {
+  const W = 30
+  const KEY_H = 70
+  const BEAT = 34
+  const whites: number[] = []
+  for (let m = low; m <= high; m++) if (!isBlackKey(m)) whites.push(m)
+  const parse = (text: string | undefined, hand: 'right' | 'left') => {
+    let beat = 0
+    return (text ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .flatMap((token) => {
+        const [pitch, value] = token.split('/') as [string, keyof typeof VALUE_BEATS]
+        const at = beat
+        beat += VALUE_BEATS[value]
+        return pitch === 'r' ? [] : [{ midi: parseNote(pitch), beat: at, beats: VALUE_BEATS[value], hand }]
+      })
+  }
+  const bars = [...parse(notes, 'right'), ...parse(left, 'left')]
+  const beats = Math.max(...bars.map((b) => b.beat + b.beats))
+  const fallH = beats * BEAT + 8
+  const width = whites.length * W
+  return (
+    <svg
+      viewBox={`-2 0 ${width + 4} ${fallH + KEY_H + 4}`}
+      className="art art-waterfall"
+      role="img"
+      aria-label="Nota şelalesi"
+    >
+      <rect x={0} y={0} width={width} height={fallH} rx={6} fill="#24213d" />
+      {bars.map((b, i) => {
+        const x = whites.indexOf(b.midi) * W
+        const bottom = fallH - b.beat * BEAT
+        return (
+          <g key={i}>
+            <rect
+              x={x + 3}
+              y={bottom - b.beats * BEAT + 3}
+              width={W - 6}
+              height={b.beats * BEAT - 4}
+              rx={5}
+              fill={FALL_COLOUR[b.hand]}
+            />
+            <text x={x + W / 2} y={bottom - 6} textAnchor="middle" fontSize={11} fontWeight={800} fill="#fff">
+              {solfegeName(b.midi, false)}
+            </text>
+          </g>
+        )
+      })}
+      <rect x={0} y={fallH - 3} width={width} height={4} fill={ACCENT} />
+      {whites.map((m) => (
+        <rect
+          key={m}
+          x={whites.indexOf(m) * W}
+          y={fallH + 2}
+          width={W}
+          height={KEY_H}
+          rx={4}
+          fill="#fff"
+          stroke="#b9b9b9"
+          strokeWidth={1.5}
+        />
+      ))}
+    </svg>
+  )
+}
+
 export function TheoryArt({ art }: { art: Illustration }) {
   switch (art.kind) {
     case 'keyboard':
@@ -424,5 +494,7 @@ export function TheoryArt({ art }: { art: Illustration }) {
       return <DurationsArt {...art} />
     case 'rhythm':
       return <RhythmArt {...art} />
+    case 'waterfall':
+      return <WaterfallArt {...art} />
   }
 }
