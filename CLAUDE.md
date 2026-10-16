@@ -382,6 +382,8 @@ Rhythm curriculum (`claude/project-thread-wprkex`): the rhythm unit became two u
   the start card (`.tune-info[data-tune]`) and in the lesson description. Songs: Frère Jacques, Ah vous dirai-je
   maman, An die Freude (plain and dotted), Au clair de la lune, Mary Had a Little Lamb, Hot Cross Buns (with rests and
   with eighths), Twinkle with rests, An der schönen blauen Donau, Petzold's Minuet (3/4), London Bridge, Jingle Bells.
+- Songs with their notes (`anyKey` off) draw a pitched staff: `RhythmStaff` `pitched` shows all five lines, a treble clef
+  and every note on its pitch (`StaffEvent.midi`); rhythm-only lessons keep the one-line staff.
 - New value `w` (whole note, topic "Birlikler").
 - Progress: the thirteen old lesson ids are kept (some moved to `rhythm2`). `isUnlocked` now opens a lesson when it or
   any later lesson of its unit has a star, so lessons added in front of passed ones never lock old progress.
