@@ -173,3 +173,13 @@ describe('tempo mode', () => {
     expect(out.song!.tip).toMatch(/2\. bölüm/)
   })
 })
+
+describe('song lessons', () => {
+  it('have titles no other lesson uses (the map finds lessons by title)', async () => {
+    const { ALL_LESSONS } = await import('../../progress/curriculum')
+    const { SONG_LESSONS } = await import('./lessons')
+    const others = new Set(ALL_LESSONS.filter((l) => !SONG_LESSONS.includes(l)).map((l) => l.title))
+    expect(SONG_LESSONS.map((l) => l.title).filter((t) => others.has(t))).toEqual([])
+    expect(new Set(SONG_LESSONS.map((l) => l.title)).size).toBe(SONG_LESSONS.length)
+  })
+})

@@ -295,7 +295,7 @@ function SongCard({ song }: { song: SongSummary }) {
             <li
               key={x.label}
               data-best={(x.accuracy === best && best > worst) || undefined}
-              data-worst={(x.accuracy === worst && best > worst) || undefined}
+              data-worst={(x.accuracy === worst && best > worst && worst < 0.8) || undefined}
             >
               <span>{x.label}</span>
               <b>%{Math.round(x.accuracy * 100)}</b>
