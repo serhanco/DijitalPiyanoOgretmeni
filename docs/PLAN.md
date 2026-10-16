@@ -27,8 +27,9 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Test modu ve ilerleme kodu                    | Birleşti (PR #13) |
 | Tek oktav ekran klavyesi                      | Birleşti (PR #14) |
 | Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Birleşti (PR #30) |
-| 9 Kulak eğitimi ve hafıza                     | Bu dal            |
-| 10 ve sonrası                                 | Başlanmadı        |
+| 9 Kulak eğitimi ve hafıza                     | Birleşti (PR #31) |
+| 10 Şarkılar                                   | Bu dal            |
+| 11 ve sonrası                                 | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -213,6 +214,16 @@ ve kulaktan şarkı. Rapor: konu konu başarı (her aralık, yön, nota, akor re
 - **Kulak Dedektifi** ve gelişmiş **Melodi Hafızası**
 
 ### Faz 10 — Şarkılar
+
+Yapıldı: **Ünite 9: Şarkılar** (22 ders, Kulak Eğitimi'nden sonra). **Nota Şelalesi**: notalar klavyenin tam
+üstünden tuşlara akar (klavye kayarsa şelale de kayar), boyu süresi kadar, sağ el mavi, sol el pembe. **Bekleyen
+mod**: şelale doğru tuşlara basılana kadar durur, can yok; hatalı biten bölüm bir kez daha akar (bölüm tekrarı),
+akış hızı seçilir. **Ritimli mod**: şelale metronomla akar (BeatTrack, basılı tutma dahil), tempo seçilir
+(yavaşlatma), Kanon'da tempo merdiveni. Şarkılar (telifsiz, orijinal adı ve kökeniyle): Ufak Kuzu, Küçük Yıldız,
+Küçük Hans (Hänschen klein), Neşeye Övgü, Yankee Doodle, Azizler Yürürken (When the Saints), Pachelbel'in Kanonu,
+Çanlar Çalıyor (Jingle Bells), Petzold'un Menüeti; final **Konser** (üç şarkı art arda, iki el). Sıra: tek el, sol
+el, iki el; uzun şarkılar yarı yarıya. Rapor: bölüm bölüm ve el el başarı, iki elin birlikteliği, "Şarkı" kartı
+(tekrarlanan bölümler, öneri). Rozetler: İlk Şarkım, İki Elle Şarkı, Konser Piyanisti.
 
 - **Nota Şelalesi** ile tanıdık, telif sorunu olmayan melodiler (halk ezgileri, klasik temalar)
 - Önce tek el, sonra iki el; yavaşlatma ve bölüm tekrarı

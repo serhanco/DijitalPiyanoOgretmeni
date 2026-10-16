@@ -1,4 +1,5 @@
 import { type ChordSummary, LATE_VOICE_TEXT } from '../games/chords/report'
+import type { SongSummary } from '../games/songs/report'
 import type { EarSummary } from '../games/ear/session'
 import type { MemorySummary } from '../games/memory/engine'
 import { type NoteLesson, PATTERN_KINDS } from '../games/noteHunter/lessons'
@@ -277,6 +278,39 @@ function EarCard({ ear }: { ear: EarSummary }) {
   )
 }
 
+/** Nota Şelalesi: each section's success, the repeats it needed, and what to practise next. */
+function SongCard({ song }: { song: SongSummary }) {
+  const best = Math.max(...song.sections.map((x) => x.accuracy))
+  const worst = Math.min(...song.sections.map((x) => x.accuracy))
+  return (
+    <section className="card song-card">
+      <h2>Şarkı</h2>
+      <p>
+        🎵 <b>{song.title}</b> · {song.mode === 'wait' ? 'bekleyen mod' : 'ritimli mod'}
+        {song.repeats > 0 && ` · ${song.repeats} bölüm tekrarı`}
+      </p>
+      {song.sections.length > 1 && (
+        <ul className="song-sections">
+          {song.sections.map((x) => (
+            <li
+              key={x.label}
+              data-best={(x.accuracy === best && best > worst) || undefined}
+              data-worst={(x.accuracy === worst && best > worst && worst < 0.8) || undefined}
+            >
+              <span>{x.label}</span>
+              <b>%{Math.round(x.accuracy * 100)}</b>
+              {x.repeats > 0 && (
+                <span className="small muted">{x.fixed ? ' 🔁 tekrarda düzeldi' : ' 🔁 tekrarlandı'}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="small">💡 {song.tip}</p>
+    </section>
+  )
+}
+
 /** The longest runs remembered in Melodi Hafızası. */
 function MemoryCard({ memory }: { memory: MemorySummary }) {
   if (memory.song)
@@ -524,6 +558,7 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
       )}
       {summary.ear && <EarCard ear={summary.ear} />}
       {summary.memory && <MemoryCard memory={summary.memory} />}
+      {summary.song && <SongCard song={summary.song} />}
       {summary.tempoLadder && <TempoLadderCard ladder={summary.tempoLadder} />}
 
       {(summary.hands || summary.sync) && <HandsCard hands={summary.hands} sync={summary.sync} />}

@@ -107,6 +107,16 @@ const CASES = [
     area: '.memory-board',
     minShare: 0,
   },
+  // Nota Şelalesi: the falling notes are the play area, lined up with the keyboard below.
+  { id: 'theory-song', name: 'Şelale teori kartı', title: 'Nota Şelalesi', drive: 'theory', area: '.theory-card' },
+  {
+    id: 'waterfall-wait',
+    name: 'Nota Şelalesi (bekleyen, iki el)',
+    title: 'Neşeye Övgü: İki El',
+    drive: 'waterfall',
+    area: '.beat-field',
+  },
+  { id: 'waterfall', name: 'Nota Şelalesi (ritimli)', title: 'Azizler Yürürken', drive: 'beat', area: '.beat-field' },
 ].filter((c) => !process.env.LAYOUT_ONLY || process.env.LAYOUT_ONLY.split(',').includes(c.id))
 
 /** Smallest white key the keyboard may draw (MIN_WHITE_KEY_PX in PianoKeyboard). */
@@ -187,7 +197,7 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
   }
 
   // Start buttons (rhythm, memory, ear lessons) are on screen without scrolling.
-  for (const el of document.querySelectorAll('.beat-start, .memory-start, .ear-start')) {
+  for (const el of document.querySelectorAll('.beat-start, .memory-start, .ear-start, .song-start')) {
     if (!visible(el)) continue
     const r = el.getBoundingClientRect()
     if (r.bottom > vh + 1 || r.top < 0) errors.push(`Başla düğmesi ekranın dışında (${Math.round(r.top)} px)`)
@@ -635,6 +645,20 @@ const DRIVERS = {
       await page.waitForTimeout(200)
     }
     return [await shot(), ...extra]
+  },
+  async waterfall(page, shot) {
+    await page.waitForSelector('.song-start')
+    const checks = [await shot('hazir')]
+    await page.click('.song-start')
+    await page.waitForFunction(() => window.__dpoSong?.session?.waiting)
+    for (let i = 0; i < 4; i++) {
+      await page.waitForFunction(() => window.__dpoSong.session.waiting)
+      await press(page, await page.evaluate(() => window.__dpoSong.session.pending))
+      await page.waitForTimeout(250)
+    }
+    await page.waitForTimeout(300)
+    checks.push(await shot())
+    return checks
   },
   async beat(page, shot) {
     await page.waitForSelector('.beat-start')

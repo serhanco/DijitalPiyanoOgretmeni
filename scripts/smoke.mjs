@@ -1025,6 +1025,112 @@ async function earUnit() {
   await page.screenshot({ path: `${out}/map-ear.png`, fullPage: true })
 }
 
+/**
+ * Nota Şelalesi in the waiting mode: press the keys of each step. With `wait` the
+ * script waits for the notes to reach the line; otherwise it plays ahead (allowed).
+ * `wrongAt` presses a wrong key at that step the first time, so its section falls again.
+ */
+async function playWaterfall(lessonTitle, shotName, { wait = false, wrongAt = -1, shotAt = 6 } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click({ force: true })
+  await page.waitForSelector('.song-start')
+  if (shotName) await page.screenshot({ path: `${out}/${shotName}-ready.png` })
+  for (let i = 0; i < 4 && (await page.getByLabel('Hızlandır').isEnabled()); i++)
+    await page.getByLabel('Hızlandır').click()
+  await page.click('.song-start')
+  await page.waitForFunction(() => window.__dpoSong?.session)
+  for (let i = 0; i < 400 && !(await page.$('.results')); i++) {
+    const st = await page.evaluate(() => {
+      const s = window.__dpoSong.session
+      return s.done ? null : { step: s.index, waiting: s.waiting, pending: s.pending, records: s.records.length }
+    })
+    if (!st) break
+    if (wait && !st.waiting) {
+      await page.waitForTimeout(60)
+      continue
+    }
+    if (st.records === wrongAt) {
+      wrongAt = -1
+      const wrong = st.pending[0] + 1
+      await pressTogether([wrong], 0, 60)
+      if (shotName) await page.screenshot({ path: `${out}/${shotName}-wrong.png` })
+    }
+    if (shotName && st.records === shotAt) await page.screenshot({ path: `${out}/${shotName}.png` })
+    await pressTogether(st.pending, 15, 60)
+  }
+  await page.waitForSelector('.results', { timeout: 5000 })
+  await page.waitForTimeout(800)
+}
+
+async function songsUnit() {
+  const done = async (shot) => {
+    await dismissOverlay()
+    if (shot) await page.screenshot({ path: `${out}/${shot}.png`, fullPage: true })
+    await page.getByText('Derslere dön').click()
+    await page.waitForTimeout(300)
+  }
+  const expectText = async (sel, re, what) => {
+    const text = (await page.textContent(sel).catch(() => '')) ?? ''
+    if (!re.test(text)) errors.push(`${what}: ${text.slice(0, 200)}`)
+  }
+  await playTheory('Nota Şelalesi', 'theory-song', { shots: [0, 2], quizShot: 1 })
+  await done()
+  await playWaterfall('Ufak Kuzu: Öğren', 'song-wait', { wait: true, wrongAt: 3 })
+  await expectText('.song-card', /1 bölüm tekrarı.*tekrarda düzeldi/s, 'Section repeat in the song card')
+  await expectText('.results', /İlk Şarkım/, 'İlk Şarkım badge')
+  await done('results-song-wait')
+  await playBeat('Ufak Kuzu: Ritimli', 'song-tempo', { faster: 4 })
+  await expectText('.song-card', /ritimli mod/, 'Tempo song card')
+  await done('results-song-tempo')
+  await playWaterfall('Küçük Yıldız: Öğren', '')
+  await done()
+  await playBeat('Küçük Yıldız: Ritimli', '', { faster: 4 })
+  await done()
+  await playWaterfall('Küçük Hans: Öğren', '')
+  await done()
+  await playBeat('Küçük Hans: Ritimli', '', { faster: 4 })
+  await done()
+  await playBeat('Neşeye Övgü: Sağ El', '', { faster: 4 })
+  await done()
+  await playWaterfall('Neşeye Övgü: Sol El', 'song-left', { wait: true })
+  await done()
+  await playWaterfall('Neşeye Övgü: İki El', 'song-both-wait', { wrongAt: 5 })
+  await expectText('.results', /İki el birlikte/, 'Two-hand topic')
+  await done('results-song-both-wait')
+  await playBeat('Neşeye Övgü: İki El Ritimli', 'song-both-tempo', { faster: 4 })
+  await expectText('.results', /İki Elle Şarkı/, 'İki Elle Şarkı badge')
+  await done('results-song-both-tempo')
+  await playBeat('Yankee Doodle: Sağ El', '', { faster: 4 })
+  await done()
+  await playWaterfall('Yankee Doodle: İki El', '')
+  await done()
+  await playWaterfall('Azizler Yürürken: 1. Yarı', '')
+  await done()
+  await playWaterfall('Azizler Yürürken: 2. Yarı', '')
+  await expectText('.song-card', /ölçü 9–12/, 'Second half keeps the song’s bar numbers')
+  await done()
+  await playBeat('Azizler Yürürken', 'song-saints', { faster: 4 })
+  await done()
+  await playBeat('Kanon: Bas', '', { faster: 4 })
+  await done()
+  const rounds = await playBeat('Kanon', 'song-canon', { faster: 4 })
+  if (rounds !== 3) errors.push(`Kanon tempo ladder played ${rounds} rounds instead of 3`)
+  await done()
+  await playWaterfall('Çanlar Çalıyor: Öğren', '')
+  await done()
+  await playBeat('Çanlar Çalıyor: Ritimli', '', { faster: 4 })
+  await done()
+  await playWaterfall('Menüet: Öğren', 'song-minuet')
+  await done()
+  await playBeat('Menüet: Ritimli', '', { faster: 4 })
+  await done()
+  await playBeat('Konser', 'song-concert', { faster: 8, shotAt: 0.2 })
+  await expectText('.song-card', /Azizler Yürürken/, 'Concert sections')
+  await expectText('.results', /Konser Piyanisti/, 'Konser Piyanisti badge')
+  await done('results-song-concert')
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${out}/map-songs.png`, fullPage: true })
+}
+
 async function finish() {
   await browser.close()
   if (errors.length) {
@@ -1069,6 +1175,15 @@ if (process.env.SMOKE_ONLY === 'ear') {
   await earUnit()
   await finish()
   console.log(`Smoke test (ear) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
+// SMOKE_ONLY=songs plays Başlangıç (it opens the other units), then unit 9.
+if (process.env.SMOKE_ONLY === 'songs') {
+  await page.waitForTimeout(800)
+  await basicsUnit()
+  await songsUnit()
+  await finish()
+  console.log(`Smoke test (songs) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
 // SMOKE_ONLY=basics plays only the Başlangıç unit.
@@ -1316,6 +1431,7 @@ await page
 
 await chordsUnit()
 await earUnit()
+await songsUnit()
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.
 await page.locator('.calib-tip').click()

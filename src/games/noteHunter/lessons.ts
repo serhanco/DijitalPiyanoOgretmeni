@@ -7,6 +7,7 @@ import type { ChordSpec } from '../chords/lessons'
 import type { EarSpec } from '../ear/session'
 import type { MemorySpec } from '../memory/engine'
 import type { ScalePart } from '../scales/steps'
+import type { SongSpec } from '../songs/song'
 import type { TheorySpec } from '../theory/quiz'
 import { withKeyboards } from './keyboard'
 
@@ -34,6 +35,7 @@ export type LessonKind =
   | 'arpeggio'
   | 'surf'
   | 'ear'
+  | 'waterfall'
 
 /** Kinds played against a metronome. */
 export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'surf']
@@ -43,6 +45,7 @@ export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'su
  * that are judged per chord: kept out of the note-reading statistics.
  */
 export const PATTERN_KINDS: LessonKind[] = [
+  'waterfall',
   'theory',
   'scale',
   'ladder',
@@ -108,6 +111,8 @@ export interface NoteLesson {
   arpeggios?: ArpeggioPart[]
   /** Kulak Dedektifi: the cases to solve by ear. */
   ear?: EarSpec
+  /** Nota Şelalesi: the song, the hands and the mode. Rhythm mode also has `rhythm` (tempo, metronome). */
+  song?: SongSpec
   /** Theory lessons: the explanation cards and the quiz. */
   theory?: TheorySpec
   /** Drill: new notes shown one by one (staff, key, where it sits) before the drill starts. */

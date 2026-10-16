@@ -23,6 +23,7 @@ const MelodyScreen = lazy(() => import('./screens/MelodyScreen').then((m) => ({ 
 const ChordScreen = lazy(() => import('./screens/ChordScreen').then((m) => ({ default: m.ChordScreen })))
 const TheoryScreen = lazy(() => import('./screens/TheoryScreen').then((m) => ({ default: m.TheoryScreen })))
 const EarScreen = lazy(() => import('./screens/EarScreen').then((m) => ({ default: m.EarScreen })))
+const SongScreen = lazy(() => import('./screens/SongScreen').then((m) => ({ default: m.SongScreen })))
 const MemoryScreen = lazy(() => import('./screens/MemoryScreen').then((m) => ({ default: m.MemoryScreen })))
 const ArcadeScreen = lazy(() => import('./screens/ArcadeScreen').then((m) => ({ default: m.ArcadeScreen })))
 const ChordArcadeScreen = lazy(() =>
@@ -83,6 +84,8 @@ export default function App() {
       quiz: summary.quiz !== undefined,
       ear: summary.ear !== undefined,
       songLearned: !!summary.memory?.song?.lastClean,
+      song: summary.song?.mode,
+      songHands: summary.song?.hands,
       allTogether: !!summary.chords && summary.chords.played >= 5 && summary.chords.together === summary.chords.played,
       noneMissed: !!summary.chords && summary.chords.played === summary.total,
       tempoRaised: !!summary.tempoLadder?.raisedTo,
@@ -187,6 +190,13 @@ export default function App() {
             />
           ) : screen.lesson.kind === 'ear' ? (
             <EarScreen
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
+          ) : screen.lesson.kind === 'waterfall' ? (
+            <SongScreen
               key={screen.run}
               lesson={screen.lesson}
               onFinish={finish(screen.lesson)}

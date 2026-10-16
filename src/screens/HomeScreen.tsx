@@ -70,6 +70,7 @@ const KIND_ICON: Record<LessonKind, string> = {
   arpeggio: '〰️',
   surf: '🏄',
   ear: '🔍',
+  waterfall: '🌊',
 }
 
 export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {

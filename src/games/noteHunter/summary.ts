@@ -16,6 +16,7 @@ import type { ChordSummary } from '../chords/report'
 import type { EarSummary } from '../ear/session'
 import type { MemorySummary } from '../memory/engine'
 import type { ScaleSummary } from '../scales/steps'
+import type { SongSummary } from '../songs/report'
 import { firstTryOk, type PromptRecord } from './session'
 
 export interface NoteStat {
@@ -70,6 +71,8 @@ export interface SessionSummary {
   chords?: ChordSummary
   /** Kulak Dedektifi: cases solved, replays and the answers most often confused. */
   ear?: EarSummary
+  /** Nota Şelalesi: success per section, repeats and what to practise next. */
+  song?: SongSummary
   /** Theory quizzes: the explanations of the questions missed on the first try. */
   quiz?: { missed: string[] }
   /** Written names of black keys when they differ from the sharp name (Si♭, not La#). */
