@@ -2,6 +2,7 @@
 // Questions are answered by tapping a choice or by pressing a key; the first
 // answer counts, a wrong one shows the explanation and the player tries again.
 
+import type { SoundPart } from '../../audio/earSound'
 import { pitchClass } from '../../music/notes'
 import { type CategoryStat, type SessionSummary, starsFor } from '../noteHunter/summary'
 
@@ -47,6 +48,8 @@ export interface TheoryCard {
   title: string
   text: string
   art?: Illustration
+  /** Played by the card's "Dinle" button: parts in turn (ear lessons). */
+  sound?: SoundPart[]
 }
 
 interface BaseQuestion {
@@ -54,6 +57,8 @@ interface BaseQuestion {
   topic: string
   prompt: string
   art?: Illustration
+  /** Played when the question opens and by its "Dinle" button. */
+  sound?: SoundPart[]
   /** Shown after a wrong answer, and in the report for missed questions. */
   explain: string
 }

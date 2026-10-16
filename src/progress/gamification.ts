@@ -26,6 +26,10 @@ export interface LessonOutcome {
   quiz?: boolean
   /** Chord lessons: `firstTry` counts chords. */
   chords?: boolean
+  /** Kulak Dedektifi: `firstTry` counts cases solved at the first answer. */
+  ear?: boolean
+  /** Şarkı Hafızası: the last run (the joined phrases or the whole song) was played without a mistake. */
+  songLearned?: boolean
   /** Chord lessons: every chord played had its notes within TOGETHER_MS (at least five chords). */
   allTogether?: boolean
   /** Arcade games: no target got away (no invader landed, no dish burnt). */
@@ -42,9 +46,11 @@ export function xpFor(outcome: LessonOutcome): XpLine[] {
     ? 'Vuruşunda çalınan notalar'
     : outcome.chords
       ? 'İlk denemede doğru akorlar'
-      : outcome.quiz
-        ? 'İlk denemede doğru cevaplar'
-        : 'İlk denemede doğru notalar'
+      : outcome.ear
+        ? 'İlk cevapta çözülen vakalar'
+        : outcome.quiz
+          ? 'İlk denemede doğru cevaplar'
+          : 'İlk denemede doğru notalar'
   const lines: XpLine[] = [{ label, xp: outcome.firstTry * XP_PER_FIRST_TRY }]
   if (outcome.failed) return lines
   lines.push({ label: 'Ders tamamlandı', xp: XP_LESSON_COMPLETE })
@@ -264,6 +270,27 @@ export const BADGES: Badge[] = [
     description: 'Gamlar ünitesindeki tüm dersleri 3 yıldızla bitir',
     icon: '🏆',
     earned: (c) => !!c.allScaleLessonIds?.length && c.allScaleLessonIds.every((id) => c.threeStarLessons.includes(id)),
+  },
+  {
+    id: 'sharp-ear',
+    title: 'Keskin Kulak',
+    description: 'Bir aralık dersini 3 yıldızla bitir',
+    icon: '👂',
+    earned: (c) => c.outcome.lessonId.startsWith('ear-int') && !c.outcome.failed && c.outcome.stars >= 3,
+  },
+  {
+    id: 'detective',
+    title: 'Baş Dedektif',
+    description: 'Büyük Vaka’yı 3 yıldızla çöz',
+    icon: '🕵️',
+    earned: (c) => c.outcome.lessonId === 'ear-final' && !c.outcome.failed && c.outcome.stars >= 3,
+  },
+  {
+    id: 'song-memory',
+    title: 'Şarkı Hafızası',
+    description: 'Şarkı Hafızası’nda bir şarkının son dizisini hatasız, ezberden çal',
+    icon: '🎶',
+    earned: (c) => !c.outcome.failed && !!c.outcome.songLearned,
   },
 ]
 

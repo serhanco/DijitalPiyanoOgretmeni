@@ -1,4 +1,5 @@
 import { type ChordSummary, LATE_VOICE_TEXT } from '../games/chords/report'
+import type { EarSummary } from '../games/ear/session'
 import type { MemorySummary } from '../games/memory/engine'
 import { type NoteLesson, PATTERN_KINDS } from '../games/noteHunter/lessons'
 import type { ScaleSummary } from '../games/scales/steps'
@@ -250,8 +251,48 @@ function TempoLadderCard({ ladder }: { ladder: TempoLadderSummary }) {
   )
 }
 
+/** Kulak Dedektifi: cases solved, replays, and the answers most often confused, with advice. */
+function EarCard({ ear }: { ear: EarSummary }) {
+  return (
+    <section className="card ear-card">
+      <h2>Kulak</h2>
+      <p>
+        Çözülen vaka: <b>{ear.solved}</b> / {ear.cases} · Tekrar dinleme: <b>{ear.replays}</b>
+      </p>
+      {ear.confusions.length > 0 ? (
+        <>
+          <p className="small muted">En çok karıştırdıkların:</p>
+          <ul>
+            {ear.confusions.map((c, i) => (
+              <li key={`${c.answer}|${c.chosen}`}>
+                <b>{c.answer}</b> sesini {c.count} kez <b>{c.chosen}</b> sandın. {ear.tips[i]}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p>Hiçbir sesi karıştırmadın. 🎧</p>
+      )}
+    </section>
+  )
+}
+
 /** The longest runs remembered in Melodi Hafızası. */
 function MemoryCard({ memory }: { memory: MemorySummary }) {
+  if (memory.song)
+    return (
+      <section className="card memory-card">
+        <h2>Şarkı Hafızası</h2>
+        <p>
+          🎼 <b>{memory.song.title}</b>: {memory.song.runs} dizinin <b>{memory.song.clean}</b> tanesini hatasız çaldın.
+        </p>
+        <p>
+          {memory.song.lastClean
+            ? `Son dizi (${memory.song.lastLabel.toLocaleLowerCase('tr')}) hatasız: şarkı ezberinde! 🎉`
+            : `Son dizi (${memory.song.lastLabel.toLocaleLowerCase('tr')}) henüz hatasız değil; bir tur daha dene.`}
+        </p>
+      </section>
+    )
   return (
     <section className="card memory-card">
       <h2>Hafıza</h2>
@@ -481,6 +522,7 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
       {summary.scale && (
         <ScaleCard scale={summary.scale} arpeggio={lesson.kind === 'arpeggio' || lesson.kind === 'surf'} />
       )}
+      {summary.ear && <EarCard ear={summary.ear} />}
       {summary.memory && <MemoryCard memory={summary.memory} />}
       {summary.tempoLadder && <TempoLadderCard ladder={summary.tempoLadder} />}
 

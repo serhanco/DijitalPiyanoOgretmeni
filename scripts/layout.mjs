@@ -74,6 +74,39 @@ const CASES = [
   { id: 'chordbar', name: 'Akor Barmeni', title: 'Akor Barmeni', drive: 'chordArcade', area: '.pixi-stage' },
   { id: 'arpeggio', name: 'Arpej', title: 'Arpejler', drive: 'melody', area: '.melody-wrap' },
   { id: 'surf', name: 'Arpej Sörfü', title: 'Arpej Sörfü', drive: 'beat', area: '.beat-field' },
+  // Kulak Dedektifi: answered on buttons (no keyboard) or on the keys.
+  {
+    id: 'theory-ear',
+    name: 'Kulak teori kartı',
+    title: 'Aralıklar ve Şarkıları',
+    drive: 'theory',
+    area: '.theory-card',
+  },
+  {
+    id: 'detective',
+    name: 'Kulak Dedektifi (seçenekli)',
+    title: 'Bütün Aralıklar',
+    drive: 'detective',
+    area: '.ear-case',
+    minShare: 0,
+    keyboard: false,
+  },
+  {
+    id: 'detective-keys',
+    name: 'Kulak Dedektifi (klavyeli)',
+    title: 'Dedektif: Bütün Oktav',
+    drive: 'detective',
+    area: '.ear-case',
+    minShare: 0,
+  },
+  {
+    id: 'song-memory',
+    name: 'Şarkı Hafızası',
+    title: 'Şarkı Hafızası: Neşeye Övgü',
+    drive: 'memory',
+    area: '.memory-board',
+    minShare: 0,
+  },
 ].filter((c) => !process.env.LAYOUT_ONLY || process.env.LAYOUT_ONLY.split(',').includes(c.id))
 
 /** Smallest white key the keyboard may draw (MIN_WHITE_KEY_PX in PianoKeyboard). */
@@ -154,7 +187,7 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
   }
 
   // Start buttons (rhythm, memory, ear lessons) are on screen without scrolling.
-  for (const el of document.querySelectorAll('.beat-start, .memory-start')) {
+  for (const el of document.querySelectorAll('.beat-start, .memory-start, .ear-start')) {
     if (!visible(el)) continue
     const r = el.getBoundingClientRect()
     if (r.bottom > vh + 1 || r.top < 0) errors.push(`Başla düğmesi ekranın dışında (${Math.round(r.top)} px)`)
@@ -521,6 +554,26 @@ const DRIVERS = {
     checks.push(await shot())
     return checks
   },
+  async detective(page, shot) {
+    const checks = [await shot('hazir')]
+    await page.click('.ear-start')
+    const answer = async (wrong = false) => {
+      await page.waitForFunction(() => window.__dpoEar?.heard(), null, { timeout: 15000 })
+      const { id, keys, options } = await page.evaluate(() => {
+        const p = window.__dpoEar.session.current
+        return { id: p.answer, keys: !p.options, options: p.options?.map((o) => o.id) ?? [] }
+      })
+      const pick = wrong ? (keys ? String(Number(id) === 60 ? 62 : 60) : options.find((o) => o !== id)) : id
+      await page.click(keys ? `.key[data-midi="${pick}"]` : `[data-option="${pick}"]`)
+    }
+    await answer()
+    await page.waitForTimeout(400)
+    checks.push(await shot('cozuldu'))
+    await answer(true)
+    await page.waitForTimeout(500)
+    checks.push(await shot())
+    return checks
+  },
   async memory(page, shot) {
     const checks = [await shot('hazir')]
     await page.click('.memory-start')
@@ -717,7 +770,7 @@ async function runViewport(vp) {
         // Before the lesson starts (ready cards) only the page itself is checked.
         const play = suffix !== 'hazir'
         // Theory cards have no keyboard; the quiz has one only for "press the key" questions.
-        const keyboard = c.drive !== 'theory'
+        const keyboard = c.keyboard ?? c.drive !== 'theory'
         const minShare = c.minShare ?? MIN_AREA_SHARE
         return { ...(await check(file, { area, play, keyboard, minShare })), shot: `${vp.id}-${file}.png` }
       }

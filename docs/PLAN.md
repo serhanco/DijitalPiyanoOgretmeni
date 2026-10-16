@@ -24,10 +24,11 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | Birleşti (PR #12) |
 | Başlangıç ünitesi (teori, notalar ikişer)     | Birleşti (PR #15) |
 | Başlangıç önerileri (kilit, fa, okuma, ses)   | Birleşti (PR #16) |
-| Test modu ve ilerleme kodu                    | PR #13            |
-| Tek oktav ekran klavyesi                      | Bu dal            |
-| Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Bu dal            |
-| 9 ve sonrası                                  | Başlanmadı        |
+| Test modu ve ilerleme kodu                    | Birleşti (PR #13) |
+| Tek oktav ekran klavyesi                      | Birleşti (PR #14) |
+| Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Birleşti (PR #30) |
+| 9 Kulak eğitimi ve hafıza                     | Bu dal            |
+| 10 ve sonrası                                 | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -197,6 +198,16 @@ kök nota yanar, öğrenci majör, minör ya da yedili olduğunu kulağıyla bul
 - **Uzay Savunması**, **Akor Aşçısı**, **Arpej Sörfü**
 
 ### Faz 9 — Kulak eğitimi ve hafıza
+
+Yapıldı: **Ünite 8: Kulak Eğitimi** (24 ders, Akorlar'dan sonra). **Kulak Dedektifi**: Notiş dedektif şapkası ve
+büyüteçle; her soru bir vaka (yön: yükseldi mi alçaldı mı; referans Do'dan sonra gizli notayı bulma; aralığı adlandırma
+çıkan, inen ve aynı anda; ilk nota verilip ikincisini klavyede bulma; akor rengi: majör, minör, eksik, artık, üç
+yedili). Yanlış cevapta önce seçilen, sonra doğru ses çalınır; "Tekrar dinle" serbest ama raporda sayılır. Her aralık
+telifsiz bir şarkının başıyla öğretilir (Frère Jacques, Für Elise, Greensleeves, When the Saints, Wagner'in Gelin
+Korosu, Küçük Yıldız, My Bonnie, Danse macabre). Gelişmiş **Melodi Hafızası**: akor notalarıyla atlamalı diziler,
+tersten çalma, şarkıları cümle cümle ezberleme (iki cümle ayrı ayrı, sonra birlikte, kısa şarkılarda en sonda bütünü)
+ve kulaktan şarkı. Rapor: konu konu başarı (her aralık, yön, nota, akor rengi), en çok karıştırılan çiftler ve
+önerileri. Rozetler: Keskin Kulak, Baş Dedektif, Şarkı Hafızası.
 
 - Nota, aralık ve akor türü tanıma
 - **Kulak Dedektifi** ve gelişmiş **Melodi Hafızası**

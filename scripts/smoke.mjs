@@ -206,7 +206,7 @@ async function playMemory(lessonTitle, shotName, { wrongInRound = -1 } = {}) {
   await page.click('.memory-start')
   let round = 0
   let shot = false
-  for (let i = 0; i < 400 && !(await page.$('.results')); i++) {
+  for (let i = 0; i < 1500 && !(await page.$('.results')); i++) {
     const state = await page.evaluate(() => {
       const g = window.__dpoMemory
       return g ? { phase: g.phase, expected: g.expected, length: g.length, played: g.played } : null
@@ -909,6 +909,122 @@ async function basicsUnit() {
   await page.screenshot({ path: `${out}/map-basics.png`, fullPage: true })
 }
 
+/**
+ * Play a Kulak Dedektifi lesson from window.__dpoEar: wait until each case has been heard,
+ * then answer it on its button or key. `wrongAt` answers that case wrong once first.
+ */
+async function playEar(lessonTitle, shotName, { wrongAt = -1, shotAt = 1 } = {}) {
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await page.click('.ear-start')
+  for (let i = 0; i < 60 && !(await page.$('.results')); i++) {
+    await page.waitForFunction(() => window.__dpoEar?.heard() || document.querySelector('.results'), null, {
+      timeout: 15000,
+    })
+    if (await page.$('.results')) break
+    const c = await page.evaluate(() => {
+      const s = window.__dpoEar.session
+      const p = s.current
+      return {
+        index: s.position,
+        answer: p.answer,
+        shown: String(p.shown),
+        keys: !p.options,
+        options: p.options?.map((o) => o.id) ?? [],
+      }
+    })
+    const click = (id) => page.click(c.keys ? `.key[data-midi="${id}"]` : `[data-option="${id}"]`)
+    if (c.index === wrongAt) {
+      const keys = await page.$$eval('.key.white', (els) => els.map((e) => e.dataset.midi))
+      await click(c.keys ? keys.find((k) => k !== c.answer && k !== c.shown) : c.options.find((o) => o !== c.answer))
+      // The chosen answer and the right one are played: wait for the contrast to finish.
+      await page.waitForTimeout(400)
+      if (shotName) await page.screenshot({ path: `${out}/${shotName}-wrong.png` })
+      await page.waitForFunction(() => !document.querySelector('.listen-btn[disabled]'), null, { timeout: 15000 })
+    }
+    await click(c.answer)
+    if (shotName && c.index === shotAt) {
+      await page.waitForTimeout(250)
+      await page.screenshot({ path: `${out}/${shotName}.png` })
+    }
+    await page.waitForTimeout(200)
+  }
+  await page.waitForSelector('.results', { timeout: 5000 })
+  await page.waitForTimeout(800)
+}
+
+/** Unit 8: ear training. Every lesson in turn, some with a mistake, and checks on the reports. */
+async function earUnit() {
+  const done = async (shot) => {
+    await dismissOverlay()
+    if (shot) await page.screenshot({ path: `${out}/${shot}.png`, fullPage: true })
+    await page.getByText('Derslere dön').click()
+    await page.waitForTimeout(300)
+  }
+  const expectText = async (sel, re, what) => {
+    const text = (await page.textContent(sel).catch(() => '')) ?? ''
+    if (!re.test(text)) errors.push(`${what}: ${text.slice(0, 200)}`)
+  }
+  await playTheory('Kulağa Giriş', 'theory-ear', { shots: [1, 3], quizShot: 2 })
+  await done()
+  await playEar('Yüksek mi Alçak mı?', 'ear-direction')
+  await done()
+  await playEar('Dedektif: Do ve Sol', 'ear-pitch', { wrongAt: 2 })
+  await expectText('.ear-card', /sandın/, 'Ear card shows no confusion')
+  await done('results-ear-pitch')
+  await playEar('Dedektif: Do, Mi, Sol')
+  await done()
+  await playMemory('Atlamalı Hafıza', 'memory-leaps')
+  await expectText('.results', /akor notasına sıçrama/, 'Leap memory report')
+  await done()
+  await playEar('Dedektif: Do Pozisyonu')
+  await done()
+  await playEar('Dedektif: Bütün Oktav', 'ear-pitch-octave', { shotAt: 4 })
+  await done()
+  await playMemory('Şarkı Hafızası: Küçük Yıldız', 'memory-song', { wrongInRound: 2 })
+  await expectText('.memory-card', /Küçük Yıldız.*3 dizinin 2 tanesini/s, 'Song memory card')
+  await done('results-memory-song')
+  await playTheory('Aralıklar ve Şarkıları', 'theory-intervals', { shots: [1, 2, 5], wrongAt: 0 })
+  await done()
+  await playEar('İkili mi Üçlü mü?', 'ear-interval')
+  await done()
+  await playEar('Büyük mü Küçük mü?', '', { wrongAt: 0 })
+  await expectText('.ear-card', /şarkısının başıyla hatırla/, 'Interval tip')
+  await done('results-ear-interval')
+  await playEar('Dörtlü, Beşli, Oktav')
+  await done()
+  await playEar('Aralık Avı', 'ear-sing', { wrongAt: 1 })
+  await expectText('.ear-card', /sandın/, 'Aralık Avı counts the wrong key')
+  await done()
+  await playMemory('Şarkı Hafızası: Neşeye Övgü', 'memory-song-ode')
+  await expectText('.memory-card', /şarkı ezberinde/, 'Ode memory card')
+  await done()
+  await playEar('İnen Aralıklar')
+  await done()
+  await playEar('Aynı Anda', 'ear-together')
+  await done()
+  await playEar('Bütün Aralıklar', 'ear-all')
+  await done()
+  await playMemory('Ters Hafıza', 'memory-reverse', { wrongInRound: 1 })
+  await expectText('.results', /Tersten çalma/, 'Reverse memory report')
+  await done()
+  await playTheory('Akorların Renkleri', 'theory-chord-colours', { shots: [4] })
+  await done()
+  await playEar('Majör mü Minör mü?', 'ear-chord', { wrongAt: 3 })
+  await expectText('.ear-card', /Majör|Minör/, 'Chord colour confusion')
+  await done('results-ear-chord')
+  await playEar('Eksik ve Artık')
+  await done()
+  await playEar('Yedili Akorlar', 'ear-sevenths')
+  await done()
+  await playMemory('Kulaktan Şarkı: Ufak Kuzu', 'memory-song-ear')
+  await done()
+  await playEar('Büyük Vaka', 'ear-final', { shotAt: 6 })
+  await expectText('.results', /Baş Dedektif/, 'Baş Dedektif badge')
+  await done('results-ear-final')
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${out}/map-ear.png`, fullPage: true })
+}
+
 async function finish() {
   await browser.close()
   if (errors.length) {
@@ -944,6 +1060,15 @@ if (process.env.SMOKE_ONLY === 'rhythm') {
   await rhythmUnits()
   await finish()
   console.log(`Smoke test (rhythm) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
+// SMOKE_ONLY=ear plays Başlangıç (it opens the other units), then unit 8.
+if (process.env.SMOKE_ONLY === 'ear') {
+  await page.waitForTimeout(800)
+  await basicsUnit()
+  await earUnit()
+  await finish()
+  console.log(`Smoke test (ear) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
 // SMOKE_ONLY=basics plays only the Başlangıç unit.
@@ -1190,6 +1315,7 @@ await page
   .screenshot({ path: `${out}/map-scales.png` })
 
 await chordsUnit()
+await earUnit()
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.
 await page.locator('.calib-tip').click()

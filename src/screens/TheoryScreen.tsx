@@ -1,5 +1,7 @@
 import { useFinishRequest } from '../testing/finishRequest'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { playParts, type SoundPart } from '../audio/earSound'
+import { initPiano } from '../audio/piano'
 import { sfx } from '../audio/sfx'
 import { canSpeak, speak, stopSpeaking } from '../audio/speech'
 import { Mascot, type MascotMood } from '../components/Mascot'
@@ -60,6 +62,7 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
   const [solved, setSolved] = useState(false)
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
   const timers = useRef<number[]>([])
+  const stopSound = useRef<(() => void) | null>(null)
   const onFinishRef = useRef(onFinish)
   useEffect(() => {
     onFinishRef.current = onFinish
@@ -90,9 +93,27 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
     () => () => {
       timers.current.forEach(clearTimeout)
       stopSpeaking()
+      stopSound.current?.()
     },
     [],
   )
+
+  /** The "Dinle" button of a card or question with a sound (ear lessons). */
+  const listen = (parts: SoundPart[]) => {
+    void initPiano().catch(() => undefined)
+    stopSound.current?.()
+    stopSound.current = playParts(parts).cancel
+  }
+  // A question with a sound plays it as it opens (the tap that opened it unlocked the audio).
+  const questionSound = phase === 'quiz' ? spec.questions[question].sound : undefined
+  useEffect(() => {
+    if (!questionSound) return
+    const t = window.setTimeout(() => {
+      stopSound.current?.()
+      stopSound.current = playParts(questionSound).cancel
+    }, 300)
+    return () => clearTimeout(t)
+  }, [questionSound])
 
   // What the 🔊 button (and the narration setting) reads: the card, or the question.
   const spoken =
@@ -180,6 +201,11 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
             )}
           </div>
           {c.art && <TheoryArt art={c.art} />}
+          {c.sound && (
+            <button className="btn btn-secondary listen-btn" onClick={() => listen(c.sound!)}>
+              🔊 Dinle
+            </button>
+          )}
           <p className="theory-text">{c.text}</p>
           <div className="actions">
             {card > 0 && (
@@ -207,6 +233,11 @@ export function TheoryScreen({ lesson, onFinish, onExit }: Props) {
             )}
           </div>
           {q.art && <TheoryArt art={q.art} />}
+          {q.sound && (
+            <button className="btn btn-secondary listen-btn" onClick={() => listen(q.sound!)}>
+              🔊 Tekrar dinle
+            </button>
+          )}
           {q.type === 'choice' && (
             <div className="quiz-options">
               {orders[question].map((i) => (
