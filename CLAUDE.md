@@ -96,12 +96,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                              |
-| ------ | -------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–8, the polish round and phase 7 improvements (PRs #1–#11), live on GitHub Pages           |
-| PR #12 | Phase 8 extras: Akor Barmeni, chords by ear (unit 6 now 24 lessons)                                |
-| PR #13 | Test mode and the progress code                                                                    |
-| This   | Rhythm curriculum: two units, patterns easy to hard, Yankı, songs (`claude/project-thread-wprkex`) |
+| Branch | State                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------ |
+| `main` | Phases 0–8, Başlangıç, test mode, the rhythm curriculum (PR #30) and the polish PRs, live              |
+| This   | Phase 9: ear training unit 8, Kulak Dedektifi, harder Melodi Hafızası (`claude/project-thread-ytjjkw`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 

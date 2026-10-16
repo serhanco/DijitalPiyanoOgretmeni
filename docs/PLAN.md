@@ -24,9 +24,9 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | Birleşti (PR #12) |
 | Başlangıç ünitesi (teori, notalar ikişer)     | Birleşti (PR #15) |
 | Başlangıç önerileri (kilit, fa, okuma, ses)   | Birleşti (PR #16) |
-| Test modu ve ilerleme kodu                    | PR #13            |
-| Tek oktav ekran klavyesi                      | Bu dal            |
-| Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Bu dal            |
+| Test modu ve ilerleme kodu                    | Birleşti (PR #13) |
+| Tek oktav ekran klavyesi                      | Birleşti (PR #14) |
+| Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Birleşti (PR #30) |
 | 9 Kulak eğitimi ve hafıza                     | Bu dal            |
 | 10 ve sonrası                                 | Başlanmadı        |
 
