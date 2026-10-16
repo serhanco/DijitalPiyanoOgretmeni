@@ -1218,6 +1218,29 @@ button.chip {
   flex-direction: column;
   gap: 10px;
 }
+.tune-info {
+  flex-basis: 100%;
+}
+.tune-info p {
+  margin: 0;
+}
+.tune-info i {
+  color: #a560e8;
+}
+.echo-turn {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  animation: pop 0.3s ease-out;
+}
+.echo-turn.listen {
+  background: #1cb0f622;
+  color: #1899d6;
+}
+.echo-turn.play {
+  background: #58cc0222;
+  color: #46a302;
+}
 .tempo-row {
   display: flex;
   align-items: center;

@@ -22,7 +22,7 @@ const VIEWPORTS = [
     name: 'Masaüstü koyu tema',
     viewport: { width: 1366, height: 700 },
     dark: true,
-    cases: ['theory', 'intro', 'grand', 'melody', 'rhythm', 'scale', 'chord', 'arpeggio'],
+    cases: ['theory', 'intro', 'grand', 'melody', 'rhythm', 'song', 'scale', 'chord', 'arpeggio'],
   },
 ].filter((v) => !process.env.LAYOUT_VIEWPORTS || process.env.LAYOUT_VIEWPORTS.split(',').includes(v.id))
 
@@ -42,6 +42,9 @@ const CASES = [
   { id: 'bar', name: 'Nota Barmeni', title: 'Nota Barmeni', drive: 'arcade', area: '.pixi-stage' },
   { id: 'melody', name: 'İki el melodi', title: 'İki El Birlikte', drive: 'melody', area: '.melody-wrap' },
   { id: 'rhythm', name: 'Ritim (porte)', title: 'Dörtlükler', drive: 'beat', area: '.beat-field' },
+  { id: 'echo', name: 'Yankı', title: 'Yankı: İkilikler', drive: 'beat', area: '.beat-field' },
+  { id: 'song', name: 'Ritimli şarkı', title: 'Küçük Yıldız', drive: 'beat', area: '.beat-field' },
+  { id: 'theory-rhythm', name: 'Ritim teori kartı', title: 'Nokta Ne Yapar?', drive: 'theory', area: '.theory-card' },
   { id: 'dino', name: 'Dino Koşusu', title: 'Dino Koşusu', drive: 'beat', area: '.beat-field' },
   { id: 'drum', name: 'Ritim Davulcusu', title: 'Ritim Davulcusu', drive: 'beat', area: '.beat-field' },
   { id: 'scale', name: 'Gam', title: 'Do Majör', drive: 'melody', area: '.melody-wrap' },
@@ -590,7 +593,7 @@ const DRIVERS = {
       // Kept so the presses still due are cancelled when the lesson ends early.
       window.__layoutTimers = []
       for (const r of t.records) {
-        if (r.rest) continue
+        if (r.rest || r.demo) continue
         const timer = window.setTimeout(() => {
           const el = document.querySelector(`.key[data-midi="${r.target}"]`)
           if (!el) return

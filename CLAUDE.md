@@ -96,11 +96,12 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                    |
-| ------ | ---------------------------------------------------------------------------------------- |
-| `main` | Phases 0–8, the polish round and phase 7 improvements (PRs #1–#11), live on GitHub Pages |
-| PR #12 | Phase 8 extras: Akor Barmeni, chords by ear (unit 6 now 24 lessons)                      |
-| PR #13 | Test mode and the progress code                                                          |
+| Branch | State                                                                                              |
+| ------ | -------------------------------------------------------------------------------------------------- |
+| `main` | Phases 0–8, the polish round and phase 7 improvements (PRs #1–#11), live on GitHub Pages           |
+| PR #12 | Phase 8 extras: Akor Barmeni, chords by ear (unit 6 now 24 lessons)                                |
+| PR #13 | Test mode and the progress code                                                                    |
+| This   | Rhythm curriculum: two units, patterns easy to hard, Yankı, songs (`claude/project-thread-wprkex`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -360,13 +361,42 @@ Game characters (`claude/project-thread-c81q91`):
   draws the shared heads.
 - Pixi v8: an `arc` is joined by a line to the path's last point, so call `moveTo` to the arc's start first.
 
+Rhythm curriculum (`claude/project-thread-wprkex`): the rhythm unit became two units, easy to hard with repetition:
+
+- **Ritim 1: Temel Vuruş** (unit 2, 28 lessons: quarter, half, whole, quarter rest) and **Ritim 2: Sekizlikler ve
+  Noktalılar** (`rhythm2`, between the bass clef and two-hands units, 25 lessons: eighths, 3/4 with dotted halves,
+  dotted quarters, a review). Units after it are renumbered (İki El 5, Gamlar 6, Akorlar 7).
+- Every pattern runs through the same steps (`rhythm/lessons.ts` helpers): `intro` (theory cards with the new
+  `{ kind: 'rhythm', pattern }` art: notes on one line, the count "1 ve 2" under them, silent beats in parentheses),
+  `echo` (**Yankı**), `drill` (a fixed pattern repeated), a Dino or Davulcu game, `songRhythm` (a song's rhythm on any
+  key) and `song` (the song with its notes, the next key lit: `RhythmSpec.guide`). Review lessons use tempo ladders.
+- `rhythm/plan.ts`: `rhythmPlan(spec)` gives the bars of a lesson: `RhythmSpec.tune` (a song, sung again until `bars`
+  is filled), `pattern` (fixed bars, cycled), `echo` (each bar twice, `listen[bar]` true for the app's turn), otherwise
+  random `generateBars`. `parsePattern` / `parseTune` check every bar is full. `BeatFrame` passes the field a spec whose
+  `bars` is the number actually played.
+- Yankı: `SkillTarget.demo` / `TimingRecord.demo` mark the app's notes. `BeatTrack.played` leaves them out of
+  `total`, `done`, `progress`, `attempted`, `next` and the windows; presses during them are only stray. The metronome
+  plays them as `cues` (piano samples via `pianoNoteAt`, a synth fallback; sounded even with the clicks off). The HUD
+  shows "🎧 Dinle n/N" / "🎹 Sen çal n/N" (`.echo-turn[data-turn]`).
+- `rhythm/tunes.ts`: copyright-free songs with `title` (Turkish), `original`, `origin` and a culture `fact`, shown on
+  the start card (`.tune-info[data-tune]`) and in the lesson description. Songs: Frère Jacques, Ah vous dirai-je
+  maman, An die Freude (plain and dotted), Au clair de la lune, Mary Had a Little Lamb, Hot Cross Buns (with rests and
+  with eighths), Twinkle with rests, An der schönen blauen Donau, Petzold's Minuet (3/4), London Bridge, Jingle Bells.
+- Songs with their notes (`anyKey` off) draw a pitched staff: `RhythmStaff` `pitched` shows all five lines, a treble clef
+  and every note on its pitch (`StaffEvent.midi`); rhythm-only lessons keep the one-line staff.
+- New value `w` (whole note, topic "Birlikler").
+- Progress: the thirteen old lesson ids are kept (some moved to `rhythm2`). `isUnlocked` now opens a lesson when it or
+  any later lesson of its unit has a star, so lessons added in front of passed ones never lock old progress.
+- `SMOKE_ONLY=rhythm` plays Başlangıç and every lesson of both rhythm units (Yankı turns, the original title on each
+  song's start card, perfect scores, the remembered tempo, tempo ladders). Layout cases `echo`, `song`, `theory-rhythm`.
+
 Next: **phase 9, ear training and memory** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
 
 `scripts/smoke.mjs` plays real lessons in Chromium: the treble unit (drills, Nota Kuşu, Balon Patlatma, a lesson that
-runs out of hearts), then all thirteen rhythm lessons incl. 3/4 and dotted ones (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
+runs out of hearts), then all fifty-three lessons of the two rhythm units (theory, Yankı, patterns, games, songs incl. 3/4 and dotted ones) (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
 all twenty-four scale lessons (scale drills with one and two hands and two octaves, four Gam Merdiveni runs at a faster
 tempo, two tempo ladders: one passed in three rounds whose raised tempo is checked on reopening, one with a late second
 round that stops the ladder; three Melodi Hafızası games, one with a wrong key, one by ear), all twenty-four chord lessons

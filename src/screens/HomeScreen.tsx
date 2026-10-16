@@ -128,7 +128,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
               {waiting && <p className="unit-lock">🔒 {requiredTitle} bitince açılır</p>}
             </header>
 
-            {unit.id === 'rhythm' && (
+            {(unit.id === 'rhythm' || unit.id === 'rhythm2') && (
               <button className="calib-tip" onClick={onCalibrate}>
                 ⏱ Bluetooth piyanoyla mı çalışıyorsun? Önce <b>gecikme ayarını</b> yap.
               </button>

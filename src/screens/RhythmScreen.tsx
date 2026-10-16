@@ -12,13 +12,14 @@ interface Props {
   onExit: () => void
 }
 
-function RhythmField({ spec, bars, track, now }: FieldProps) {
+function RhythmField({ spec, bars, skill, track, now }: FieldProps) {
   const events = layoutRhythm(bars, spec.beatsPerBar).map((e, i) => {
     const r = track?.records[i]
     // How far through its length the note was (or is being) held.
     const share = r?.holdShare ?? (r && r.heldKey !== null ? Math.max(0, (now - r.dueAt) / track!.lengthMs(r)) : null)
     return {
       ...e,
+      midi: spec.anyKey ? undefined : skill.targets[i]?.midi,
       judgement: r?.judgement ?? null,
       hold: share === null ? null : { share, verdict: r!.holdVerdict },
     }
@@ -26,7 +27,13 @@ function RhythmField({ spec, bars, track, now }: FieldProps) {
   const beat = track ? track.beatAt(now) : null
   return (
     <div className="rhythm-field">
-      <RhythmStaff events={events} bars={spec.bars} beatsPerBar={spec.beatsPerBar} playhead={beat} />
+      <RhythmStaff
+        events={events}
+        bars={spec.bars}
+        beatsPerBar={spec.beatsPerBar}
+        playhead={beat}
+        pitched={!spec.anyKey}
+      />
       <p className="rhythm-legend small muted">
         <span className="dot perfect" /> Mükemmel <span className="dot good" /> İyi <span className="dot early" />{' '}
         Erken/Geç <span className="dot miss" /> Kaçırıldı

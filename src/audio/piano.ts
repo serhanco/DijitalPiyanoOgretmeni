@@ -63,3 +63,10 @@ export function pianoRelease(midi: number): void {
 export function isPianoReady(): boolean {
   return sampler !== null
 }
+
+/** Play `midi` for `seconds` at audio-clock `time` (scheduled sounds). False when the samples are not loaded. */
+export function pianoNoteAt(midi: number, seconds: number, time: number, velocity = 0.8): boolean {
+  if (!sampler) return false
+  sampler.triggerAttackRelease(freq(midi), seconds, time, velocity)
+  return true
+}

@@ -4,7 +4,7 @@ import { HANDS_LESSONS } from '../games/noteHunter/handsLessons'
 import { type NoteLesson, TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import { type Clef, fitKeyboard } from '../music/notes'
 import { SCALE_LESSONS } from '../games/scales/lessons'
-import { RHYTHM_LESSONS } from '../rhythm/lessons'
+import { RHYTHM2_LESSONS, RHYTHM_LESSONS } from '../rhythm/lessons'
 import { BASICS_LESSONS } from '../games/theory/lessons'
 
 export interface Unit {
@@ -44,8 +44,8 @@ export const UNITS: Unit[] = [
   {
     id: 'rhythm',
     requires: AFTER_BASICS,
-    title: 'Ünite 2: Ritim ve Tempo',
-    subtitle: 'Zamanında çal',
+    title: 'Ünite 2: Ritim 1, Temel Vuruş',
+    subtitle: 'Dörtlük, ikilik, birlik ve es; her kalıp bir şarkıyla',
     color: '#ce82ff',
     lessons: RHYTHM_LESSONS,
   },
@@ -59,9 +59,17 @@ export const UNITS: Unit[] = [
     review: true,
   },
   {
+    id: 'rhythm2',
+    requires: AFTER_BASICS,
+    title: 'Ünite 4: Ritim 2, Sekizlikler ve Noktalılar',
+    subtitle: 'Sekizlik, üç dörtlük, noktalı notalar; her kalıp bir şarkıyla',
+    color: '#a560e8',
+    lessons: RHYTHM2_LESSONS,
+  },
+  {
     id: 'hands',
     requires: AFTER_BASICS,
-    title: 'Ünite 4: İki El',
+    title: 'Ünite 5: İki El',
     subtitle: 'Büyük porte, Orta Do ve iki el birlikte',
     color: '#ff4b8b',
     lessons: HANDS_LESSONS,
@@ -69,7 +77,7 @@ export const UNITS: Unit[] = [
   {
     id: 'scales',
     requires: AFTER_BASICS,
-    title: 'Ünite 5: Gamlar',
+    title: 'Ünite 6: Gamlar',
     subtitle: 'Sağ el, sol el, iki el eş zamanlı',
     color: '#2bc4a8',
     lessons: SCALE_LESSONS,
@@ -77,7 +85,7 @@ export const UNITS: Unit[] = [
   {
     id: 'chords',
     requires: AFTER_BASICS,
-    title: 'Ünite 6: Akorlar',
+    title: 'Ünite 7: Akorlar',
     subtitle: 'Üçlüler, çevrimler, arpejler',
     color: '#ff9600',
     lessons: CHORD_LESSONS,
@@ -99,14 +107,16 @@ export function unitDone(unitId: string, bestStars: (id: string) => number): boo
 /**
  * The first lesson of a unit opens when the unit it requires is done (or when
  * the learner already has stars in the unit, so earlier progress stays open);
- * each next lesson opens once the one before it has a star.
+ * each next lesson opens once the one before it has a star. A lesson added in
+ * front of ones the learner has already passed is open too, so new lessons
+ * never lock old progress.
  */
 export function isUnlocked(lessonId: string, bestStars: (id: string) => number): boolean {
   for (const unit of UNITS) {
     const i = unit.lessons.findIndex((l) => l.id === lessonId)
     if (i === 0)
       return !unit.requires || unitDone(unit.requires, bestStars) || unit.lessons.some((l) => bestStars(l.id) >= 1)
-    if (i > 0) return bestStars(unit.lessons[i - 1].id) >= 1
+    if (i > 0) return unit.lessons.slice(i - 1).some((l) => bestStars(l.id) >= 1)
   }
   return false
 }

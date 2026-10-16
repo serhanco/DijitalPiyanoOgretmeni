@@ -26,6 +26,7 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Başlangıç önerileri (kilit, fa, okuma, ses)   | Birleşti (PR #16) |
 | Test modu ve ilerleme kodu                    | PR #13            |
 | Tek oktav ekran klavyesi                      | Bu dal            |
+| Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Bu dal            |
 | 9 ve sonrası                                  | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).

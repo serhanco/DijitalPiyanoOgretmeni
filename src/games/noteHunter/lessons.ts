@@ -1,5 +1,6 @@
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 import type { RhythmValue } from '../../rhythm/rhythm'
+import type { Tune } from '../../rhythm/plan'
 import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
 import type { ArpeggioPart } from '../chords/arpeggio'
 import type { ChordSpec } from '../chords/lessons'
@@ -65,6 +66,14 @@ export interface RhythmSpec {
   anyKey?: boolean
   /** Tempo merdiveni: the same plan again at rising tempos. */
   tempoLadder?: TempoLadderSpec
+  /** Fixed bars ("q q h | h h") played in turn until `bars` is filled, instead of random ones. */
+  pattern?: string
+  /** Yankı: the app plays each bar of `pattern` first, then the learner plays it back. `bars` counts the learner's bars. */
+  echo?: boolean
+  /** A song: its rhythm, and with `anyKey` off its notes, instead of random bars; `bars` is unused. */
+  tune?: Tune
+  /** Light the next note's key on the keyboard (songs played with their notes). */
+  guide?: boolean
 }
 
 export interface NoteLesson {

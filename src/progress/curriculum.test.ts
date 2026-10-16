@@ -31,6 +31,15 @@ describe('isUnlocked', () => {
     expect(isUnlocked(unit('rhythm')[0].id, best)).toBe(true)
   })
 
+  it('keeps lessons open in front of ones already passed', () => {
+    const lessons = UNITS.find((u) => u.id === 'rhythm')!.lessons
+    const old = lessons.findIndex((l) => l.id === 'rhythm-4')
+    const stars: Record<string, number> = { 'rhythm-4': 2 }
+    const best = (id: string) => stars[id] ?? 0
+    for (const l of lessons.slice(0, old + 2)) expect(isUnlocked(l.id, best), l.id).toBe(true)
+    expect(isUnlocked(lessons[old + 2].id, best)).toBe(false)
+  })
+
   it('starts the map with the basics unit', () => {
     expect(UNITS[0].id).toBe('basics')
     expect(UNITS[0].lessons[0].kind).toBe('theory')

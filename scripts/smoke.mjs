@@ -144,7 +144,8 @@ async function playBeat(
   shotName,
   { offsetMs = 0, shotAt = 0.5, slower = 0, faster = 0, lateRound = 0, tapMs = 0 } = {},
 ) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  // The map may still be gliding to the lesson just left.
+  await page.getByRole('button', { name: lessonTitle, exact: true }).click({ force: true })
   await page.waitForSelector('.beat-start')
   for (let i = 0; i < slower; i++) await page.getByLabel('Yavaşlat').click()
   for (let i = 0; i < faster; i++) await page.getByLabel('Hızlandır').click()
@@ -157,10 +158,11 @@ async function playBeat(
     const lengthMs = await page.evaluate(
       ([offset, tap]) => {
         const t = window.__dpoBeat
-        const beats = { h: 2, q: 1, e: 0.5, qd: 1.5, hd: 3 }
+        const beats = { w: 4, h: 2, q: 1, e: 0.5, qd: 1.5, hd: 3 }
         window.__dpoPrevBeat = t
         for (const r of t.records) {
-          if (r.rest) continue
+          // Yankı: the app plays its own bars.
+          if (r.rest || r.demo) continue
           // One pointer per key, so two hands can press at once.
           const pointerId = 100 + r.target
           window.setTimeout(
@@ -634,6 +636,199 @@ async function playTheory(lessonTitle, shotName, { shots = [], wrongAt = -1, qui
   await page.waitForTimeout(800)
 }
 
+const backToMap = async () => {
+  await dismissOverlay()
+  await page.getByText('Derslere dön').click()
+}
+const scoreOf = async () => Number((await page.textContent('.stat-value'))?.replace(/\D/g, ''))
+
+/** Play a Yankı: checks the listen / play turns and a perfect score. */
+async function playEcho(title, shotName) {
+  const turns = new Set()
+  const watch = setInterval(
+    () =>
+      void page
+        .getAttribute('.echo-turn', 'data-turn', { timeout: 100 })
+        .then((t) => t && turns.add(t))
+        .catch(() => undefined),
+    250,
+  )
+  await playBeat(title, shotName, { shotAt: 0.2 })
+  clearInterval(watch)
+  if (!turns.has('listen') || !turns.has('play')) errors.push(`${title}: no listen / play turns (${[...turns]})`)
+  const score = await scoreOf()
+  if (score !== 100) errors.push(`${title} scored ${score}%`)
+}
+
+/** A song: the original title on the start card, the next key lit, a perfect score. */
+async function playSong(title, original, shotName, opts = {}) {
+  await page.getByRole('button', { name: title, exact: true }).click()
+  await page.waitForSelector('.beat-start')
+  const shown = await page.getAttribute('.tune-info', 'data-tune').catch(() => null)
+  if (shown !== original) errors.push(`${title}: start card shows "${shown}", not "${original}"`)
+  await page.getByLabel('Dersten çık').click()
+  const rounds = await playBeat(title, shotName, opts)
+  const score = await scoreOf()
+  if (score !== 100) errors.push(`${title} scored ${score}%`)
+  return rounds
+}
+
+/** Units 2 and 4: every rhythm pattern is introduced, echoed, drilled, played in a game and in songs. */
+async function rhythmUnits() {
+  // Ritim 1: quarters.
+  await playTheory('Vuruş ve Dörtlük', 'theory-rhythm-quarter', { shots: [0, 1], quizShot: 0 })
+  await backToMap()
+  await playEcho('Yankı: Dörtlükler', 'rhythm-echo-quarters')
+  await backToMap()
+  await playBeat('Dörtlükler', 'rhythm-quarters')
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-rhythm.png`, fullPage: true })
+  const rhythmScore = await scoreOf()
+  if (rhythmScore !== 100) errors.push(`Perfectly timed rhythm lesson scored ${rhythmScore}%`)
+  await page.getByText('Derslere dön').click()
+  await playBeat('Dino: İlk Adımlar')
+  await backToMap()
+  await playBeat('Ritmi: Uyuyor musun? (ilk cümle)')
+  await backToMap()
+  await playSong('Uyuyor musun? (ilk cümle)', 'Frère Jacques', 'song-frere-opening')
+  await backToMap()
+
+  // Halves.
+  await playTheory('İkilik Nota', 'theory-rhythm-half', { shots: [1] })
+  await backToMap()
+  await playEcho('Yankı: İkilikler')
+  await backToMap()
+  // Halves tapped on the beat but let go at once: on time, yet only partly held.
+  await playBeat('İkilikler', 'rhythm-halves-tapped', { tapMs: 60 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-halves-tapped.png`, fullPage: true })
+  const tappedScore = await scoreOf()
+  if (!(tappedScore < 90)) errors.push(`Tapped halves scored ${tappedScore}%, the hold did not count`)
+  if (!(await page.getByText(/erken bıraktın/).count())) errors.push('Results do not say the notes were let go early')
+  await page.getByText('Derslere dön').click()
+  await playBeat('Dino Koşusu', 'game-dino', { offsetMs: 60 }) // "İyi" timing, a little late
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-dino.png`, fullPage: true })
+  await page.getByText('Derslere dön').click()
+  await playBeat('Ritmi: Küçük Yıldız', 'song-rhythm-twinkle')
+  await backToMap()
+  await playSong('Küçük Yıldız', 'Ah ! vous dirai-je, maman', 'song-twinkle')
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-song.png`, fullPage: true })
+  await page.getByText('Derslere dön').click()
+  await playSong('Neşeye Övgü', 'An die Freude')
+  await backToMap()
+
+  // Wholes.
+  await playTheory('Birlik Nota', 'theory-rhythm-whole', { shots: [0] })
+  await backToMap()
+  await playEcho('Yankı: Birlikler', 'rhythm-echo-wholes')
+  await backToMap()
+  await playBeat('Birlikler', 'rhythm-wholes')
+  await backToMap()
+  await playBeat('Davulcu: Uzun Notalar')
+  await backToMap()
+  await playBeat('Ritmi: Ay Işığında')
+  await backToMap()
+  await playSong('Ay Işığında', 'Au clair de la lune', 'song-au-clair')
+  await backToMap()
+  await playSong('Ufak Kuzu', 'Mary Had a Little Lamb')
+  await backToMap()
+
+  // Rests.
+  await playTheory('Dörtlük Es', 'theory-rhythm-rest', { shots: [0] })
+  await backToMap()
+  await playEcho('Yankı: Esler')
+  await backToMap()
+  await playBeat('Esler', 'rhythm-rests')
+  await backToMap()
+  await playBeat('Ritim Davulcusu', 'game-drum')
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-drum.png`, fullPage: true })
+  if (!(await page.getByText('Vuruşunda çalınan notalar').count())) errors.push('Rhythm XP line has the drill label')
+  await page.getByText('Derslere dön').click()
+  await playBeat('Ritmi: Sıcak Çörekler (esli)')
+  await backToMap()
+  await playSong('Küçük Yıldız (esli)', 'Ah ! vous dirai-je, maman', 'song-twinkle-rests')
+  await backToMap()
+  await playBeat('Dino Koşusu: Notalı')
+  await backToMap()
+  const reviewRounds = await playBeat('Büyük Tekrar')
+  if (reviewRounds !== 3) errors.push(`Büyük Tekrar played ${reviewRounds} rounds, not 3`)
+  await backToMap()
+  await page.screenshot({ path: `${out}/map-rhythm.png`, fullPage: true })
+
+  // Ritim 2: eighths.
+  await playTheory('Sekizlik Nota', 'theory-rhythm-eighth', { shots: [0] })
+  await backToMap()
+  await playEcho('Yankı: Sekizlikler', 'rhythm-echo-eighths')
+  await backToMap()
+  await playBeat('Sekizlikler', 'rhythm-eighths')
+  await backToMap()
+  await playBeat('Davulcu: Sekizlikler')
+  await backToMap()
+  await playBeat('Ritmi: Sıcak Çörekler')
+  await backToMap()
+  await playSong('Sıcak Çörekler', 'Hot Cross Buns')
+  await backToMap()
+  await playSong('Uyuyor musun?', 'Frère Jacques', 'song-frere')
+  await backToMap()
+
+  // 3/4 and dotted halves; the chosen tempo is remembered.
+  await playTheory('Vals Ölçüsü', 'theory-rhythm-waltz', { shots: [1] })
+  await backToMap()
+  await playEcho('Yankı: Üç Dörtlük')
+  await backToMap()
+  await playBeat('Üç Dörtlük', 'rhythm-waltz', { slower: 1 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-waltz.png`, fullPage: true })
+  await page.getByText('Derslere dön').click()
+  await page.getByRole('button', { name: 'Üç Dörtlük', exact: true }).click()
+  const tempo = (await page.textContent('.tempo-value'))?.trim()
+  if (tempo !== '79 BPM') errors.push(`Tempo was not remembered: ${tempo}`)
+  await page.getByLabel('Dersten çık').click()
+  await playBeat('Dino Valsi', 'game-dino-waltz')
+  await backToMap()
+  await playBeat('Ritmi: Mavi Tuna')
+  await backToMap()
+  await playSong('Mavi Tuna', 'An der schönen blauen Donau', 'song-danube')
+  await backToMap()
+  await playSong('Menüet', 'Menuet in G, BWV Anh. 114', 'song-minuet')
+  await backToMap()
+
+  // Dotted quarters.
+  await playTheory('Nokta Ne Yapar?', 'theory-rhythm-dotted', { shots: [0] })
+  await backToMap()
+  await playEcho('Yankı: Noktalılar')
+  await backToMap()
+  await playBeat('Noktalı Dörtlük', 'rhythm-dotted', { shotAt: 0.3 })
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/results-dotted.png`, fullPage: true })
+  const dottedScore = await scoreOf()
+  if (dottedScore !== 100) errors.push(`Perfectly timed dotted lesson scored ${dottedScore}%`)
+  await page.getByText('Derslere dön').click()
+  await playBeat('Davulcu: Noktalılar', 'game-drum-dotted')
+  await backToMap()
+  await playBeat('Ritmi: Londra Köprüsü')
+  await backToMap()
+  await playSong('Londra Köprüsü', 'London Bridge Is Falling Down', 'song-london')
+  await backToMap()
+  await playSong('Neşeye Övgü (aslı gibi)', 'An die Freude')
+  await backToMap()
+
+  // Review: mixed rhythm, a song, a song with a tempo ladder, everything mixed.
+  await playBeat('Karışık Ritim')
+  await backToMap()
+  await playSong('Çanlar Çalıyor', 'Jingle Bells', 'song-jingle')
+  await backToMap()
+  const ladderRounds = await playSong('Şarkı Merdiveni', 'Frère Jacques')
+  if (ladderRounds !== 3) errors.push(`Şarkı Merdiveni played ${ladderRounds} rounds, not 3`)
+  await backToMap()
+  await playBeat('Ritim Ustası')
+  await backToMap()
+  await page.screenshot({ path: `${out}/map-rhythm2.png`, fullPage: true })
+}
+
 /** Play a drill that first introduces new notes (the lit key), then the drill itself. */
 async function playIntro(lessonTitle, shotName) {
   await page.getByRole('button', { name: lessonTitle, exact: true }).click()
@@ -742,6 +937,15 @@ if (process.env.SMOKE_ONLY === 'chords') {
   console.log(`Smoke test (chords) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
+// SMOKE_ONLY=rhythm plays Başlangıç (it opens the other units), then both rhythm units.
+if (process.env.SMOKE_ONLY === 'rhythm') {
+  await page.waitForTimeout(800)
+  await basicsUnit()
+  await rhythmUnits()
+  await finish()
+  console.log(`Smoke test (rhythm) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
 // SMOKE_ONLY=basics plays only the Başlangıç unit.
 if (process.env.SMOKE_ONLY === 'basics') {
   await page.waitForTimeout(800)
@@ -788,70 +992,7 @@ await page.getByText('Derslere dön').click()
 await page.waitForTimeout(500)
 await page.screenshot({ path: `${out}/map-after.png`, fullPage: true })
 
-// Unit 2: rhythm. Its first lesson is open from the start.
-await playBeat('Dörtlükler', 'rhythm-quarters')
-await dismissOverlay()
-await page.screenshot({ path: `${out}/results-rhythm.png`, fullPage: true })
-const rhythmScore = (await page.textContent('.stat-value'))?.trim()
-if (rhythmScore !== '%100') errors.push(`Perfectly timed rhythm lesson scored ${rhythmScore}`)
-await page.getByText('Derslere dön').click()
-// Halves tapped on the beat but let go at once: on time, yet only partly held.
-await playBeat('İkilikler', 'rhythm-halves-tapped', { tapMs: 60 })
-await dismissOverlay()
-await page.screenshot({ path: `${out}/results-halves-tapped.png`, fullPage: true })
-const tappedScore = Number((await page.textContent('.stat-value'))?.replace(/\D/g, ''))
-if (!(tappedScore < 90)) errors.push(`Tapped halves scored ${tappedScore}%, the hold did not count`)
-if (!(await page.getByText(/erken bıraktın/).count())) errors.push('Results do not say the notes were let go early')
-await page.getByText('Derslere dön').click()
-await playBeat('İkilikler')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
-await playBeat('Dino Koşusu', 'game-dino', { offsetMs: 60 }) // "İyi" timing, a little late
-await dismissOverlay()
-await page.screenshot({ path: `${out}/results-dino.png`, fullPage: true })
-await page.getByText('Derslere dön').click()
-await playBeat('Sekizlikler', 'rhythm-eighths')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
-await playBeat('Esler', 'rhythm-rests')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
-await playBeat('Ritim Davulcusu', 'game-drum')
-await dismissOverlay()
-await page.screenshot({ path: `${out}/results-drum.png`, fullPage: true })
-if (!(await page.getByText('Vuruşunda çalınan notalar').count())) errors.push('Rhythm XP line has the drill label')
-await page.getByText('Derslere dön').click()
-await playBeat('Dino Koşusu: Notalı')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
-await playBeat('Karışık Ritim')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
-await playBeat('Davulcu: Sekizlikler')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
-
-// Polish round: 3/4 and dotted notes; the chosen tempo is remembered.
-await playBeat('Üç Dörtlük', 'rhythm-waltz', { slower: 1 })
-await dismissOverlay()
-await page.screenshot({ path: `${out}/results-waltz.png`, fullPage: true })
-await page.getByText('Derslere dön').click()
-await page.getByRole('button', { name: 'Üç Dörtlük', exact: true }).click()
-const tempo = (await page.textContent('.tempo-value'))?.trim()
-if (tempo !== '79 BPM') errors.push(`Tempo was not remembered: ${tempo}`)
-await page.getByLabel('Dersten çık').click()
-await playBeat('Dino Valsi', 'game-dino-waltz')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
-await playBeat('Noktalı Dörtlük', 'rhythm-dotted', { shotAt: 0.3 })
-await dismissOverlay()
-await page.screenshot({ path: `${out}/results-dotted.png`, fullPage: true })
-const dottedScore = (await page.textContent('.stat-value'))?.trim()
-if (dottedScore !== '%100') errors.push(`Perfectly timed dotted lesson scored ${dottedScore}`)
-await page.getByText('Derslere dön').click()
-await playBeat('Davulcu: Noktalılar', 'game-drum-dotted')
-await dismissOverlay()
-await page.getByText('Derslere dön').click()
+await rhythmUnits()
 
 // Phase 6, unit 3: the bass clef with the left hand, starting with the clef and the notes two at a time.
 await playTheory('Fa Anahtarı', 'theory-bass', { shots: [0, 2], quizShot: 5 })

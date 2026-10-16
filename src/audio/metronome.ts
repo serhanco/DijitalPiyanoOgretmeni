@@ -3,6 +3,7 @@
 // beats, after the audio output latency.
 
 import { gameNow, onPauseChange } from '../input/gameClock'
+import { initPiano, pianoNoteAt } from './piano'
 import { useSettings } from '../state/settings'
 
 type ToneModule = typeof import('tone')
@@ -34,6 +35,16 @@ export interface MetronomeOptions {
   toBeat: number
   /** Click even when the metronome setting is off (calibration). */
   force?: boolean
+  /** Notes the app plays itself (Yankı): sounded even when the clicks are off. */
+  cues?: Cue[]
+}
+
+export interface Cue {
+  /** Beat it starts on, counted like `fromBeat`. */
+  beat: number
+  midi: number
+  /** Length in beats. */
+  beats: number
 }
 
 export interface Metronome {
@@ -44,7 +55,10 @@ const silent: Metronome = { stop: () => undefined }
 
 /** Start clicking. Needs `prepareMetronome` to have resolved first, otherwise stays silent. */
 export async function startMetronome(opts: MetronomeOptions): Promise<Metronome> {
-  if (!opts.force && !useSettings.getState().metronome) return silent
+  const clicks = opts.force || useSettings.getState().metronome
+  const cues = opts.cues ?? []
+  if (!clicks && !cues.length) return silent
+  if (cues.length) void initPiano().catch(() => undefined)
   const Tone = await prepareMetronome()
   if (!Tone) return silent
   const ctx = Tone.getContext().rawContext as AudioContext
@@ -60,9 +74,31 @@ export async function startMetronome(opts: MetronomeOptions): Promise<Metronome>
     volume: -6,
   }).toDestination()
 
+  const beatSec = 60 / opts.bpm
+  // Without piano samples the cues get a soft synth voice.
+  const voice = cues.length
+    ? new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.005, decay: 0.2, sustain: 0.5, release: 0.2 },
+      }).toDestination()
+    : null
+  for (const cue of cues) {
+    transport.schedule(
+      (time) => {
+        const seconds = cue.beats * beatSec * 0.9
+        if (!pianoNoteAt(cue.midi, seconds, time))
+          voice?.triggerAttackRelease(Tone.Frequency(cue.midi, 'midi').toFrequency(), seconds, time)
+      },
+      (cue.beat - opts.fromBeat) * beatSec,
+    )
+  }
+
   let beat = opts.fromBeat
   transport.scheduleRepeat((time) => {
-    if (beat > opts.toBeat) return
+    if (!clicks || beat > opts.toBeat) {
+      beat++
+      return
+    }
     const downbeat = ((beat % opts.beatsPerBar) + opts.beatsPerBar) % opts.beatsPerBar === 0
     // Count-in clicks are higher so the player hears when the music starts.
     const note = beat < 0 ? 'G6' : downbeat ? 'E6' : 'A5'
@@ -82,7 +118,10 @@ export async function startMetronome(opts: MetronomeOptions): Promise<Metronome>
       transport.stop()
       transport.cancel()
       // Let the last click ring out.
-      window.setTimeout(() => click.dispose(), 300)
+      window.setTimeout(() => {
+        click.dispose()
+        voice?.dispose()
+      }, 300)
     },
   }
 }

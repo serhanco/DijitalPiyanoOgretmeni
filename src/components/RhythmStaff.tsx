@@ -14,6 +14,7 @@ import {
   StaveNote,
   Voice,
 } from 'vexflow/bravura'
+import { vexKey } from '../music/notes'
 import { VALUE_BEATS, type RhythmValue } from '../rhythm/rhythm'
 import type { HoldVerdict } from '../rhythm/hold'
 import type { Judgement } from '../rhythm/timing'
@@ -22,6 +23,8 @@ export interface StaffEvent {
   value: RhythmValue
   beat: number
   judgement: Judgement | null
+  /** Songs: the note to play (pitched staff). */
+  midi?: number | null
   /** How long the note was held, as a share of its length; `verdict` is null while the key is down. */
   hold?: { share: number; verdict: HoldVerdict | null } | null
 }
@@ -33,6 +36,8 @@ interface Props {
   beatsPerBar: number
   /** Current beat (negative during the count-in), or null before the start. */
   playhead: number | null
+  /** Songs: five lines and a treble clef, every note on its pitch; otherwise one line for the rhythm alone. */
+  pitched?: boolean
 }
 
 const WIDTH = 360
@@ -50,7 +55,7 @@ const JUDGEMENT_COLORS: Record<Judgement, string> = {
   miss: '#ff4b4b',
 }
 
-const DURATION: Record<RhythmValue, string> = { h: 'h', q: 'q', e: '8', qr: 'qr', qd: 'qd', hd: 'hd' }
+const DURATION: Record<RhythmValue, string> = { w: 'w', h: 'h', q: 'q', e: '8', qr: 'qr', qd: 'qd', hd: 'hd' }
 
 /** The notation sets its own paper and ink for the colour scheme instead of leaning on a CSS filter, so it reads in any browser. */
 const THEMES = {
@@ -88,7 +93,7 @@ const LEAD = BEAT_U
 /** Centre of a note head, in the strip's units. */
 const xOf = (beat: number) => LEAD + beat * BEAT_U
 
-export function RhythmStaff({ events, bars, beatsPerBar, playhead }: Props) {
+export function RhythmStaff({ events, bars, beatsPerBar, playhead, pitched = false }: Props) {
   const stripRef = useRef<HTMLDivElement>(null)
   const fixedRef = useRef<HTMLDivElement>(null)
   const [fontsLoaded, setFontsLoaded] = useState(false)
@@ -96,7 +101,7 @@ export function RhythmStaff({ events, bars, beatsPerBar, playhead }: Props) {
   const totalBeats = bars * beatsPerBar
   const totalU = LEAD + totalBeats * BEAT_U + BEAT_U
   // `events` is a new array every frame; redraw only when what it shows changes.
-  const key = events.map((e) => `${e.beat}${e.value}${e.judgement ?? ''}`).join(',')
+  const key = events.map((e) => `${e.beat}${e.value}${e.midi ?? ''}${e.judgement ?? ''}`).join(',')
   const eventsRef = useRef(events)
   useEffect(() => {
     eventsRef.current = events
@@ -133,8 +138,8 @@ export function RhythmStaff({ events, bars, beatsPerBar, playhead }: Props) {
     ctx.setFillStyle(theme.ink)
     ctx.setStrokeStyle(theme.ink)
     const stave = new Stave(10, STAVE_Y, CLIP_U - 10)
-    stave.setConfigForLines([0, 1, 2, 3, 4].map((i) => ({ visible: i === 2 })))
-    stave.addClef('percussion').addTimeSignature(`${beatsPerBar}/4`)
+    stave.setConfigForLines([0, 1, 2, 3, 4].map((i) => ({ visible: pitched || i === 2 })))
+    stave.addClef(pitched ? 'treble' : 'percussion').addTimeSignature(`${beatsPerBar}/4`)
     stave.setEndBarType(Barline.type.NONE)
     stave.setStyle(ink)
     stave.setContext(ctx).draw()
@@ -153,7 +158,7 @@ export function RhythmStaff({ events, bars, beatsPerBar, playhead }: Props) {
       svg.setAttribute('role', 'img')
       svg.setAttribute('aria-label', 'Ritim')
     }
-  }, [beatsPerBar, fontsLoaded, theme])
+  }, [beatsPerBar, fontsLoaded, theme, pitched])
 
   // The strip: every bar of the piece, one beat = BEAT_U wherever it is.
   useEffect(() => {
@@ -173,8 +178,8 @@ export function RhythmStaff({ events, bars, beatsPerBar, playhead }: Props) {
       const from = bar === 0 ? 0 : x0
       const stave = new Stave(from, STAVE_Y, beatsPerBar * BEAT_U + (x0 - from))
       if (bar === 0) stave.setBegBarType(Barline.type.NONE)
-      // Rhythm is read on one line: keep the five-line geometry, show the middle line.
-      stave.setConfigForLines([0, 1, 2, 3, 4].map((i) => ({ visible: i === 2 })))
+      // Rhythm alone is read on one line: keep the five-line geometry, show the middle line (songs show all five).
+      stave.setConfigForLines([0, 1, 2, 3, 4].map((i) => ({ visible: pitched || i === 2 })))
       if (bar === bars - 1) stave.setEndBarType(Barline.type.END)
       stave.setStyle(ink)
       stave.setContext(ctx).draw()
@@ -182,7 +187,11 @@ export function RhythmStaff({ events, bars, beatsPerBar, playhead }: Props) {
       const inBar = events.filter((e) => Math.floor(e.beat / beatsPerBar) === bar)
       if (inBar.length === 0) continue
       const notes: StaveNoteType[] = inBar.map((e) => {
-        const n = new StaveNote({ keys: ['b/4'], duration: DURATION[e.value], stemDirection: 1 })
+        const n = new StaveNote({
+          keys: [e.midi != null ? vexKey(e.midi) : 'b/4'],
+          duration: DURATION[e.value],
+          stemDirection: 1,
+        })
         if (e.value === 'qd' || e.value === 'hd') Dot.buildAndAttach([n], { all: true })
         if (e.judgement) {
           const color = JUDGEMENT_COLORS[e.judgement]
@@ -205,7 +214,7 @@ export function RhythmStaff({ events, bars, beatsPerBar, playhead }: Props) {
     }
     crop(el, totalU)
     // `key` stands for `events`.
-  }, [key, bars, beatsPerBar, totalU, fontsLoaded, theme])
+  }, [key, bars, beatsPerBar, totalU, fontsLoaded, theme, pitched])
 
   const pct = (v: number) => `${(v / WIDTH) * 100}%`
   const inStrip = (v: number) => `${(v / totalU) * 100}%`

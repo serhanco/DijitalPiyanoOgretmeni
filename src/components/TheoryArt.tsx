@@ -2,6 +2,7 @@
 // with finger numbers and the note durations. Plain SVG, scaled by CSS.
 
 import type { Illustration } from '../games/theory/quiz'
+import { isRest, layoutRhythm, parseRhythm, VALUE_BEATS } from '../rhythm/rhythm'
 import { diatonicIndex, isBlackKey, MIDDLE_C, parseNote, solfegeName } from '../music/notes'
 
 const ACCENT = '#ffc800'
@@ -317,6 +318,100 @@ function DurationsArt({ beats }: Extract<Illustration, { kind: 'durations' }>) {
   )
 }
 
+const BEAT_W = 44
+
+/** One quarter rest, drawn as the usual zigzag. */
+function QuarterRest({ x, y }: { x: number; y: number }) {
+  return (
+    <path
+      d={`M${x - 3} ${y - 18} l7 9 l-6 7 l7 9 c-6 -3 -10 0 -6 6`}
+      fill="none"
+      stroke={INK}
+      strokeWidth={2.6}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+  )
+}
+
+/** A rhythm pattern on one line with its count underneath: bold where a note starts, grey where it is held or silent. */
+function RhythmArt({ pattern, beatsPerBar = 4 }: Extract<Illustration, { kind: 'rhythm' }>) {
+  const events = layoutRhythm(parseRhythm(pattern), beatsPerBar)
+  const bars = Math.max(1, ...events.map((e) => e.bar + 1))
+  const total = bars * beatsPerBar
+  const width = total * BEAT_W + 16
+  const lineY = 52
+  const xOf = (beat: number) => 22 + beat * BEAT_W
+  const starts = new Set(events.filter((e) => !isRest(e.value)).map((e) => e.beat))
+  const rests = events.filter((e) => isRest(e.value))
+  const silent = (b: number) => rests.some((r) => b >= r.beat && b < r.beat + VALUE_BEATS[r.value])
+  return (
+    <svg viewBox={`0 0 ${width} 112`} className="art art-rhythm" role="img" aria-label={`Ritim: ${pattern}`}>
+      <line x1={4} y1={lineY} x2={width - 4} y2={lineY} stroke="#b9b9b9" strokeWidth={1.5} />
+      {Array.from({ length: bars - 1 }, (_, i) => (
+        <line
+          key={i}
+          x1={xOf((i + 1) * beatsPerBar) - BEAT_W / 2 + 4}
+          x2={xOf((i + 1) * beatsPerBar) - BEAT_W / 2 + 4}
+          y1={lineY - 22}
+          y2={lineY + 22}
+          stroke={INK}
+          strokeWidth={1.5}
+        />
+      ))}
+      {events.map((e, i) => {
+        const x = xOf(e.beat)
+        if (isRest(e.value)) return <QuarterRest key={i} x={x} y={lineY} />
+        const filled = !['w', 'h', 'hd'].includes(e.value)
+        const eighth = e.value === 'e'
+        // Eighths in pairs share a beam; a lone one (after a dotted quarter) gets a flag.
+        const partner = eighth ? events[i + (e.beat % 1 === 0 ? 1 : -1)] : undefined
+        const paired = partner?.value === 'e' && Math.floor(partner.beat) === Math.floor(e.beat)
+        return (
+          <g key={i}>
+            <NoteHead x={x} y={lineY} filled={filled} stem={e.value !== 'w'} />
+            {(e.value === 'qd' || e.value === 'hd') && <circle cx={x + 13} cy={lineY - 2} r={2.4} fill={INK} />}
+            {eighth && paired && e.beat % 1 === 0 && (
+              <rect x={x + 5.8} y={lineY - 35} width={BEAT_W / 2 + 1.6} height={5} fill={INK} />
+            )}
+            {eighth && !paired && (
+              <path d={`M${x + 6.6} ${lineY - 34} q4 8 10 12 q-2 -6 -10 -6`} fill={INK} stroke={INK} strokeWidth={1} />
+            )}
+          </g>
+        )
+      })}
+      {Array.from({ length: total }, (_, b) => {
+        const x = xOf(b)
+        const on = starts.has(b)
+        return (
+          <g key={b}>
+            <text
+              x={x}
+              y={88}
+              textAnchor="middle"
+              fontSize={14}
+              fontWeight={on ? 800 : 600}
+              fill={on ? '#a560e8' : silent(b) ? '#c4c4c4' : '#9a9a9a'}
+            >
+              {silent(b) ? `(${(b % beatsPerBar) + 1})` : (b % beatsPerBar) + 1}
+            </text>
+            {starts.has(b + 0.5) && (
+              <text x={x + BEAT_W / 2} y={88} textAnchor="middle" fontSize={12} fontWeight={800} fill="#a560e8">
+                ve
+              </text>
+            )}
+          </g>
+        )
+      })}
+      {rests.length > 0 && (
+        <text x={width / 2} y={106} textAnchor="middle" fontSize={10} fill="#999">
+          (parantezli vuruşta sus)
+        </text>
+      )}
+    </svg>
+  )
+}
+
 export function TheoryArt({ art }: { art: Illustration }) {
   switch (art.kind) {
     case 'keyboard':
@@ -327,5 +422,7 @@ export function TheoryArt({ art }: { art: Illustration }) {
       return <HandArt {...art} />
     case 'durations':
       return <DurationsArt {...art} />
+    case 'rhythm':
+      return <RhythmArt {...art} />
   }
 }
