@@ -51,6 +51,8 @@ export function PixiStage({ create, className, children }: Props) {
           return
         }
         el.appendChild(app.canvas)
+        // The container may have changed size while Pixi was starting (the observer ignored it then).
+        app.resize()
         scene = createRef.current(app)
         app.ticker.add((t) => {
           if (!isPaused()) scene?.tick(Math.min(t.deltaMS, 100), gameNow())
