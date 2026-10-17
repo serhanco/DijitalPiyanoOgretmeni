@@ -19,6 +19,8 @@ import { type SessionSummary, summarize } from '../games/noteHunter/summary'
 import { subscribe } from '../input/inputBus'
 import { solfegeName } from '../music/notes'
 import { useSettings } from '../state/settings'
+import { useProfile } from '../state/profile'
+import { paceText } from '../progress/adaptive'
 
 // The clef glyph comes from the Bravura music font that VexFlow registers.
 void import('vexflow/bravura').then(() => document.fonts?.load('30px Bravura')).catch(() => undefined)
@@ -50,6 +52,8 @@ type Game = BirdGame | BalloonGame | BarGame
 export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const kind: ArcadeKind = lesson.kind === 'balloon' || lesson.kind === 'bar' ? lesson.kind : 'bird'
   const { ignoreOctave, showKeyLabels } = useSettings()
+  // Adaptive difficulty: the lesson's pace from the last games, read once when the game starts.
+  const [pace] = useState(() => useProfile.getState().pace[lesson.id] ?? 1)
   const game: Game = useMemo(() => {
     const skill = noteSkill({
       clef: lesson.clef,
@@ -58,9 +62,15 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
       ignoreOctave,
       clefOf: lesson.grand ? grandClefPicker(lesson.bothStaves) : undefined,
     })
-    if (kind === 'bar') return new BarGame(skill, ARCADE_HEARTS)
-    return kind === 'bird' ? new BirdGame(skill, ARCADE_HEARTS) : new BalloonGame(skill, ARCADE_HEARTS)
-  }, [lesson, kind, ignoreOctave])
+    const g =
+      kind === 'bar'
+        ? new BarGame(skill, ARCADE_HEARTS)
+        : kind === 'bird'
+          ? new BirdGame(skill, ARCADE_HEARTS)
+          : new BalloonGame(skill, ARCADE_HEARTS)
+    g.pace = pace
+    return g
+  }, [lesson, kind, ignoreOctave, pace])
 
   // Let the browser smoke test read the current target.
   useEffect(() => {
@@ -210,6 +220,11 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
       <div className="arcade-info">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={56} />
         <p className="arcade-message">{message}</p>
+        {pace !== 1 && (
+          <span className={`pace-chip ${pace > 1 ? 'up' : 'down'}`} title="Son oyunlarına göre ayarlanan hız">
+            Hız {paceText(pace)}
+          </span>
+        )}
         <span className="arcade-score">⭐ {hud.score}</span>
       </div>
 

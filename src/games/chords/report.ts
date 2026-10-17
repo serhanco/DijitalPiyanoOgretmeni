@@ -2,7 +2,14 @@
 // hand and degree; how close together the notes came down, which note tends
 // to come last, and the chords worth practising.
 
-import { chordTitle, GROUP_LABELS, INVERSION_LABELS, QUALITY_GROUP, type QualityGroup } from '../../music/chords'
+import {
+  type ChordTarget,
+  chordTitle,
+  GROUP_LABELS,
+  INVERSION_LABELS,
+  QUALITY_GROUP,
+  type QualityGroup,
+} from '../../music/chords'
 import { avg, type CategoryStat, type SessionSummary, starsFor } from '../noteHunter/summary'
 import { chordFirstTry, type ChordRecord, together } from './session'
 
@@ -28,6 +35,8 @@ export interface ChordSummary {
   incomplete: number
   /** Chords played wrong at least once, weakest first. */
   weakest: { name: string; shown: number; firstTry: number }[]
+  /** Every chord played (per inversion and hands), for spaced repetition. */
+  perChord: { target: ChordTarget; shown: number; firstTry: number }[]
 }
 
 const HANDS_LABELS = { right: 'Sağ el akorları', left: 'Sol el akorları', both: 'İki elle akorlar' }
@@ -143,6 +152,15 @@ export function summarizeChords(records: ChordRecord[], failed = false): Session
     .sort((a, b) => a.firstTry / a.shown - b.firstTry / b.shown)
     .slice(0, 3)
 
+  const perChord = new Map<string, { target: ChordTarget; shown: number; firstTry: number }>()
+  // A chord left unanswered by an early finish says nothing about it.
+  for (const r of records.filter((x) => x.answeredAt !== null || x.missed)) {
+    const t = r.chord
+    const key = `${chordTitle(t)}|${t.hands}`
+    const had = perChord.get(key) ?? { target: t, shown: 0, firstTry: 0 }
+    perChord.set(key, { ...had, shown: had.shown + 1, firstTry: had.firstTry + (chordFirstTry(r) ? 1 : 0) })
+  }
+
   const reactions = records
     .filter(chordFirstTry)
     .filter((r) => r.shownAt !== null)
@@ -168,6 +186,7 @@ export function summarizeChords(records: ChordRecord[], failed = false): Session
       inversionMistakes: records.reduce((n, r) => n + r.inversionMistakes, 0),
       incomplete: records.reduce((n, r) => n + r.incomplete, 0),
       weakest,
+      perChord: [...perChord.values()],
     },
   }
 }

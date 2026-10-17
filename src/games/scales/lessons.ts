@@ -15,7 +15,7 @@ const part = (tonic: string, type: ScaleType, hands: ScalePart['hands'], octaves
 const TEMPO_LADDER: TempoLadderSpec = { rounds: 3, stepBpm: 12 }
 
 /** A scale lesson read from the staff, with fingers and crossings, at the player's own pace. */
-function scaleLesson(id: string, title: string, description: string, scales: ScalePart[]): NoteLesson {
+export function scaleLesson(id: string, title: string, description: string, scales: ScalePart[]): NoteLesson {
   return {
     id,
     kind: 'scale',

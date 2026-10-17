@@ -29,8 +29,9 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Birleşti (PR #30) |
 | 9 Kulak eğitimi ve hafıza                     | Birleşti (PR #31) |
 | 10 Şarkılar                                   | Birleşti (PR #32) |
-| 11 Boss'lar, günlük görevler, haftalık        | Bu dal            |
-| 12 ve sonrası                                 | Başlanmadı        |
+| 11 Boss'lar, günlük görevler, haftalık        | Birleşti (PR #33) |
+| 12 Akıllı öğrenme                             | Bu dal            |
+| 13                                            | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -244,6 +245,16 @@ XP. Rozetler: Boss Avcısı, Boss Ustası, Haftanın Yıldızı.
 - Haftalık meydan okumalar, günlük görevler ("bugün 3 mükemmel ders")
 
 ### Faz 12 — Akıllı öğrenme
+
+Yapıldı: **Aralıklı tekrar**: her nota (porteye göre), akor, gam ve arpej bir kart; kartlar 5 kutuda (1, 2, 4, 7, 15
+gün). Zamanı gelmiş kart %90 ve üstü çalınınca bir üst kutuya çıkar, %60'ın altında kutu 1'e döner; erken tekrar
+kutuyu yükseltmez. Her ders kartlarını günceller (boss aşamaları dahil). **Günün Karışımı**: haritada zamanı gelen
+kartları sayan kart; en çok üç aşama (notalar, akorlar, gamlar ya da arpejler), Notiş aralarda; bitince "Aralıklı
+tekrar" kartı her kartın kutusunu ve dönüş gününü gösterir; günde bir kez +15 XP. **Uyarlanabilir zorluk**: Nota
+Kuşu, Balon ve Nota Barmeni'nde ders başına hız (×0,8–×1,3, oyunda "Hız ×1,1"); ritim derslerinde üç yıldız önerilen
+tempoyu 4 artırır, canlar bitince 4 düşürür (dersin temposunun −20/+30 sınırında); Günün Karışımı'nın okuma aşamasına
+iyi bilinen notaların yanındaki yeni notalar eklenir. **Haftalık özet**: profilde "Bu hafta", haritada yeni haftanın
+ilk açılışında "Geçen haftan" (kapatılabilir).
 
 - Aralıklı tekrar: zayıf notalar, akorlar ve gamlar daha sık gelir
 - Uyarlanabilir zorluk (başarıya göre hız ve nota aralığı)

@@ -11,6 +11,7 @@ import { BOSS_HP, bossReport, hpAfter, phaseDamage } from '../games/boss/report'
 import type { SessionSummary } from '../games/noteHunter/summary'
 import { gameTimeout } from '../input/gameClock'
 import { setComputerKeyboardBase } from '../input/computerKeyboard'
+import { cardResults, type CardResult } from '../progress/srs'
 import { finishPending, useFinishRequest } from '../testing/finishRequest'
 import { LessonPlayer, type LessonScreenProps } from './LessonPlayer'
 
@@ -57,13 +58,15 @@ export function BossScreen({ lesson, onFinish, onExit }: LessonScreenProps) {
 
   const stageRef = useRef(stage)
   const summariesRef = useRef(summaries)
+  // The spaced-repetition cards each phase played.
+  const cardsRef = useRef<CardResult[]>([])
   useEffect(() => {
     stageRef.current = stage
     summariesRef.current = summaries
   })
   // "Dersi bitir" between the phases ends the fight with what was played.
   useFinishRequest(() => {
-    if (stageRef.current !== 'play') onFinish(bossReport(spec, summariesRef.current))
+    if (stageRef.current !== 'play') onFinish({ ...bossReport(spec, summariesRef.current), cards: cardsRef.current })
   })
 
   useEffect(() => {
@@ -96,9 +99,10 @@ export function BossScreen({ lesson, onFinish, onExit }: LessonScreenProps) {
   const onPhase = (s: SessionSummary) => {
     const next = [...summariesRef.current, s]
     summariesRef.current = next
+    cardsRef.current = [...cardsRef.current, ...cardResults(spec.phases[next.length - 1].lesson, s)]
     // A test finish inside a phase ends the whole fight.
     if (finishPending()) {
-      onFinish(bossReport(spec, next))
+      onFinish({ ...bossReport(spec, next), cards: cardsRef.current })
       return
     }
     // The hit lands: the boss flinches (or laughs when the hearts ran out).
@@ -200,7 +204,7 @@ export function BossScreen({ lesson, onFinish, onExit }: LessonScreenProps) {
               {lost ? ', canların bitti' : `, ${damage} hasar`}
             </p>
             {over ? (
-              <button className="btn boss-go" onClick={() => onFinish(report)}>
+              <button className="btn boss-go" onClick={() => onFinish({ ...report, cards: cardsRef.current })}>
                 {defeated ? '🏆 Sonuçları gör' : 'Sonuçları gör'}
               </button>
             ) : (

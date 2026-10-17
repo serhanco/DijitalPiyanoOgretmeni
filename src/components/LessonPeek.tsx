@@ -23,6 +23,7 @@ const KIND_NAME: Record<LessonKind, string> = {
   ear: 'Oyun: Kulak Dedektifi',
   waterfall: 'Oyun: Nota Şelalesi',
   boss: 'Boss savaşı',
+  mix: 'Günün tekrar karışımı',
 }
 
 interface Props {

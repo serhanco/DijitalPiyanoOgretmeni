@@ -2,6 +2,8 @@ import type { NoteStat } from '../games/noteHunter/summary'
 import type { Clef } from '../music/notes'
 import type { NoteScore } from './curriculum'
 import { db, noteStatKey, type NoteStatRow, type SessionRow } from './db'
+import { applyResults, type Card, type CardMove, type CardResult } from './srs'
+import { dayKey } from './gamification'
 
 /** Store a finished session and add its per-note results (per staff) to the running totals. */
 export async function recordSession(row: Omit<SessionRow, 'id'>, perNote: NoteStat[]): Promise<void> {
@@ -57,4 +59,27 @@ export async function rhythmSessions(limit = 12): Promise<SessionRow[]> {
     .filter((s) => s.timing !== undefined)
     .limit(limit)
     .toArray()
+}
+
+/** Every spaced-repetition card. */
+export async function allCards(): Promise<Card[]> {
+  return db.review.toArray()
+}
+
+/** Moves the cards a lesson played to their new boxes (`save: false` only works the moves out). */
+export async function reviewLesson(results: CardResult[], now: Date, save = true): Promise<CardMove[]> {
+  if (!results.length) return []
+  return db.transaction('rw', db.review, async () => {
+    const keys = [...new Set(results.map((r) => r.key))]
+    const rows = await db.review.bulkGet(keys)
+    const stored = new Map(rows.flatMap((c) => (c ? [[c.key, c] as const] : [])))
+    const { cards, moves } = applyResults(stored, results, dayKey(now), now.getTime())
+    if (save) await db.review.bulkPut(cards)
+    return moves
+  })
+}
+
+/** Sessions since `at` (epoch ms), oldest first. */
+export async function sessionsSince(at: number): Promise<SessionRow[]> {
+  return db.sessions.where('at').aboveOrEqual(at).sortBy('at')
 }

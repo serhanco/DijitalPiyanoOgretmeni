@@ -2798,6 +2798,160 @@ button.chip {
   animation: pop 0.3s ease-out;
 }
 
+/* Smart learning (phase 12) */
+.mix-card {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 2px solid color-mix(in srgb, #8a5cf6 45%, var(--border));
+  background: color-mix(in srgb, #8a5cf6 10%, var(--surface));
+}
+.mix-card[data-due='no'] {
+  border-color: var(--border);
+  background: var(--surface);
+}
+.mix-card.back {
+  animation: mix-back 0.9s ease-out 0.45s 2;
+}
+@keyframes mix-back {
+  from {
+    outline: 0 solid color-mix(in srgb, #8a5cf6 55%, transparent);
+    outline-offset: 0;
+  }
+  to {
+    outline: 14px solid color-mix(in srgb, #8a5cf6 0%, transparent);
+    outline-offset: 8px;
+  }
+}
+.mix-icon {
+  font-size: 2rem;
+}
+.mix-body {
+  flex: 1;
+  min-width: 0;
+}
+.mix-body h2 {
+  font-size: 1rem;
+  font-weight: 900;
+}
+.mix-body p {
+  margin: 2px 0 0;
+}
+.mix-bonus {
+  color: #8a5cf6;
+  font-weight: 900;
+}
+.mix-stretch {
+  font-weight: 800;
+  color: #8a5cf6;
+}
+.week-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.home > .week-card {
+  margin-top: 16px;
+}
+.week-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  text-align: center;
+  margin: 6px 0;
+}
+.week-stats div {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 2px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.week-stats b {
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+.week-stats span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.week-notes,
+.review-moves {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review-moves li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 10px;
+}
+.review-moves li > .small {
+  grid-column: 1 / -1;
+}
+.review-moves li[data-move='down'] > b {
+  color: var(--danger);
+}
+.review-moves li[data-move='up'] > b {
+  color: var(--primary-dark);
+}
+.box-meter {
+  display: inline-flex;
+  gap: 3px;
+}
+.box-meter span {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--border);
+}
+.box-meter span.on {
+  background: #8a5cf6;
+}
+.review-line {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 700;
+  margin: 12px 0 0;
+}
+.adapt-card p {
+  margin: 0;
+  font-weight: 800;
+}
+.adapt-card p + p {
+  margin-top: 6px;
+}
+.pace-chip {
+  font-weight: 900;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pace-chip.up {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+}
+.pace-chip.down {
+  background: color-mix(in srgb, #1cb0f6 18%, transparent);
+  color: #1cb0f6;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  /* The mix stage keeps Notiş at full size (lesson screens shrink the mascot). */
+  .game.mix .boss-stage .mascot svg {
+    width: 100px;
+    height: 100px;
+  }
+}
+
 /* Map tour (phase 12 polish): medals, lesson peek, shortcuts, unit list, welcome */
 .node-wrap {
   position: relative;

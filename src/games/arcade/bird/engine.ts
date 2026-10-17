@@ -40,6 +40,8 @@ export class BirdGame {
   private spawned = 0
   private sinceSpawnS = Infinity
   private readonly skill: SkillProvider
+  /** Adaptive difficulty: every duration is divided by this (1.1 = 10% faster). */
+  pace = 1
 
   constructor(skill: SkillProvider, hearts = 3) {
     this.skill = skill
@@ -75,7 +77,7 @@ export class BirdGame {
   /** Speed ramps up as the game goes on. */
   private lerp(start: number, end: number) {
     const t = this.total > 1 ? Math.min(1, this.spawned / (this.total - 1)) : 0
-    return start + (end - start) * t
+    return (start + (end - start) * t) / this.pace
   }
 
   update(dtMs: number, now: number): BirdEvent[] {

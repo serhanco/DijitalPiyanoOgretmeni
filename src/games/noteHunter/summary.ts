@@ -18,6 +18,8 @@ import type { MemorySummary } from '../memory/engine'
 import type { ScaleSummary } from '../scales/steps'
 import type { BossSummary } from '../boss/report'
 import type { SongSummary } from '../songs/report'
+import type { CardResult } from '../../progress/srs'
+import type { MixSummary } from '../../progress/mix'
 import { firstTryOk, type PromptRecord } from './session'
 
 export interface NoteStat {
@@ -76,6 +78,10 @@ export interface SessionSummary {
   song?: SongSummary
   /** Unit boss: the phases, the damage they did and whether the boss fell. */
   boss?: BossSummary
+  /** Günün Karışımı: the phases played. */
+  mix?: MixSummary
+  /** Lessons made of other lessons (boss, mix): the spaced-repetition cards their phases played. */
+  cards?: CardResult[]
   /** Theory quizzes: the explanations of the questions missed on the first try. */
   quiz?: { missed: string[] }
   /** Written names of black keys when they differ from the sharp name (Si♭, not La#). */

@@ -6,10 +6,11 @@ const SETTINGS_KEY = 'dpo-settings'
 
 /** Read the whole progress from IndexedDB and localStorage. */
 export async function collectBackup(): Promise<Backup> {
-  const [profile, sessions, noteStats] = await Promise.all([
+  const [profile, sessions, noteStats, review] = await Promise.all([
     db.kv.get(PROFILE_KEY),
     db.sessions.orderBy('at').toArray(),
     db.noteStats.toArray(),
+    db.review.toArray(),
   ])
   return {
     v: 1,
@@ -19,14 +20,17 @@ export async function collectBackup(): Promise<Backup> {
     settings: localStorage.getItem(SETTINGS_KEY),
     sessions: sessions.map(({ id: _id, ...row }) => row),
     noteStats,
+    review,
   }
 }
 
 /** Replace the progress on this device with a backup. The page must reload afterwards. */
 export async function restoreBackup(b: Backup): Promise<void> {
-  await db.transaction('rw', db.kv, db.sessions, db.noteStats, async () => {
+  await db.transaction('rw', [db.kv, db.sessions, db.noteStats, db.review], async () => {
     await db.sessions.clear()
     await db.noteStats.clear()
+    await db.review.clear()
+    await db.review.bulkPut(b.review ?? [])
     await db.sessions.bulkAdd(b.sessions.map((s) => ({ ...s })))
     await db.noteStats.bulkPut(b.noteStats)
     if (b.profile) await db.kv.put({ key: PROFILE_KEY, value: b.profile })

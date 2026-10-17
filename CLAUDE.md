@@ -96,10 +96,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| `main` | Phases 0–10, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live      |
-| This   | Phase 11: unit bosses, daily quests, weekly challenge (`claude/project-thread-ytjjkw`) |
+| Branch | State                                                                             |
+| ------ | --------------------------------------------------------------------------------- |
+| `main` | Phases 0–11, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live |
+| This   | Phase 12: smart learning (`claude/project-thread-ytjjkw`)                         |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -468,7 +468,31 @@ Map tour (`claude/project-thread-u0kytq`, interface polish after phase 11):
 - `components/Welcome.tsx`: first launch only (`dpo-welcomed` in localStorage, and no finished lesson): Notiş, keyboard
   kind (a 25-key controller turns on `ignoreOctave`), daily goal. The scripts set the key before loading.
 
-Next: **phase 12, smart learning** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+Phase 12 (smart learning, `claude/project-thread-ytjjkw`):
+
+- `progress/srs.ts` (pure): every note (per staff), chord (per inversion and hands), scale part and arpeggio part is a
+  `Card` in Leitner boxes 1–5 (`BOX_DAYS` 1, 2, 4, 7, 15; due dates are day keys). `nextBox`: ≥ `PROMOTE_AT` (0.9) moves
+  a due card up (an early replay does not), < `DEMOTE_BELOW` (0.6) back to 1; a new card starts in 2 or 1.
+  `cardResults(lesson, summary)`: reading lessons' `perNote`, chord kinds' `ChordSummary.perChord` (not `byEar`), scale /
+  ladder / arpeggio / surf topics `part-n`; lessons made of lessons (boss, mix) carry `SessionSummary.cards`.
+- Dexie version 2 adds the `review` table (also in the backup code); `history.reviewLesson(results, now, save)` writes
+  the cards and returns the `CardMove`s (`App.finish`, a test finish only works them out). Results: the mix lists every
+  move ("Aralıklı tekrar" card), other lessons show one line.
+- `progress/mix.ts`: `buildMix(cards, today)` → lesson `mix` (`kind: 'mix'`, `MixSpec`): a drill of the due notes of
+  the staff with most due (filled up to 4, plus `stretchNotes`: the white keys just outside the met range once 4 notes
+  are in box ≥ 3, introduced first), the due chords (`exact`, names shown), the due scales or else arpeggios.
+  `MixScreen` plays the phases (like `BossScreen`, Notiş between, `window.__dpoMix`); `mixReport` never fails. No stars;
+  +15 XP once a day (`profile.mixDay`). Map: `DailyMixCard` (`[data-node="mix"]`, hidden until there are cards).
+- `progress/adaptive.ts`: `nextPace` per arcade lesson (bird, balloon, bar: ±0.1 in 0.8–1.3, `profile.pace`,
+  `Reward.pace`); engines divide their durations by `game.pace`; HUD chip `.pace-chip`. `nextTempo`: three stars +4,
+  lost −4 into `settings.tempo[lessonId]` (lesson tempo −20 … +30; not for tempo ladders), results `[data-adapt]`.
+- `progress/weekly.ts`: `weekSummary(sessions, cards, monday)` (lessons, XP, days, accuracy vs the week before, most
+  improved lesson, mastered cards). `components/WeekSummary.tsx`: "Bu hafta" on the profile, "Geçen haftan" on the map
+  until closed (`profile.weekSeen`). Map cards keep their last data in module caches so the map does not jump on return.
+- `SMOKE_ONLY=smart` plays Başlangıç, makes its cards due (plus a chord and a scale), plays the mix, checks the boxes,
+  the pace after a perfect Nota Kuşu and both weekly summaries; layout case `mix` and the `akilli` map check seed IndexedDB.
+
+Next: **phase 13, platforms** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser

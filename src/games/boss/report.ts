@@ -43,7 +43,7 @@ function phaseTitle(title: string): string {
 }
 
 /** Topics of every phase together; the same topic in two phases is merged. */
-function mergedTopics(summaries: SessionSummary[]): CategoryStat[] {
+export function mergedTopics(summaries: SessionSummary[]): CategoryStat[] {
   const out = new Map<string, CategoryStat>()
   for (const s of summaries)
     for (const c of s.perCategory) {

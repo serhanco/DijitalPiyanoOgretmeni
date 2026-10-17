@@ -44,9 +44,11 @@ const bodyMotion: Record<BossMood, TargetAndTransition> = {
     transition: { duration: 1.2, repeat: Infinity, repeatDelay: 0.4 },
   },
   defeated: {
-    y: [0, -10, 24],
+    // Lies on its side inside the 160-wide drawing (turning about the middle of the body), smaller so the horns and tail stay in view.
+    x: [0, 0, 16],
+    y: [0, -10, -12],
     rotate: [0, -10, -78],
-    scale: [1, 1, 0.92],
+    scale: [1, 1, 0.66],
     transition: { duration: 0.9, ease: 'easeIn' },
   },
 }
@@ -243,7 +245,11 @@ export function BossMonster({ look, name, mood = 'idle', pulse = 0, size = 160 }
     <div className="boss-monster" data-mood={mood} style={{ width: size }}>
       <svg viewBox="0 0 160 160" width={size} height={size} role="img" aria-label={name}>
         {!ghost && <ellipse cx={80} cy={150} rx={44} ry={6} fill="rgb(0 0 0 / 0.14)" />}
-        <motion.g key={`${mood}-${pulse}`} animate={bodyMotion[mood]} style={{ originX: 0.5, originY: 0.9 }}>
+        <motion.g
+          key={`${mood}-${pulse}`}
+          animate={bodyMotion[mood]}
+          style={{ originX: 0.5, originY: mood === 'defeated' ? 0.7 : 0.9 }}
+        >
           <motion.g
             animate={ghost && mood !== 'defeated' ? { y: [0, -6, 0] } : { y: 0 }}
             transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}

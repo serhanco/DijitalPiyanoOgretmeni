@@ -1,7 +1,10 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
+import { DailyMixCard } from '../components/DailyMixCard'
 import { HomeShortcuts } from '../components/HomeShortcuts'
 import { LessonPeek } from '../components/LessonPeek'
+import { LastWeekCard } from '../components/WeekSummary'
+import { MIX_LESSON_ID } from '../progress/mix'
 import { TopBar } from '../components/TopBar'
 import { UnitNav, type UnitRow } from '../components/UnitNav'
 import type { LessonKind, NoteLesson } from '../games/noteHunter/lessons'
@@ -77,6 +80,7 @@ const KIND_ICON: Record<LessonKind, string> = {
   ear: '🔍',
   waterfall: '🌊',
   boss: '👾',
+  mix: '🔀',
 }
 
 export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
@@ -158,6 +162,8 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
         </p>
       )}
       <Greeting />
+      <LastWeekCard />
+      <DailyMixCard onStart={onStart} back={focus === MIX_LESSON_ID} />
       <HomeShortcuts />
 
       {UNITS.map((unit) => {

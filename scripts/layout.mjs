@@ -119,6 +119,16 @@ const CASES = [
   { id: 'waterfall', name: 'Nota Şelalesi (ritimli)', title: 'Azizler Yürürken', drive: 'beat', area: '.beat-field' },
   // Unit boss: the boss stage before and between the phases, and a phase (a lesson of the unit) on its own screen.
   { id: 'boss', name: 'Ünite boss’u', title: 'Boss: Sol Ejderhası', drive: 'boss', area: '.staff-wrap' },
+  // Günün Karışımı (seeded cards): the stage, the reading phase, between the phases, the chord phase.
+  {
+    id: 'mix',
+    name: 'Günün Karışımı',
+    title: 'Günün Karışımı’nı başlat',
+    drive: 'mix',
+    area: '.staff-wrap',
+    // The mix card's button starts it at once (no lesson card).
+    direct: true,
+  },
 ].filter((c) => !process.env.LAYOUT_ONLY || process.env.LAYOUT_ONLY.split(',').includes(c.id))
 
 /** Smallest white key the keyboard may draw (MIN_WHITE_KEY_PX in PianoKeyboard). */
@@ -355,8 +365,10 @@ async function openLesson(page, title) {
  */
 function mapPlace(title) {
   const vh = window.innerHeight
-  const node = [...document.querySelectorAll('.home .node')].find((n) => n.getAttribute('aria-label') === title)
-  const step = node?.closest('.path-step')
+  const node = [...document.querySelectorAll('.home .node, .home .mix-card button')].find(
+    (n) => n.getAttribute('aria-label') === title,
+  )
+  const step = node?.closest('.path-step, .mix-card')
   if (!step) return { errors: [`Haritada "${title}" düğmesi yok`], warnings: [] }
   const r = node.getBoundingClientRect()
   const offset = Math.round(r.top + r.height / 2 - vh / 2)
@@ -370,6 +382,101 @@ function mapPlace(title) {
     errors.push(`Haritaya dönünce "${title}" ortada değil: ortadan ${offset} px`)
   if (!step.classList.contains('back')) warnings.push(`"${title}" az önce oynanan ders diye işaretlenmedi`)
   return { errors, warnings, facts: { returnOffset: offset, scrollY: Math.round(window.scrollY) } }
+}
+
+/**
+ * Phase 12 needs history the trial runs never keep: spaced-repetition cards that are due (five
+ * notes, a chord, a scale) and two lessons last week, written straight into IndexedDB.
+ */
+function seedSmart() {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('dijital-piyano')
+    open.onerror = () => reject(open.error)
+    open.onsuccess = () => {
+      const idb = open.result
+      const tx = idb.transaction(['review', 'sessions'], 'readwrite')
+      const card = (key, kind, label, data, box) => ({
+        key,
+        kind,
+        label,
+        data,
+        box,
+        due: '2000-01-01',
+        lastSeen: 0,
+        shown: 4,
+        firstTry: 2,
+        last: 0.5,
+      })
+      const review = tx.objectStore('review')
+      const names = { 60: 'Do4', 62: 'Re4', 64: 'Mi4', 65: 'Fa4', 67: 'Sol4' }
+      for (const [midi, name] of Object.entries(names))
+        review.put(
+          card(
+            `note:treble:${midi}`,
+            'note',
+            `${name} (sol anahtarı)`,
+            { kind: 'note', clef: 'treble', midi: +midi },
+            1,
+          ),
+        )
+      review.put(
+        card(
+          'chord:c0:major:0:right',
+          'chord',
+          'Do Majör',
+          { kind: 'chord', root: { letter: 'c', acc: 0 }, quality: 'major', inversion: 0, hands: 'right' },
+          2,
+        ),
+      )
+      review.put(
+        card(
+          'scale:C:major:right:1',
+          'scale',
+          'Do Majör · sağ el',
+          { kind: 'scale', part: { tonic: 'C', type: 'major', hands: 'right' } },
+          2,
+        ),
+      )
+      const lastWeek = Date.now() - 7 * 86_400_000
+      for (const [i, lessonId] of ['basics-notes-1', 'basics-notes-2'].entries())
+        tx.objectStore('sessions').add({
+          lessonId,
+          at: lastWeek + i * 3_600_000,
+          total: 10,
+          firstTry: 8 + i,
+          accuracy: 0.8 + i / 10,
+          avgReactionMs: 1500,
+          stars: 2,
+          xp: 20,
+          failed: false,
+        })
+      tx.oncomplete = () => resolve(null)
+      tx.onerror = () => reject(tx.error)
+    }
+  })
+}
+
+/** The map with the seeded history: last week's summary and the mix card, then the summary closed. */
+async function smartMap(page, snap, vpId) {
+  await page.evaluate(seedSmart)
+  await page.reload()
+  await page.waitForSelector('.mix-card[data-due="yes"]')
+  await page.waitForSelector('.week-card[data-week="last"]')
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.waitForTimeout(300)
+  await snap('akilli-harita')
+  const checks = [
+    {
+      ...(await page.evaluate(measure, { play: false, minKey: 0, minShare: 0 })),
+      name: 'akilli-harita',
+      shot: `${vpId}-akilli-harita.png`,
+    },
+  ]
+  await page.getByLabel('Haftalık özeti kapat').click()
+  await page.waitForTimeout(200)
+  if (await page.$('.week-card[data-week="last"]'))
+    checks.push({ name: 'hafta-kapat', errors: ['Geçen haftanın özeti kapanmadı'], warnings: [] })
+  return checks
 }
 
 /** Wait until the map stops gliding (the smooth scroll back to the lesson). */
@@ -675,6 +782,27 @@ const DRIVERS = {
     await page.waitForTimeout(600)
     return checks
   },
+  async mix(page, shot) {
+    await page.waitForSelector('.game.mix .boss-go')
+    const checks = [await shot('arena', '.boss-arena')]
+    await page.click('.boss-go')
+    await page.waitForSelector('.staff-wrap[data-note]')
+    checks.push(await shot())
+    for (let i = 0; i < 40 && !(await page.$('.game.mix')); i++) {
+      const target = await page.getAttribute('.staff-wrap', 'data-note', { timeout: 1500 }).catch(() => null)
+      if (target) await page.click(`.key[data-midi="${target}"]`)
+      await page.waitForTimeout(450)
+    }
+    await page.waitForSelector('.game.mix[data-stage="between"]')
+    await page.waitForTimeout(600)
+    checks.push(await shot('arena-arasi', '.boss-arena'))
+    // The chord phase; "Dersi bitir" then ends the whole mix.
+    await page.click('.boss-go')
+    await page.waitForSelector('.chord-wrap')
+    await page.waitForTimeout(500)
+    checks.push(await shot('akor', '.chord-wrap'))
+    return checks
+  },
   async waterfall(page, shot) {
     await page.waitForSelector('.song-start')
     const checks = [await shot('hazir')]
@@ -811,12 +939,27 @@ async function runViewport(vp) {
     await page.waitForTimeout(800)
   }
 
+  const smart = { id: 'akilli', name: 'Günün Karışımı ve haftalık özet (harita)', checks: [] }
+  results.push(smart)
+  try {
+    smart.checks.push(...(await smartMap(page, snap, vp.id)))
+  } catch (e) {
+    smart.checks.push({
+      name: 'çalıştırma',
+      errors: [`Harita kartları denenemedi: ${e.message.split('\n')[0]}`],
+      warnings: [],
+    })
+    await page.goto(url)
+    await page.waitForTimeout(800)
+  }
+
   for (const c of CASES.filter((c) => !vp.cases || vp.cases.includes(c.id))) {
     const before = pageErrors.length
     const entry = { id: c.id, name: c.name, title: c.title, checks: [] }
     results.push(entry)
     try {
-      await openLesson(page, c.title)
+      if (c.direct) await page.getByRole('button', { name: c.title, exact: true }).click()
+      else await openLesson(page, c.title)
       await page.waitForTimeout(400)
       const shot = async (suffix = '', area = c.area) => {
         const file = `${c.id}${suffix ? `-${suffix}` : ''}`
