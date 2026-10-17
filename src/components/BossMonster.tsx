@@ -132,7 +132,7 @@ function Mouth({ look, mood }: { look: BossLook; mood: BossMood }) {
   )
 }
 
-/** Wings, tail, tentacles and spikes: behind the body. */
+/** Wings, tail and spikes: behind the body. */
 function Back({ look }: { look: BossLook }) {
   const f = look.features
   return (
@@ -162,16 +162,26 @@ function Back({ look }: { look: BossLook }) {
         />
       )}
       {f.includes('spikes') && <path d="M54 54 l8 -18 l8 16 l10 -20 l10 20 l8 -16 l8 18 z" />}
-      {f.includes('tentacles') &&
-        [44, 64, 96, 116].map((x, i) => (
+    </g>
+  )
+}
+
+/** Wavy arms curling out under the body, each swaying on its own. */
+function Tentacles({ look }: { look: BossLook }) {
+  return (
+    <g stroke={look.body} strokeWidth={11} strokeLinecap="round" fill="none">
+      {[40, 60, 80, 100, 120].map((x, i) => {
+        const dir = x < 80 ? -1 : 1
+        return (
           <motion.path
             key={x}
-            d={`M${x - 8} 124 q-2 18 ${i < 2 ? -10 : 10} 22 q6 2 8 -4 q-6 -6 8 -18 z`}
-            animate={{ rotate: [0, i % 2 ? 8 : -8, 0] }}
-            transition={{ duration: 1 + i * 0.15, repeat: Infinity, ease: 'easeInOut' }}
+            d={`M${x} 124 q${dir * 4} 14 ${dir * 2} 22 q${-dir * 2} 8 ${dir * 10} 8`}
+            animate={{ rotate: [0, i % 2 ? 7 : -7, 0] }}
+            transition={{ duration: 1 + i * 0.13, repeat: Infinity, ease: 'easeInOut' }}
             style={{ originX: 0.5, originY: 0 }}
           />
-        ))}
+        )
+      })}
     </g>
   )
 }
@@ -264,9 +274,14 @@ export function BossMonster({ look, name, mood = 'idle', pulse = 0, size = 160 }
               />
             ) : (
               <>
-                <ellipse cx={58} cy={138} rx={13} ry={8} fill={look.dark} />
-                <ellipse cx={102} cy={138} rx={13} ry={8} fill={look.dark} />
+                {!look.features.includes('tentacles') && (
+                  <>
+                    <ellipse cx={58} cy={138} rx={13} ry={8} fill={look.dark} />
+                    <ellipse cx={102} cy={138} rx={13} ry={8} fill={look.dark} />
+                  </>
+                )}
                 <ellipse cx={80} cy={94} rx={52} ry={46} fill={look.body} />
+                {look.features.includes('tentacles') && <Tentacles look={look} />}
               </>
             )}
             <ellipse cx={80} cy={112} rx={28} ry={18} fill={look.belly} opacity={0.6} />

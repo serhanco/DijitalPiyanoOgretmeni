@@ -480,8 +480,10 @@ export function earReport(session: EarSession): SessionSummary {
       ? 'Dedektifin büyüteci buğulandı. Her vakada önce bir kez daha dinle, sonra karar ver.'
       : accuracy === 1
         ? 'Bütün vakaları ilk denemede çözdün. Keskin bir kulağın var!'
-        : accuracy >= 0.75
-          ? `İyi iş dedektif! “${weak.label}” biraz daha dinleme istiyor.`
-          : `Kulak zamanla açılır. “${weak.label}” konusunu sesleri art arda dinleyerek tekrar dene.`,
+        : !weak
+          ? 'Vakalar seni bekliyor: dinle, sonra çöz.'
+          : accuracy >= 0.75
+            ? `İyi iş dedektif! “${weak.label}” biraz daha dinleme istiyor.`
+            : `Kulak zamanla açılır. “${weak.label}” konusunu sesleri art arda dinleyerek tekrar dene.`,
   }
 }

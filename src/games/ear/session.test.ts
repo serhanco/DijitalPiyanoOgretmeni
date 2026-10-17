@@ -74,6 +74,12 @@ describe('case builders', () => {
 describe('EarSession', () => {
   const cases = intervalPrompts({ intervals: [3, 4], ways: ['up'], low: 60, high: 72 }, 4, seeded(7))
 
+  it('reports a session ended before any case was answered (a test finish)', () => {
+    const r = earReport(new EarSession(cases, { hearts: 3 }))
+    expect(r.firstTry).toBe(0)
+    expect(r.message).toMatch(/Vakalar seni bekliyor/)
+  })
+
   it('counts the first answer, costs a heart for a wrong one, and lets the player try again', () => {
     const s = new EarSession(cases, { hearts: 3 })
     expect(s.choose(s.current!.answer, 0)).toEqual([]) // not heard yet
