@@ -21,6 +21,11 @@ export function consumeFinishRequest(): boolean {
   return was
 }
 
+/** True while a test finish waits for App to consume it (a boss ends its fight on it). */
+export function finishPending(): boolean {
+  return requested
+}
+
 export function onFinishRequest(listener: Listener): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)

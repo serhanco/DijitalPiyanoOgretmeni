@@ -16,6 +16,7 @@ import type { ChordSummary } from '../chords/report'
 import type { EarSummary } from '../ear/session'
 import type { MemorySummary } from '../memory/engine'
 import type { ScaleSummary } from '../scales/steps'
+import type { BossSummary } from '../boss/report'
 import type { SongSummary } from '../songs/report'
 import { firstTryOk, type PromptRecord } from './session'
 
@@ -73,6 +74,8 @@ export interface SessionSummary {
   ear?: EarSummary
   /** Nota Şelalesi: success per section, repeats and what to practise next. */
   song?: SongSummary
+  /** Unit boss: the phases, the damage they did and whether the boss fell. */
+  boss?: BossSummary
   /** Theory quizzes: the explanations of the questions missed on the first try. */
   quiz?: { missed: string[] }
   /** Written names of black keys when they differ from the sharp name (Si♭, not La#). */

@@ -1131,6 +1131,87 @@ async function songsUnit() {
   await page.screenshot({ path: `${out}/map-songs.png`, fullPage: true })
 }
 
+/**
+ * A unit boss fight: plays every phase on its own screen (note drills and the arcade games of
+ * Başlangıç) and steps through the boss stage between them. `lose` presses wrong keys in the
+ * first phase until the hearts run out.
+ */
+async function bossFight(title, shotName, { lose = false } = {}) {
+  await page.getByRole('button', { name: title, exact: true }).click()
+  await page.waitForSelector('.boss-arena .boss-go')
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${out}/${shotName}-intro.png` })
+  await page.click('.boss-go')
+  let between = 0
+  for (let i = 0; i < 3000 && !(await page.$('.results')); i++) {
+    if (await page.$('.game.boss[data-stage="between"]')) {
+      await page.waitForTimeout(1300)
+      await page.screenshot({ path: `${out}/${shotName}-hit-${++between}.png` })
+      await page.click('.boss-go')
+      await page.waitForTimeout(300)
+      continue
+    }
+    const target = await page.getAttribute('.staff-wrap', 'data-note', { timeout: 100 }).catch(() => null)
+    if (target) {
+      const midi = Number(target)
+      const key = lose ? (midi === 60 ? 62 : 60) : midi
+      await page.click(`.key[data-midi="${key}"]`, { timeout: 1500 }).catch(() => undefined)
+      await page.waitForTimeout(lose ? 150 : 520)
+      continue
+    }
+    const arcade = await page.evaluate(() => {
+      const g = window.__dpoArcade
+      if (!g) return null
+      if ('pipes' in g) {
+        const cur = g.current
+        return cur && cur.record.answeredAt === null ? cur.record.target : null
+      }
+      const up = g.flying?.sort((a, b) => a.y - b.y)[0]
+      return up && up.y < 0.4 ? up.record.target : null
+    })
+    if (arcade !== null) await page.click(`.key[data-midi="${arcade}"]`, { timeout: 1500 }).catch(() => undefined)
+    await page.waitForTimeout(120)
+  }
+  await page.waitForSelector('.results', { timeout: 5000 })
+  await page.waitForTimeout(900)
+  await dismissOverlay()
+  await page.screenshot({ path: `${out}/${shotName}-results.png`, fullPage: true })
+  return between
+}
+
+/** Başlangıç's boss beaten, then lost to; the day's quests moved on by the unit's lessons. */
+async function bossesAndQuests() {
+  const back = () => page.getByText('Derslere dön').click()
+  const board = await page.textContent('.quest-board')
+  if (!board.includes('Bugünün görevleri') || !board.includes('Haftalık meydan okuma'))
+    throw new Error(`Quest board missing: ${board}`)
+  const doneQuests = await page.locator('.quest-board .quest.done').count()
+  if (doneQuests < 1) throw new Error('No quest done after the whole Başlangıç unit')
+  await page.locator('.quest-board').screenshot({ path: `${out}/quests-map.png` })
+
+  const hits = await bossFight('Boss: Karışık Kedi', 'boss-win')
+  if (hits !== 3) throw new Error(`Expected the boss stage after each of 3 phases, saw ${hits}`)
+  const win = await page.textContent('.results')
+  if (!(await page.textContent('h1')).includes('Karışık Kedi yenildi')) throw new Error('Boss should be beaten')
+  if (!(await page.$('.boss-card[data-defeated]'))) throw new Error('Boss card should say the boss fell')
+  for (const want of ['Boss yenildi', 'Boss Avcısı', '1. aşama: Nota okuma', '3. aşama: Nota Kuşu'])
+    if (!win.includes(want)) throw new Error(`Boss results lack "${want}"`)
+  await back()
+  await page.waitForTimeout(400)
+  const stars = await page.getAttribute('[data-node="boss-basics"] .node-stars', 'aria-label')
+  if (stars === '0 yıldız') throw new Error('Beaten boss should have stars on the map')
+
+  await bossFight('Boss: Karışık Kedi', 'boss-lose', { lose: true })
+  if (!(await page.textContent('h1')).includes('Karışık Kedi kazandı')) throw new Error('Boss should win')
+  const lost = await page.textContent('.boss-card')
+  if (!lost.includes('canlar bitti') || !lost.includes('oynanmadı'))
+    throw new Error(`Lost boss card should say where the hearts ran out: ${lost}`)
+  await back()
+  await page.waitForTimeout(400)
+  if ((await page.getAttribute('[data-node="boss-basics"] .node-stars', 'aria-label')) !== stars)
+    throw new Error('A lost fight must keep the boss stars')
+}
+
 async function finish() {
   await browser.close()
   if (errors.length) {
@@ -1184,6 +1265,15 @@ if (process.env.SMOKE_ONLY === 'songs') {
   await songsUnit()
   await finish()
   console.log(`Smoke test (songs) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
+// SMOKE_ONLY=boss plays Başlangıç, checks the quests, beats its boss and loses to it.
+if (process.env.SMOKE_ONLY === 'boss') {
+  await page.waitForTimeout(800)
+  await basicsUnit()
+  await bossesAndQuests()
+  await finish()
+  console.log(`Smoke test (boss) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
 // SMOKE_ONLY=basics plays only the Başlangıç unit.

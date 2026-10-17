@@ -96,10 +96,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                     |
-| ------ | ----------------------------------------------------------------------------------------- |
-| `main` | Phases 0–9, Başlangıç, test mode, the rhythm curriculum (PR #30) and the polish PRs, live |
-| This   | Phase 10: songs unit 9, Nota Şelalesi (`claude/project-thread-ytjjkw`)                    |
+| Branch | State                                                                                  |
+| ------ | -------------------------------------------------------------------------------------- |
+| `main` | Phases 0–10, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live      |
+| This   | Phase 11: unit bosses, daily quests, weekly challenge (`claude/project-thread-ytjjkw`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -435,7 +435,28 @@ Phase 10 (songs, `claude/project-thread-ytjjkw`, unit 9 = 22 lessons):
   Şarkı, Konser Piyanisti (`LessonOutcome.song`, `songHands`). `SMOKE_ONLY=songs`; layout cases `theory-song`,
   `waterfall-wait`, `waterfall`.
 
-Next: **phase 11, unit bosses and events** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
+Phase 11 (bosses and quests, `claude/project-thread-ytjjkw`):
+
+- `games/boss/bosses.ts`: every unit ends with a boss lesson (`kind: 'boss'`, id `boss-<unit>`, title `Boss: <name>`,
+  appended to `UNITS` in `curriculum.ts`). `BossSpec { name, taunt, look, phases }`; a phase is a lesson of the unit
+  with a patch (shorter `length`, fewer `bars`, sliced `scales` / `melodies`, no tempo ladder, no intro), id
+  `boss-<unit>-<n>`, title `Aşama n/3: <lesson>`. `unitDone` ignores bosses (they open nothing); the map draws the boss
+  after the weak-notes node, bigger, with its own "BOSS!" bubble, and `current` (BAŞLA) skips bosses.
+- `games/boss/report.ts`: `phaseDamage` = accuracy / `BOSS_WIN` (0.75) × 100 / phases; `bossReport` joins the phase
+  summaries (phase topics, then the phases' topics merged by label); defeated = all phases played, none out of hearts,
+  mean ≥ `BOSS_WIN`; `failed = !defeated` (no stars). `SessionSummary.boss` → results "Boss" card.
+- `screens/LessonPlayer.tsx`: the lesson-kind dispatch (moved out of `App`); `BossScreen` plays each phase through it,
+  with a stage between phases (`BossMonster`: parametric SVG monster, moods `idle | hurt | angry | laugh | defeated`,
+  HP bar). A test finish inside a phase (`finishPending()`) ends the whole fight. `window.__dpoBoss`.
+- `progress/quests.ts` (pure): `DAILY_POOL` / `WEEKLY_POOL`, `pickQuests` (seeded by the day / ISO week key, only
+  eligible quests: `questEligible` in curriculum checks the unit is open), `advanceQuests(daily, weekly, event)` →
+  progress, `xpLines` (+10 per quest, chest +20 when all three are done, weekly +50). Profile keeps `quests` and
+  `weekly`; `ensureQuests` picks them (the map's `QuestBoard` calls it); `completeLesson` adds the quest lines to the
+  reward (`Reward.lessonXp` is the lesson's own XP, `Reward.quests` the steps for the results "Görevler" card).
+  `LessonOutcome.kind` and `boss`; XP line "Boss yenildi" (+30); badges Boss Avcısı, Boss Ustası, Haftanın Yıldızı.
+- `SMOKE_ONLY=boss` plays Başlangıç, checks the quest board, beats Karışık Kedi and loses to it; layout case `boss`.
+
+Next: **phase 12, smart learning** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser

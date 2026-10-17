@@ -22,6 +22,8 @@ beforeEach(async () => {
     lessonsCompleted: 0,
     lessons: {},
     badges: {},
+    quests: null,
+    weekly: null,
   })
   await Promise.all([db.sessions.clear(), db.noteStats.clear()])
 })
@@ -30,7 +32,9 @@ describe('completeLesson', () => {
   it('adds XP, extends the streak, keeps best stars and reports rewards', () => {
     const day1 = new Date(2026, 9, 7, 10)
     const r1 = useProfile.getState().completeLesson(outcome, day1)
-    expect(r1.xpGained).toBe(16 + 10)
+    expect(r1.lessonXp).toBe(16 + 10)
+    // Quests completed on the way add their own lines.
+    expect(r1.xpGained).toBe(r1.xpLines.reduce((n, l) => n + l.xp, 0))
     expect(r1.streak).toBe(1)
     expect(r1.streakExtended).toBe(true)
     expect(r1.previousBestAccuracy).toBeNull()
@@ -39,12 +43,33 @@ describe('completeLesson', () => {
     const r2 = useProfile.getState().completeLesson({ ...outcome, stars: 1, accuracy: 0.6, firstTry: 6 }, day1)
     expect(r2.streakExtended).toBe(false)
     expect(r2.previousBestAccuracy).toBe(0.8)
-    expect(r2.goalJustReached).toBe(true) // 26 + 22 >= 30
+    // 26 + 22 >= 30 (a quest reward can cross it already on the first lesson)
+    expect(r1.goalJustReached || r2.goalJustReached).toBe(true)
     expect(useProfile.getState().lessons['treble-1']).toEqual({ bestStars: 2, bestAccuracy: 0.8, plays: 2 })
 
     const r3 = useProfile.getState().completeLesson(outcome, new Date(2026, 9, 8, 9))
     expect(r3.streak).toBe(2)
-    expect(r3.dailyXp).toBe(26)
+    expect(r3.dailyXp).toBe(r3.xpGained)
+    expect(r3.lessonXp).toBe(26)
+  })
+
+  it('moves the day’s quests on and pays out the finished ones', () => {
+    const day = new Date(2026, 9, 7, 10)
+    useProfile.getState().ensureQuests(day)
+    const before = useProfile.getState().quests!
+    expect(before.day).toBe('2026-10-07')
+    expect(before.quests).toHaveLength(3)
+    // A three-star, flawless first play moves most quests on.
+    const r = useProfile.getState().completeLesson({ ...outcome, accuracy: 1, firstTry: 10, stars: 3 }, day)
+    const after = useProfile.getState().quests!
+    expect(after.quests.map((q) => q.id)).toEqual(before.quests.map((q) => q.id))
+    for (const step of r.quests.steps.filter((s) => s.completed))
+      expect(r.xpLines.map((l) => l.label)).toContain(
+        step.def.id.startsWith('week') ? `Haftalık meydan okuma: ${step.def.title}` : `Görev: ${step.def.title}`,
+      )
+    expect(r.quests.steps.length).toBeGreaterThan(0)
+    // Only units already open give quests: on day one no ear or song quests.
+    expect(after.quests.some((q) => q.id === 'ear-2' || q.id === 'song-1')).toBe(false)
   })
 
   it('does not count a failed lesson as completed', () => {

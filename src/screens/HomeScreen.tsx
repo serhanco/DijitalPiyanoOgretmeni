@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
 import { MidiPanel } from '../components/MidiPanel'
+import { QuestBoard } from '../components/QuestBoard'
 import { TopBar } from '../components/TopBar'
 import type { LessonKind, NoteLesson } from '../games/noteHunter/lessons'
 import { type Clef, CLEF_NAMES } from '../music/notes'
@@ -71,6 +72,7 @@ const KIND_ICON: Record<LessonKind, string> = {
   surf: '🏄',
   ear: '🔍',
   waterfall: '🌊',
+  boss: '👾',
 }
 
 export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
@@ -101,7 +103,10 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
   }, [toast])
 
   // The first unlocked lesson without stars is where the learner is.
-  const current = UNITS.flatMap((u) => u.lessons).find((l) => unlockedLesson(l.id) && bestStars(l.id) === 0)
+  // Bosses are a side challenge: they wave their own bubble.
+  const current = UNITS.flatMap((u) => u.lessons).find(
+    (l) => l.kind !== 'boss' && unlockedLesson(l.id) && bestStars(l.id) === 0,
+  )
 
   return (
     <div className="home">
@@ -112,12 +117,66 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
         </p>
       )}
       <Greeting />
+      <QuestBoard />
       <MidiPanel />
 
       {UNITS.map((unit) => {
         // A unit waiting for another one (Başlangıç) says so on its banner.
         const waiting = !!unit.requires && !unlockedLesson(unit.lessons[0].id)
         const requiredTitle = UNITS.find((u) => u.id === unit.requires)?.title
+        // The weak-notes review comes before the boss, the unit's last node.
+        const path = unit.lessons.filter((l) => l.kind !== 'boss')
+        const boss = unit.lessons.find((l) => l.kind === 'boss')
+        const node = (lesson: NoteLesson, i: number) => {
+          const unlocked = unlockedLesson(lesson.id)
+          const stars = bestStars(lesson.id)
+          const isCurrent = current?.id === lesson.id
+          const isBoss = lesson.kind === 'boss'
+          return (
+            <div
+              key={lesson.id}
+              className={`path-step ${focus === lesson.id ? 'back' : ''} ${isBoss ? 'boss-step-node' : ''}`}
+              data-node={lesson.id}
+              style={{ transform: `translateX(${isBoss ? 0 : ZIGZAG[i % ZIGZAG.length]}px)` }}
+            >
+              {(isCurrent || (isBoss && isUnlocked(lesson.id, bestStars) && stars === 0)) && (
+                <span className={`start-bubble ${isBoss ? 'boss' : ''}`}>{isBoss ? 'BOSS!' : 'BAŞLA'}</span>
+              )}
+              <button
+                className={`node ${isBoss ? 'boss' : ''} ${unlocked ? 'open' : 'locked'} ${stars === 3 ? 'gold' : ''} ${isCurrent ? 'current' : ''}`}
+                style={unlocked ? ({ '--node': unit.color } as React.CSSProperties) : undefined}
+                onClick={() =>
+                  unlocked
+                    ? onStart(lesson)
+                    : setToast(
+                        i === 0 && waiting
+                          ? `Bu ünite ${requiredTitle} ünitesinin bütün dersleri bitince açılır.`
+                          : isBoss
+                            ? 'Boss, ünitenin son dersi bir yıldızla bitince açılır.'
+                            : 'Bu dersi açmak için önceki dersi en az 1 yıldızla bitir.',
+                      )
+                }
+                aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
+              >
+                {unlocked
+                  ? stars === 3
+                    ? '👑'
+                    : isBoss && stars > 0
+                      ? '🏆'
+                      : KIND_ICON[lesson.kind ?? 'drill']
+                  : '🔒'}
+              </button>
+              <span className="node-title">{lesson.title}</span>
+              <span className="node-stars" aria-label={`${stars} yıldız`}>
+                {[1, 2, 3].map((s) => (
+                  <span key={s} className={s <= stars ? 'on' : ''}>
+                    ★
+                  </span>
+                ))}
+              </span>
+            </div>
+          )
+        }
         return (
           <section
             key={unit.id}
@@ -138,45 +197,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
 
             {!unit.comingSoon && (
               <div className="path">
-                {unit.lessons.map((lesson, i) => {
-                  const unlocked = unlockedLesson(lesson.id)
-                  const stars = bestStars(lesson.id)
-                  const isCurrent = current?.id === lesson.id
-                  return (
-                    <div
-                      key={lesson.id}
-                      className={`path-step ${focus === lesson.id ? 'back' : ''}`}
-                      data-node={lesson.id}
-                      style={{ transform: `translateX(${ZIGZAG[i % ZIGZAG.length]}px)` }}
-                    >
-                      {isCurrent && <span className="start-bubble">BAŞLA</span>}
-                      <button
-                        className={`node ${unlocked ? 'open' : 'locked'} ${stars === 3 ? 'gold' : ''} ${isCurrent ? 'current' : ''}`}
-                        style={unlocked ? ({ '--node': unit.color } as React.CSSProperties) : undefined}
-                        onClick={() =>
-                          unlocked
-                            ? onStart(lesson)
-                            : setToast(
-                                i === 0 && waiting
-                                  ? `Bu ünite ${requiredTitle} ünitesinin bütün dersleri bitince açılır.`
-                                  : 'Bu dersi açmak için önceki dersi en az 1 yıldızla bitir.',
-                              )
-                        }
-                        aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
-                      >
-                        {unlocked ? (stars === 3 ? '👑' : KIND_ICON[lesson.kind ?? 'drill']) : '🔒'}
-                      </button>
-                      <span className="node-title">{lesson.title}</span>
-                      <span className="node-stars" aria-label={`${stars} yıldız`}>
-                        {[1, 2, 3].map((s) => (
-                          <span key={s} className={s <= stars ? 'on' : ''}>
-                            ★
-                          </span>
-                        ))}
-                      </span>
-                    </div>
-                  )
-                })}
+                {path.map(node)}
 
                 {unit.review &&
                   (() => {
@@ -186,7 +207,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
                       <div
                         className={`path-step ${focus === `review-${clef}` ? 'back' : ''}`}
                         data-node={`review-${clef}`}
-                        style={{ transform: `translateX(${ZIGZAG[unit.lessons.length % ZIGZAG.length]}px)` }}
+                        style={{ transform: `translateX(${ZIGZAG[path.length % ZIGZAG.length]}px)` }}
                       >
                         <button
                           className={`node review ${notes.length ? 'open' : 'locked'}`}
@@ -203,6 +224,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
                       </div>
                     )
                   })()}
+                {boss && node(boss, path.length)}
               </div>
             )}
           </section>

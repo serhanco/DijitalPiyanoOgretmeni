@@ -1,5 +1,7 @@
 // Pure rules for XP, levels, streaks and badges. No storage, no React.
 
+import type { LessonKind } from '../games/noteHunter/lessons'
+
 export const XP_PER_FIRST_TRY = 2
 export const XP_LESSON_COMPLETE = 10
 export const XP_PERFECT_BONUS = 10
@@ -8,9 +10,12 @@ export const XP_SPEED_BONUS = 5
 export const SPEED_BONUS_MS = 1500
 export const DEFAULT_DAILY_GOAL = 30
 export const HEARTS_PER_LESSON = 5
+export const XP_BOSS_BONUS = 30
 
 export interface LessonOutcome {
   lessonId: string
+  /** The lesson's kind (quests count games, songs...). Defaults to 'drill'. */
+  kind?: LessonKind
   total: number
   firstTry: number
   accuracy: number
@@ -37,6 +42,8 @@ export interface LessonOutcome {
   allTogether?: boolean
   /** Arcade games: no target got away (no invader landed, no dish burnt). */
   noneMissed?: boolean
+  /** Unit boss: beaten or not. */
+  boss?: { defeated: boolean }
 }
 
 export interface XpLine {
@@ -59,6 +66,7 @@ export function xpFor(outcome: LessonOutcome): XpLine[] {
   const lines: XpLine[] = [{ label, xp: outcome.firstTry * XP_PER_FIRST_TRY }]
   if (outcome.failed) return lines
   lines.push({ label: 'Ders tamamlandı', xp: XP_LESSON_COMPLETE })
+  if (outcome.boss?.defeated) lines.push({ label: 'Boss yenildi', xp: XP_BOSS_BONUS })
   if (outcome.accuracy === 1) lines.push({ label: 'Hatasız ders', xp: XP_PERFECT_BONUS })
   if (outcome.accuracy >= 0.9 && outcome.avgReactionMs !== null && outcome.avgReactionMs < SPEED_BONUS_MS) {
     lines.push({ label: 'Hız bonusu', xp: XP_SPEED_BONUS })
@@ -128,6 +136,11 @@ export interface BadgeContext {
   allBassLessonIds: string[]
   allScaleLessonIds?: string[]
   allChordLessonIds?: string[]
+  /** Unit bosses beaten so far (this lesson included) and how many there are. */
+  bossesDefeated?: number
+  bossCount?: number
+  /** This lesson finished the weekly challenge. */
+  weeklyDone?: boolean
 }
 
 export interface Badge {
@@ -318,6 +331,27 @@ export const BADGES: Badge[] = [
     description: 'Konser’i 3 yıldızla bitir',
     icon: '🎹',
     earned: (c) => c.outcome.lessonId === 'song-concert' && !c.outcome.failed && c.outcome.stars >= 3,
+  },
+  {
+    id: 'boss-hunter',
+    title: 'Boss Avcısı',
+    description: 'Bir ünite boss’unu yen',
+    icon: '👾',
+    earned: (c) => !!c.outcome.boss?.defeated,
+  },
+  {
+    id: 'boss-master',
+    title: 'Boss Ustası',
+    description: 'Bütün ünite boss’larını yen',
+    icon: '🐉',
+    earned: (c) => !!c.bossCount && (c.bossesDefeated ?? 0) >= c.bossCount,
+  },
+  {
+    id: 'week-star',
+    title: 'Haftanın Yıldızı',
+    description: 'Bir haftalık meydan okumayı tamamla',
+    icon: '🏵️',
+    earned: (c) => !!c.weeklyDone,
   },
 ]
 
