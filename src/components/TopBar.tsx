@@ -6,6 +6,7 @@ import { SettingsPanel } from './SettingsPanel'
 interface Props {
   onProfile: () => void
   onCalibrate: () => void
+  onUnits: () => void
 }
 
 /** Ring that fills up as today's XP approaches the daily goal. */
@@ -29,7 +30,7 @@ export function GoalRing({ value, goal, size = 40 }: { value: number; goal: numb
 }
 
 /** The map's top bar: sticks to the top of the screen while the map scrolls. */
-export function TopBar({ onProfile, onCalibrate }: Props) {
+export function TopBar({ onProfile, onCalibrate, onUnits }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { totalXp, streak, daily, dailyGoal } = useProfile()
   const [today] = useState(() => dayKey(new Date()))
@@ -51,6 +52,9 @@ export function TopBar({ onProfile, onCalibrate }: Props) {
       </span>
       <button className="chip level" onClick={onProfile} aria-label="Profil">
         Sv. {level} 👤
+      </button>
+      <button className="chip units-btn" onClick={onUnits} aria-label="Üniteler">
+        🧭
       </button>
       <button
         className="chip settings-btn"
