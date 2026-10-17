@@ -1169,6 +1169,14 @@ button.chip {
     padding: 4px 8px;
     font-size: 0.85rem;
   }
+  .chip.goal .goal-ring {
+    width: 22px;
+    height: 22px;
+  }
+  .units-btn,
+  .settings-btn {
+    padding: 4px 6px;
+  }
 }
 
 /* Rhythm (phase 5) */
@@ -2942,4 +2950,286 @@ button.chip {
     width: 100px;
     height: 100px;
   }
+}
+
+/* Map tour (phase 12 polish): medals, lesson peek, shortcuts, unit list, welcome */
+.node-wrap {
+  position: relative;
+  display: inline-block;
+}
+.medal {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 5px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #fff;
+  border: 3px solid var(--bg);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.2);
+  pointer-events: none;
+}
+.medal.m1 {
+  background: #cd7f32;
+}
+.medal.m2 {
+  background: #9aa5b1;
+  letter-spacing: -2px;
+}
+.medal.m3 {
+  background: #ffc800;
+  font-size: 0.95rem;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 15px;
+}
+.node-wrap:has(.m3)::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid #ffc800;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.units-btn {
+  font-size: 1.1rem;
+}
+.shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 3px 0 var(--border);
+  padding: 10px 12px;
+}
+.shortcut:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--border);
+}
+.shortcut-icon {
+  font-size: 1.6rem;
+}
+.shortcut-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+.shortcut-body b {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.shortcut-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shortcut-state .midi-dot {
+  flex: none;
+}
+.sheet .card {
+  margin-top: 8px;
+}
+.lesson-peek .peek-kind {
+  font-weight: 800;
+  color: var(--muted);
+}
+.lesson-peek .peek-desc {
+  margin: 8px 0 12px;
+  font-weight: 600;
+}
+.peek-best {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.lesson-peek-go {
+  width: 100%;
+}
+.unit-fold {
+  margin-top: 8px;
+  font: inherit;
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: #fff;
+  cursor: pointer;
+  background: rgb(0 0 0 / 0.18);
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.unit[data-folded] .unit-banner {
+  opacity: 0.9;
+}
+.unit-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.unit-nav-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.unit-nav-row.dim {
+  opacity: 0.6;
+}
+.unit-nav-dot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.unit-nav-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+.unit-nav-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.unit-nav-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+.unit-nav-count {
+  font-weight: 900;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  background: var(--bg);
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.welcome-card {
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: auto;
+  animation: pop-in 0.25s ease-out;
+}
+.welcome-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.welcome-dots span {
+  width: 28px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+}
+.welcome-dots span.on {
+  background: var(--primary);
+}
+.welcome-say {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.welcome-text {
+  font-weight: 700;
+  color: var(--muted);
+}
+.welcome-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.welcome-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 3px 0 var(--border);
+  padding: 12px 14px;
+}
+.welcome-option > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+.welcome-option .muted {
+  font-size: 0.85rem;
+}
+.welcome-option.on {
+  border-color: var(--accent);
+  box-shadow: 0 3px 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.welcome-option-icon {
+  font-size: 1.8rem;
+}
+.welcome-connect {
+  align-self: flex-start;
+}
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  text-align: center;
 }

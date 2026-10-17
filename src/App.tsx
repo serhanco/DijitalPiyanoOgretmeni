@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { useSoundRouting } from './audio/useSoundRouting'
 import { type NoteLesson, PATTERN_KINDS } from './games/noteHunter/lessons'
 import type { SessionSummary } from './games/noteHunter/summary'
@@ -14,6 +14,8 @@ import { ProfileScreen } from './screens/ProfileScreen'
 import { ResultsScreen } from './screens/ResultsScreen'
 import { type Reward, useProfile } from './state/profile'
 import { useSettings } from './state/settings'
+import { Welcome } from './components/Welcome'
+import { welcomeDone } from './components/welcomeState'
 import { consumeFinishRequest } from './testing/finishRequest'
 import { type Place, TestTools } from './testing/TestTools'
 
@@ -40,11 +42,24 @@ type Screen =
       tempo?: { from: number; to: number }
     }
 
+/** True once the saved profile has been read; a returning learner must not see the welcome flash by. */
+function useProfileLoaded(): boolean {
+  return useSyncExternalStore(
+    (notify) => useProfile.persist.onFinishHydration(notify),
+    () => useProfile.persist.hasHydrated(),
+  )
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
   const midiStatus = useMidi((s) => s.status)
   const connectMidi = useMidi((s) => s.connect)
   const testMode = useSettings((s) => s.testMode)
+  const profileLoaded = useProfileLoaded()
+  const lessonsCompleted = useProfile((s) => s.lessonsCompleted)
+  const [welcomed, setWelcomed] = useState(welcomeDone)
+  // Old players (who have finished a lesson) never see the welcome.
+  const showWelcome = !welcomed && profileLoaded && lessonsCompleted === 0
 
   useSoundRouting()
   useEffect(() => attachComputerKeyboard(), [])
@@ -178,6 +193,7 @@ export default function App() {
           onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
         />
       )}
+      {showWelcome && <Welcome onDone={() => setWelcomed(true)} />}
       {testMode && <TestTools place={place} />}
     </main>
   )

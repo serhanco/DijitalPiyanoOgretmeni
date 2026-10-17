@@ -17,6 +17,8 @@ await page.addInitScript(() => {
   Object.defineProperty(navigator, 'requestMIDIAccess', { value: async () => access })
   window.__fakeMidi = (bytes) => input.onmidimessage?.({ data: new Uint8Array(bytes), timeStamp: performance.now() })
 })
+// The welcome shows once per device; tests start on the map.
+await page.addInitScript(() => localStorage.setItem('dpo-welcomed', '1'))
 page.setDefaultTimeout(10000)
 const errors = []
 page.on('pageerror', (e) => {
@@ -26,9 +28,15 @@ page.on('pageerror', (e) => {
 // Piano samples cannot load without network; ignore those.
 page.on('console', (m) => m.type() === 'error' && !m.text().includes('ERR_FAILED') && errors.push(m.text()))
 
+/** Open a lesson from the map: tap its node, then Başla / Tekrar çal on the card that opens. */
+async function openLesson(title, force = false) {
+  await page.getByRole('button', { name: title, exact: true }).click({ force })
+  await page.locator('.lesson-peek-go').click()
+}
+
 /** Play a lesson to the end. `wrongFirst` presses keys from the top until the right one. */
 async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName = '' } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.waitForSelector('.staff svg')
   /** "clef:midi" of every prompt, to check which staff notes were written on. */
   const seen = new Set()
@@ -63,7 +71,7 @@ async function play(lessonTitle, { wrongFirst = false, shotAfter = 0, shotName =
  * down `gapMs` apart (left hand first), from the page so the gap is exact.
  */
 async function playMelody(lessonTitle, shotName, { gapMs = 20, shotAfter = 6 } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.waitForSelector('.melody-wrap .staff svg')
   for (let i = 0; i < 200 && !(await page.$('.results')); i++) {
     const wrap = await page.$('.melody-wrap')
@@ -100,7 +108,7 @@ async function playMelody(lessonTitle, shotName, { gapMs = 20, shotAfter = 6 } =
 
 /** Play an arcade lesson perfectly, reading the target from the game object. */
 async function playArcade(lessonTitle, shotName) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.waitForSelector('.pixi-stage canvas')
   let shot = false
   for (let i = 0; i < 2000 && !(await page.$('.results')); i++) {
@@ -145,7 +153,7 @@ async function playBeat(
   { offsetMs = 0, shotAt = 0.5, slower = 0, faster = 0, lateRound = 0, tapMs = 0 } = {},
 ) {
   // The map may still be gliding to the lesson just left.
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click({ force: true })
+  await openLesson(lessonTitle, true)
   await page.waitForSelector('.beat-start')
   for (let i = 0; i < slower; i++) await page.getByLabel('Yavaşlat').click()
   for (let i = 0; i < faster; i++) await page.getByLabel('Hızlandır').click()
@@ -202,7 +210,7 @@ async function playBeat(
  * the game object. `wrongInRound` presses one wrong key in that round first.
  */
 async function playMemory(lessonTitle, shotName, { wrongInRound = -1 } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.click('.memory-start')
   let round = 0
   let shot = false
@@ -267,7 +275,7 @@ async function pressTogether(keys, gapMs, holdMs = 150) {
 
 /** Play a chord drill: every note of the current chord, `gapMs` apart. */
 async function playChords(lessonTitle, shotName, { gapMs = 25, shotAfter = 3, ear = false } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   const board = ear ? '.ear-board' : '.chord-wrap'
   if (ear) {
     await page.getByRole('button', { name: /Dinlemeye başla/ }).click()
@@ -288,7 +296,7 @@ async function playChords(lessonTitle, shotName, { gapMs = 25, shotAfter = 3, ea
  * first plays one inverted chord in another inversion.
  */
 async function playChordArcade(lessonTitle, shotName, { wrongInversion = false } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.waitForSelector('.pixi-stage canvas')
   let shot = false
   for (let i = 0; i < 600 && !(await page.$('.results')); i++) {
@@ -476,7 +484,7 @@ async function testModeFlow() {
   const xpStart = (await page.textContent('.chip.xp'))?.trim()
 
   // A lesson that is locked without test mode (it needs the one before it).
-  await page.getByRole('button', { name: 'Porte Ustası', exact: true }).click()
+  await openLesson('Porte Ustası')
   await page.waitForSelector('.staff svg')
   await page.locator('.test-fab').first().click()
   await page.waitForSelector('.test-shot img', { timeout: 10000 })
@@ -509,7 +517,7 @@ async function testModeFlow() {
   if (xpAfter !== xpStart) errors.push(`Early finish changed XP from ${xpStart} to ${xpAfter}`)
 
   // The note panel pauses an arcade game: the balloons stand still while it is open.
-  await page.getByRole('button', { name: 'Balon Patlatma', exact: true }).click()
+  await openLesson('Balon Patlatma')
   await page.waitForSelector('.pixi-stage canvas')
   await page.waitForTimeout(1500)
   const balloons = () => page.evaluate(() => JSON.stringify(window.__dpoArcade.flying.map((b) => b.y)))
@@ -527,7 +535,7 @@ async function testModeFlow() {
   await page.getByText('Derslere dön').click()
 
   // A rhythm lesson finished mid-round.
-  await page.getByRole('button', { name: 'Dörtlükler', exact: true }).click()
+  await openLesson('Dörtlükler')
   await page.click('.beat-start')
   await page.waitForTimeout(3000)
   await page.getByLabel('Dersi bitir').click()
@@ -582,6 +590,7 @@ async function testModeFlow() {
   await page.getByLabel('Ayarları kapat').click()
 
   const other = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  await other.addInitScript(() => localStorage.setItem('dpo-welcomed', '1'))
   other.on('pageerror', (e) => errors.push(`Other device: ${e.message}`))
   other.on('dialog', (d) => d.accept())
   await other.goto(url)
@@ -603,7 +612,7 @@ async function testModeFlow() {
  * question wrong once first.
  */
 async function playTheory(lessonTitle, shotName, { shots = [], wrongAt = -1, quizShot = -1 } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.waitForSelector('.theory-card')
   for (let i = 0; i < 20 && (await page.$('.theory-card')); i++) {
     await page.waitForTimeout(350)
@@ -662,7 +671,7 @@ async function playEcho(title, shotName) {
 
 /** A song: the original title on the start card, the next key lit, a perfect score. */
 async function playSong(title, original, shotName, opts = {}) {
-  await page.getByRole('button', { name: title, exact: true }).click()
+  await openLesson(title)
   await page.waitForSelector('.beat-start')
   const shown = await page.getAttribute('.tune-info', 'data-tune').catch(() => null)
   if (shown !== original) errors.push(`${title}: start card shows "${shown}", not "${original}"`)
@@ -785,7 +794,7 @@ async function rhythmUnits() {
   const adapt = await page.textContent('[data-adapt="tempo"]').catch(() => null)
   if (!adapt?.includes('79 → 83')) errors.push(`Three stars should raise the tempo: ${adapt}`)
   await page.getByText('Derslere dön').click()
-  await page.getByRole('button', { name: 'Üç Dörtlük', exact: true }).click()
+  await openLesson('Üç Dörtlük')
   const tempo = (await page.textContent('.tempo-value'))?.trim()
   if (tempo !== '83 BPM') errors.push(`Tempo was not remembered: ${tempo}`)
   await page.getByLabel('Dersten çık').click()
@@ -833,7 +842,7 @@ async function rhythmUnits() {
 
 /** Play a drill that first introduces new notes (the lit key), then the drill itself. */
 async function playIntro(lessonTitle, shotName) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.waitForSelector('.staff svg')
   let intros = 0
   for (let i = 0; i < 80 && !(await page.$('.results')); i++) {
@@ -916,7 +925,7 @@ async function basicsUnit() {
  * then answer it on its button or key. `wrongAt` answers that case wrong once first.
  */
 async function playEar(lessonTitle, shotName, { wrongAt = -1, shotAt = 1 } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click()
+  await openLesson(lessonTitle)
   await page.click('.ear-start')
   for (let i = 0; i < 60 && !(await page.$('.results')); i++) {
     await page.waitForFunction(() => window.__dpoEar?.heard() || document.querySelector('.results'), null, {
@@ -1033,7 +1042,7 @@ async function earUnit() {
  * `wrongAt` presses a wrong key at that step the first time, so its section falls again.
  */
 async function playWaterfall(lessonTitle, shotName, { wait = false, wrongAt = -1, shotAt = 6 } = {}) {
-  await page.getByRole('button', { name: lessonTitle, exact: true }).click({ force: true })
+  await openLesson(lessonTitle, true)
   await page.waitForSelector('.song-start')
   if (shotName) await page.screenshot({ path: `${out}/${shotName}-ready.png` })
   for (let i = 0; i < 4 && (await page.getByLabel('Hızlandır').isEnabled()); i++)
@@ -1139,7 +1148,7 @@ async function songsUnit() {
  * first phase until the hearts run out.
  */
 async function bossFight(title, shotName, { lose = false } = {}) {
-  await page.getByRole('button', { name: title, exact: true }).click()
+  await openLesson(title)
   await page.waitForSelector('.boss-arena .boss-go')
   await page.waitForTimeout(400)
   await page.screenshot({ path: `${out}/${shotName}-intro.png` })
@@ -1184,12 +1193,14 @@ async function bossFight(title, shotName, { lose = false } = {}) {
 /** Başlangıç's boss beaten, then lost to; the day's quests moved on by the unit's lessons. */
 async function bossesAndQuests() {
   const back = () => page.getByText('Derslere dön').click()
+  await page.locator('[data-shortcut="quests"]').click()
   const board = await page.textContent('.quest-board')
   if (!board.includes('Bugünün görevleri') || !board.includes('Haftalık meydan okuma'))
     throw new Error(`Quest board missing: ${board}`)
   const doneQuests = await page.locator('.quest-board .quest.done').count()
   if (doneQuests < 1) throw new Error('No quest done after the whole Başlangıç unit')
   await page.locator('.quest-board').screenshot({ path: `${out}/quests-map.png` })
+  await page.keyboard.press('Escape')
 
   const hits = await bossFight('Boss: Karışık Kedi', 'boss-win')
   if (hits !== 3) throw new Error(`Expected the boss stage after each of 3 phases, saw ${hits}`)
@@ -1349,7 +1360,7 @@ async function smartLearning() {
   if (!pace?.includes('×1,2')) throw new Error(`Perfect game should speed up: ${pace}`)
   if (!(await page.textContent('.review-line'))?.includes('Tekrar kartları')) throw new Error('No review line')
   await back()
-  await page.getByRole('button', { name: 'Nota Kuşu: İlk Oktav', exact: true }).click()
+  await openLesson('Nota Kuşu: İlk Oktav')
   await page.waitForSelector('.pace-chip')
   if ((await page.textContent('.pace-chip')) !== 'Hız ×1,2') throw new Error('No pace chip in the game')
   await page.waitForTimeout(1500)
@@ -1668,7 +1679,7 @@ const tempoTopics = await page.textContent('.results')
 if (!tempoTopics?.includes('104 BPM')) errors.push('Tempo ladder report has no per-tempo topics')
 await back()
 // The raised tempo is remembered.
-await page.getByRole('button', { name: 'Tempo Merdiveni', exact: true }).click()
+await openLesson('Tempo Merdiveni')
 const ladderLine = await page.textContent('.tempo-ladder')
 if (!ladderLine?.includes('92 → 104 → 116')) errors.push(`Raised tempo ladder: ${ladderLine}`)
 await page.getByLabel('Dersten çık').click()
@@ -1742,6 +1753,7 @@ await page.getByLabel('Geri').click()
 await page.waitForTimeout(400)
 
 // The Akai is recognised and the octave hint answers its leftmost key.
+await page.locator('[data-shortcut="midi"]').click()
 const panel = await page.textContent('.midi-panel')
 if (!panel?.includes('Akai MPK Mini MK3')) errors.push(`MIDI panel did not recognise the Akai: ${panel}`)
 await page.evaluate(() => window.__fakeMidi([0x90, 48, 100]))

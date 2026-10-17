@@ -120,7 +120,15 @@ const CASES = [
   // Unit boss: the boss stage before and between the phases, and a phase (a lesson of the unit) on its own screen.
   { id: 'boss', name: 'Ünite boss’u', title: 'Boss: Sol Ejderhası', drive: 'boss', area: '.staff-wrap' },
   // Günün Karışımı (seeded cards): the stage, the reading phase, between the phases, the chord phase.
-  { id: 'mix', name: 'Günün Karışımı', title: 'Günün Karışımı’nı başlat', drive: 'mix', area: '.staff-wrap' },
+  {
+    id: 'mix',
+    name: 'Günün Karışımı',
+    title: 'Günün Karışımı’nı başlat',
+    drive: 'mix',
+    area: '.staff-wrap',
+    // The mix card's button starts it at once (no lesson card).
+    direct: true,
+  },
 ].filter((c) => !process.env.LAYOUT_ONLY || process.env.LAYOUT_ONLY.split(',').includes(c.id))
 
 /** Smallest white key the keyboard may draw (MIN_WHITE_KEY_PX in PianoKeyboard). */
@@ -345,6 +353,12 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
   return { errors, warnings, facts }
 }
 
+/** Open a lesson from the map: tap its node, then Başla on the card that opens. */
+async function openLesson(page, title) {
+  await page.getByRole('button', { name: title, exact: true }).click()
+  await page.locator('.lesson-peek-go').click()
+}
+
 /**
  * Back on the map after a lesson: the lesson's node is on screen, centred unless the page
  * cannot scroll that far, and marked as the one just played.
@@ -488,7 +502,7 @@ async function mapReturns(page, snap, vpId) {
   const top = () => page.evaluate(() => window.scrollTo(0, 0))
 
   await top()
-  await page.getByRole('button', { name: 'Arpejler', exact: true }).click()
+  await openLesson(page, 'Arpejler')
   await page.waitForSelector('.melody-wrap')
   await page.getByLabel('Dersten çık').click()
   await settle(page)
@@ -497,7 +511,7 @@ async function mapReturns(page, snap, vpId) {
 
   await top()
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.getByRole('button', { name: 'Majör Üçlüler', exact: true }).click()
+  await openLesson(page, 'Majör Üçlüler')
   await page.waitForSelector('.chord-wrap')
   await page.getByLabel('Dersi bitir').click()
   await page.waitForSelector('.results')
@@ -885,6 +899,7 @@ async function runViewport(vp) {
     deviceScaleFactor: 1,
     colorScheme: vp.dark ? 'dark' : 'light',
   })
+  await context.addInitScript(() => localStorage.setItem('dpo-welcomed', '1'))
   const page = await context.newPage()
   page.setDefaultTimeout(10000)
   const pageErrors = []
@@ -943,7 +958,8 @@ async function runViewport(vp) {
     const entry = { id: c.id, name: c.name, title: c.title, checks: [] }
     results.push(entry)
     try {
-      await page.getByRole('button', { name: c.title, exact: true }).click()
+      if (c.direct) await page.getByRole('button', { name: c.title, exact: true }).click()
+      else await openLesson(page, c.title)
       await page.waitForTimeout(400)
       const shot = async (suffix = '', area = c.area) => {
         const file = `${c.id}${suffix ? `-${suffix}` : ''}`

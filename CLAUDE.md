@@ -456,6 +456,18 @@ Phase 11 (bosses and quests, `claude/project-thread-ytjjkw`):
   `LessonOutcome.kind` and `boss`; XP line "Boss yenildi" (+30); badges Boss Avcısı, Boss Ustası, Haftanın Yıldızı.
 - `SMOKE_ONLY=boss` plays Başlangıç, checks the quest board, beats Karışık Kedi and loses to it; layout case `boss`.
 
+Map tour (`claude/project-thread-u0kytq`, interface polish after phase 11):
+
+- Lesson nodes keep their kind's icon; stars show as a `.medal` on the node's corner (bronze 1, silver 2, gold crown 3,
+  a trophy on a boss). A tap on an open node opens `components/LessonPeek.tsx` (what it is, best accuracy, plays) and
+  `.lesson-peek-go` starts it: scripts use `openLesson(title)` instead of clicking the node.
+- The map's quest board and MIDI panel open as sheets (`components/Sheet.tsx`) from two short cards
+  (`HomeShortcuts`, `[data-shortcut="quests" | "midi"]`); the 🧭 chip in the top bar opens `UnitNav` (progress per unit,
+  tap to jump). A finished unit (boss included, not in test mode, not the unit just left) folds into its banner
+  (`[data-unit-fold]`); `openedUnits` remembers the ones opened again.
+- `components/Welcome.tsx`: first launch only (`dpo-welcomed` in localStorage, and no finished lesson): Notiş, keyboard
+  kind (a 25-key controller turns on `ignoreOctave`), daily goal. The scripts set the key before loading.
+
 Phase 12 (smart learning, `claude/project-thread-ytjjkw`):
 
 - `progress/srs.ts` (pure): every note (per staff), chord (per inversion and hands), scale part and arpeggio part is a
