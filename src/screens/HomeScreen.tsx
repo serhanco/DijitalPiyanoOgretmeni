@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
-import { MidiPanel } from '../components/MidiPanel'
-import { QuestBoard } from '../components/QuestBoard'
+import { HomeShortcuts } from '../components/HomeShortcuts'
+import { LessonPeek } from '../components/LessonPeek'
 import { TopBar } from '../components/TopBar'
+import { UnitNav, type UnitRow } from '../components/UnitNav'
 import type { LessonKind, NoteLesson } from '../games/noteHunter/lessons'
 import { type Clef, CLEF_NAMES } from '../music/notes'
-import { buildReviewLesson, isUnlocked, UNITS, weakestNotes } from '../progress/curriculum'
+import { buildReviewLesson, isUnlocked, mapNodeOf, UNITS, weakestNotes } from '../progress/curriculum'
 import { noteScores } from '../progress/history'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
@@ -48,6 +49,9 @@ function useMapScroll(focus: string | undefined) {
   }, [focus])
 }
 
+/** Finished units that the learner opened again, kept while the app runs. */
+const openedUnits = new Set<string>()
+
 /** Horizontal offsets that make the lesson path zigzag, Duolingo style. */
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
@@ -82,6 +86,9 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
   const unlockedLesson = (id: string) => testMode || isUnlocked(id, bestStars)
   const [weak, setWeak] = useState<Record<Clef, number[]>>({ treble: [], bass: [] })
   const [toast, setToast] = useState<string | null>(null)
+  const [peek, setPeek] = useState<NoteLesson | null>(null)
+  const [navOpen, setNavOpen] = useState(false)
+  const [, rerender] = useState(0)
   useMapScroll(focus)
 
   useEffect(() => {
@@ -108,17 +115,50 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
     (l) => l.kind !== 'boss' && unlockedLesson(l.id) && bestStars(l.id) === 0,
   )
 
+  // A finished unit (boss included) folds into its banner; test mode and a lesson just left keep it open.
+  const finished = (unit: (typeof UNITS)[number]) =>
+    !testMode &&
+    !unit.comingSoon &&
+    unit.lessons.every((l) => bestStars(l.id) > 0) &&
+    !unit.lessons.some((l) => mapNodeOf(l) === focus || l.id === focus)
+  const folded = (unit: (typeof UNITS)[number]) => finished(unit) && !openedUnits.has(unit.id)
+  const toggleUnit = (id: string) => {
+    if (openedUnits.has(id)) openedUnits.delete(id)
+    else openedUnits.add(id)
+    rerender((n) => n + 1)
+  }
+  const unitRows: UnitRow[] = UNITS.map((u) => ({
+    id: u.id,
+    title: u.title,
+    color: u.color,
+    done: u.lessons.filter((l) => bestStars(l.id) > 0).length,
+    total: u.lessons.length,
+    locked: !!u.requires && !unlockedLesson(u.lessons[0].id),
+    soon: !!u.comingSoon,
+  }))
+  const jumpTo = (id: string) => {
+    openedUnits.add(id)
+    setNavOpen(false)
+    rerender((n) => n + 1)
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-unit="${CSS.escape(id)}"]`)
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY - 76
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      window.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' })
+    })
+  }
+
   return (
     <div className="home">
-      <TopBar onProfile={onProfile} onCalibrate={onCalibrate} />
+      <TopBar onProfile={onProfile} onCalibrate={onCalibrate} onUnits={() => setNavOpen(true)} />
       {testMode && (
         <p className="test-banner">
           🧪 <b>Test modu açık:</b> bütün dersler açık. Bir şey görünce sağdaki 📝 ile not bırak.
         </p>
       )}
       <Greeting />
-      <QuestBoard />
-      <MidiPanel />
+      <HomeShortcuts />
 
       {UNITS.map((unit) => {
         // A unit waiting for another one (Başlangıç) says so on its banner.
@@ -142,30 +182,31 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
               {(isCurrent || (isBoss && isUnlocked(lesson.id, bestStars) && stars === 0)) && (
                 <span className={`start-bubble ${isBoss ? 'boss' : ''}`}>{isBoss ? 'BOSS!' : 'BAŞLA'}</span>
               )}
-              <button
-                className={`node ${isBoss ? 'boss' : ''} ${unlocked ? 'open' : 'locked'} ${stars === 3 ? 'gold' : ''} ${isCurrent ? 'current' : ''}`}
-                style={unlocked ? ({ '--node': unit.color } as React.CSSProperties) : undefined}
-                onClick={() =>
-                  unlocked
-                    ? onStart(lesson)
-                    : setToast(
-                        i === 0 && waiting
-                          ? `Bu ünite ${requiredTitle} ünitesinin bütün dersleri bitince açılır.`
-                          : isBoss
-                            ? 'Boss, ünitenin son dersi bir yıldızla bitince açılır.'
-                            : 'Bu dersi açmak için önceki dersi en az 1 yıldızla bitir.',
-                      )
-                }
-                aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
-              >
-                {unlocked
-                  ? stars === 3
-                    ? '👑'
-                    : isBoss && stars > 0
-                      ? '🏆'
-                      : KIND_ICON[lesson.kind ?? 'drill']
-                  : '🔒'}
-              </button>
+              <span className="node-wrap">
+                <button
+                  className={`node ${isBoss ? 'boss' : ''} ${unlocked ? 'open' : 'locked'} ${stars === 3 ? 'gold' : ''} ${isCurrent ? 'current' : ''}`}
+                  style={unlocked ? ({ '--node': unit.color } as React.CSSProperties) : undefined}
+                  onClick={() =>
+                    unlocked
+                      ? setPeek(lesson)
+                      : setToast(
+                          i === 0 && waiting
+                            ? `Bu ünite ${requiredTitle} ünitesinin bütün dersleri bitince açılır.`
+                            : isBoss
+                              ? 'Boss, ünitenin son dersi bir yıldızla bitince açılır.'
+                              : 'Bu dersi açmak için önceki dersi en az 1 yıldızla bitir.',
+                        )
+                  }
+                  aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
+                >
+                  {unlocked ? KIND_ICON[lesson.kind ?? 'drill'] : '🔒'}
+                </button>
+                {unlocked && stars > 0 && (
+                  <span className={`medal m${stars}`} aria-hidden>
+                    {stars === 3 ? (isBoss ? '🏆' : '👑') : stars === 2 ? '★★' : '★'}
+                  </span>
+                )}
+              </span>
               <span className="node-title">{lesson.title}</span>
               <span className="node-stars" aria-label={`${stars} yıldız`}>
                 {[1, 2, 3].map((s) => (
@@ -181,21 +222,35 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
           <section
             key={unit.id}
             className={`unit ${unit.comingSoon ? 'soon' : ''}`}
+            data-unit={unit.id}
             data-waiting={waiting || undefined}
+            data-folded={folded(unit) || undefined}
           >
             <header className="unit-banner" style={{ background: unit.comingSoon ? undefined : unit.color }}>
               <h2>{unit.title}</h2>
               <p>{unit.comingSoon ? 'Yakında' : unit.subtitle}</p>
               {waiting && <p className="unit-lock">🔒 {requiredTitle} bitince açılır</p>}
+              {finished(unit) && (
+                <button
+                  className="unit-fold"
+                  onClick={() => toggleUnit(unit.id)}
+                  aria-expanded={!folded(unit)}
+                  data-unit-fold={unit.id}
+                >
+                  {folded(unit)
+                    ? `✓ Bitti, ★ ${unit.lessons.reduce((n, l) => n + bestStars(l.id), 0)}/${unit.lessons.length * 3} · aç`
+                    : 'Katla'}
+                </button>
+              )}
             </header>
 
-            {(unit.id === 'rhythm' || unit.id === 'rhythm2') && (
+            {(unit.id === 'rhythm' || unit.id === 'rhythm2') && !folded(unit) && (
               <button className="calib-tip" onClick={onCalibrate}>
                 ⏱ Bluetooth piyanoyla mı çalışıyorsun? Önce <b>gecikme ayarını</b> yap.
               </button>
             )}
 
-            {!unit.comingSoon && (
+            {!unit.comingSoon && !folded(unit) && (
               <div className="path">
                 {path.map(node)}
 
@@ -230,6 +285,22 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
           </section>
         )
       })}
+
+      {peek && (
+        <LessonPeek
+          lesson={peek}
+          icon={KIND_ICON[peek.kind ?? 'drill']}
+          stars={bestStars(peek.id)}
+          bestAccuracy={lessons[peek.id] ? lessons[peek.id].bestAccuracy : null}
+          plays={lessons[peek.id]?.plays ?? 0}
+          onStart={() => {
+            setPeek(null)
+            onStart(peek)
+          }}
+          onClose={() => setPeek(null)}
+        />
+      )}
+      {navOpen && <UnitNav rows={unitRows} onPick={jumpTo} onClose={() => setNavOpen(false)} />}
 
       {toast && (
         <div className="toast" role="status">
