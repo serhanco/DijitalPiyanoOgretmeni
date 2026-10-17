@@ -774,7 +774,7 @@ async function rhythmUnits() {
   await playSong('Uyuyor musun?', 'Frère Jacques', 'song-frere')
   await backToMap()
 
-  // 3/4 and dotted halves; the chosen tempo is remembered.
+  // 3/4 and dotted halves; the chosen tempo is remembered, and three stars raise it a little.
   await playTheory('Vals Ölçüsü', 'theory-rhythm-waltz', { shots: [1] })
   await backToMap()
   await playEcho('Yankı: Üç Dörtlük')
@@ -782,10 +782,12 @@ async function rhythmUnits() {
   await playBeat('Üç Dörtlük', 'rhythm-waltz', { slower: 1 })
   await dismissOverlay()
   await page.screenshot({ path: `${out}/results-waltz.png`, fullPage: true })
+  const adapt = await page.textContent('[data-adapt="tempo"]').catch(() => null)
+  if (!adapt?.includes('79 → 83')) errors.push(`Three stars should raise the tempo: ${adapt}`)
   await page.getByText('Derslere dön').click()
   await page.getByRole('button', { name: 'Üç Dörtlük', exact: true }).click()
   const tempo = (await page.textContent('.tempo-value'))?.trim()
-  if (tempo !== '79 BPM') errors.push(`Tempo was not remembered: ${tempo}`)
+  if (tempo !== '83 BPM') errors.push(`Tempo was not remembered: ${tempo}`)
   await page.getByLabel('Dersten çık').click()
   await playBeat('Dino Valsi', 'game-dino-waltz')
   await backToMap()
@@ -1212,6 +1214,181 @@ async function bossesAndQuests() {
     throw new Error('A lost fight must keep the boss stars')
 }
 
+/** Runs a function on the app's IndexedDB (Dexie 'dijital-piyano') inside the page. */
+async function idb(fn, arg) {
+  return page.evaluate(
+    ([src, a]) =>
+      new Promise((resolve, reject) => {
+        const open = indexedDB.open('dijital-piyano')
+        open.onerror = () => reject(open.error)
+        open.onsuccess = () => {
+          const tx = open.result.transaction(['review', 'sessions', 'kv'], 'readwrite')
+          let result
+          Promise.resolve(new Function('tx', 'a', `return (${src})(tx, a)`)(tx, a)).then((r) => (result = r))
+          tx.oncomplete = () => {
+            open.result.close()
+            resolve(result)
+          }
+          tx.onerror = () => reject(tx.error)
+        }
+      }),
+    [fn.toString(), arg],
+  )
+}
+
+const allCards = () =>
+  idb(
+    (tx) =>
+      new Promise((resolve) => {
+        const req = tx.objectStore('review').getAll()
+        req.onsuccess = () => resolve(req.result)
+      }),
+  )
+
+/**
+ * Phase 12: Başlangıç leaves note cards behind; made due (and with a chord and a scale card
+ * added) they become Günün Karışımı, played through its three phases. Then the arcade pace
+ * after a perfect Nota Kuşu, and the weekly summaries on the profile and the map.
+ */
+async function smartLearning() {
+  const back = async () => {
+    await page.getByText('Derslere dön').click()
+    await page.waitForTimeout(500)
+  }
+  let cards = await allCards()
+  const notes = cards.filter((c) => c.kind === 'note')
+  if (notes.length < 8) throw new Error(`Başlangıç should leave note cards, found ${notes.length}`)
+  if (!notes.every((c) => c.box >= 1 && c.due > '2026')) throw new Error('Cards need a box and a date')
+  if ((await page.getAttribute('.mix-card', 'data-due')) !== 'no')
+    throw new Error('Right after the lessons nothing should be due yet')
+
+  // A few days later: every card is due; a chord and a scale were played earlier too.
+  await idb((tx) => {
+    const store = tx.objectStore('review')
+    const req = store.getAll()
+    req.onsuccess = () => {
+      for (const c of req.result) store.put({ ...c, due: '2000-01-01' })
+      const base = { lastSeen: 0, shown: 4, firstTry: 2, last: 0.5, due: '2000-01-01', box: 2 }
+      store.put({
+        ...base,
+        key: 'chord:c0:major:0:right',
+        kind: 'chord',
+        label: 'Do Majör',
+        data: { kind: 'chord', root: { letter: 'c', acc: 0 }, quality: 'major', inversion: 0, hands: 'right' },
+      })
+      store.put({
+        ...base,
+        key: 'chord:g0:major:0:right',
+        kind: 'chord',
+        label: 'Sol Majör',
+        data: { kind: 'chord', root: { letter: 'g', acc: 0 }, quality: 'major', inversion: 0, hands: 'right' },
+      })
+      store.put({
+        ...base,
+        key: 'scale:C:major:right:1',
+        kind: 'scale',
+        label: 'Do Majör · sağ el',
+        data: { kind: 'scale', part: { tonic: 'C', type: 'major', hands: 'right' } },
+      })
+    }
+  })
+  await page.reload()
+  await page.waitForSelector('.mix-card[data-due="yes"]')
+  const card = await page.textContent('.mix-card')
+  if (!/\d+ nota, 2 akor, 1 gam/.test(card) || !card.includes('+15 XP')) throw new Error(`Mix card: ${card}`)
+  await page.locator('.mix-card').screenshot({ path: `${out}/mix-card.png` })
+
+  await page.getByLabel('Günün Karışımı’nı başlat').click()
+  await page.waitForSelector('.game.mix .boss-go')
+  await page.screenshot({ path: `${out}/mix-intro.png` })
+  await page.click('.boss-go')
+  let between = 0
+  for (let i = 0; i < 600 && !(await page.$('.results')); i++) {
+    if (await page.$('.game.mix[data-stage="between"]')) {
+      await page.waitForTimeout(500)
+      await page.screenshot({ path: `${out}/mix-between-${++between}.png` })
+      await page.click('.boss-go')
+      await page.waitForTimeout(300)
+      continue
+    }
+    const note = await page.getAttribute('.staff-wrap', 'data-note', { timeout: 100 }).catch(() => null)
+    if (note) {
+      await page.click(`.key[data-midi="${note}"]`)
+      await page.waitForTimeout(520)
+      continue
+    }
+    const pending =
+      (await page.getAttribute('.chord-wrap', 'data-pending', { timeout: 100 }).catch(() => null)) ||
+      (await page.getAttribute('.melody-wrap', 'data-pending', { timeout: 100 }).catch(() => null))
+    if (pending) await pressTogether(pending.split(' ').map(Number), 20)
+    await page.waitForTimeout(200)
+  }
+  await page.waitForSelector('.results', { timeout: 5000 })
+  if (between !== 3) throw new Error(`Expected Notiş after each of 3 mix phases, saw ${between}`)
+  await page.waitForTimeout(900)
+  await dismissOverlay()
+  await page.waitForSelector('.review-card')
+  await page.screenshot({ path: `${out}/mix-results.png`, fullPage: true })
+  const results = await page.textContent('.results')
+  for (const want of ['Günün Karışımı tamamlandı', 'Günün karışımı', 'Aralıklı tekrar', 'kutu 2 → 3', 'Do Majör'])
+    if (!results.includes(want)) throw new Error(`Mix results lack "${want}"`)
+  await back()
+  // The card is drawn from the cards read last time, then refreshed.
+  if (!(await page.waitForSelector('.mix-card[data-due="no"]', { timeout: 3000 }).catch(() => null)))
+    throw new Error('After the mix nothing is due')
+  cards = await allCards()
+  const moved = cards.filter((c) => c.kind === 'note' && c.box === 3).length
+  if (moved < 4) throw new Error(`Played well when due, note cards should reach box 3 (${moved})`)
+  if (!cards.find((c) => c.key === 'scale:C:major:right:1' && c.box === 3))
+    throw new Error('Scale card did not move up')
+
+  // Adaptive pace: Başlangıç already played this Nota Kuşu perfectly (×1,1); another perfect game makes it ×1,2.
+  await playArcade('Nota Kuşu: İlk Oktav', 'smart-bird')
+  await dismissOverlay()
+  const pace = await page.textContent('[data-adapt="pace"]').catch(() => null)
+  if (!pace?.includes('×1,2')) throw new Error(`Perfect game should speed up: ${pace}`)
+  if (!(await page.textContent('.review-line'))?.includes('Tekrar kartları')) throw new Error('No review line')
+  await back()
+  await page.getByRole('button', { name: 'Nota Kuşu: İlk Oktav', exact: true }).click()
+  await page.waitForSelector('.pace-chip')
+  if ((await page.textContent('.pace-chip')) !== 'Hız ×1,2') throw new Error('No pace chip in the game')
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${out}/smart-bird-pace.png` })
+  await page.getByLabel('Oyundan çık').click()
+  await page.waitForTimeout(500)
+
+  // Weekly summary: this week on the profile, last week on the map until closed.
+  await page.getByLabel('Profil').click()
+  await page.waitForSelector('.week-card[data-week="this"] .week-stats')
+  await page.locator('.week-card').screenshot({ path: `${out}/week-profile.png` })
+  await page.getByLabel('Geri').click()
+  await idb((tx) => {
+    const at = Date.now() - 7 * 86_400_000
+    for (const [i, lessonId] of ['basics-notes-1', 'basics-notes-2'].entries())
+      tx.objectStore('sessions').add({
+        lessonId,
+        at: at + i,
+        total: 10,
+        firstTry: 7,
+        accuracy: 0.7,
+        avgReactionMs: 1500,
+        stars: 1,
+        xp: 15,
+        failed: false,
+      })
+  })
+  await page.reload()
+  await page.waitForSelector('.week-card[data-week="last"]')
+  await page.locator('.week-card').screenshot({ path: `${out}/week-map.png` })
+  await page.getByLabel('Haftalık özeti kapat').click()
+  // The profile is saved to IndexedDB in the background.
+  await page.waitForTimeout(500)
+  await page.reload()
+  await page.waitForSelector('.mix-card')
+  await page.waitForTimeout(800)
+  if (await page.$('.week-card')) throw new Error('A closed weekly summary should stay closed this week')
+}
+
 async function finish() {
   await browser.close()
   if (errors.length) {
@@ -1274,6 +1451,15 @@ if (process.env.SMOKE_ONLY === 'boss') {
   await bossesAndQuests()
   await finish()
   console.log(`Smoke test (boss) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
+// SMOKE_ONLY=smart plays Başlangıç, then Günün Karışımı, the adaptive pace and the weekly summaries.
+if (process.env.SMOKE_ONLY === 'smart') {
+  await page.waitForTimeout(800)
+  await basicsUnit()
+  await smartLearning()
+  await finish()
+  console.log(`Smoke test (smart learning) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
 // SMOKE_ONLY=basics plays only the Başlangıç unit.

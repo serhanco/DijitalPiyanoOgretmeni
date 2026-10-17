@@ -1,4 +1,5 @@
 import type { NoteStatRow, SessionRow } from '../progress/db'
+import type { Card } from '../progress/srs'
 
 /** Everything that makes up the learner's progress, to move it to another device. */
 export interface Backup {
@@ -11,6 +12,8 @@ export interface Backup {
   settings: string | null
   sessions: Omit<SessionRow, 'id'>[]
   noteStats: NoteStatRow[]
+  /** Spaced-repetition cards (missing in backups made before phase 12). */
+  review?: Card[]
 }
 
 /** Codes start with this, so a pasted code is recognised (1 = gzip, 0 = plain JSON). */

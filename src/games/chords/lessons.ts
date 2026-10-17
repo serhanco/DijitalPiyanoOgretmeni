@@ -59,7 +59,7 @@ const sevenths = (list: [string, ChordQuality][]): ChordTarget[] => list.map(([r
 
 type Kind = 'chord' | 'chef' | 'space' | 'chordbar'
 
-function chordLesson(kind: Kind, id: string, title: string, description: string, spec: ChordSpec): NoteLesson {
+export function chordLesson(kind: Kind, id: string, title: string, description: string, spec: ChordSpec): NoteLesson {
   const left = spec.chords.every((c) => c.hands === 'left')
   const both = spec.chords.some((c) => c.hands === 'both')
   return {
@@ -93,7 +93,7 @@ const progressionLesson = (
     progression: numerals,
   })
 
-function arpeggioLesson(id: string, title: string, description: string, arpeggios: ArpeggioPart[]): NoteLesson {
+export function arpeggioLesson(id: string, title: string, description: string, arpeggios: ArpeggioPart[]): NoteLesson {
   return {
     id,
     kind: 'arpeggio',

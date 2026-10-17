@@ -40,6 +40,8 @@ export class BalloonGame {
   private sinceSpawnS = Infinity
   private lastLanes: number[] = []
   private readonly skill: SkillProvider
+  /** Adaptive difficulty: every duration is divided by this (1.1 = 10% faster). */
+  pace = 1
   private readonly random: () => number
 
   constructor(skill: SkillProvider, hearts = 3, random: () => number = Math.random) {
@@ -71,7 +73,7 @@ export class BalloonGame {
 
   private lerp(start: number, end: number) {
     const t = this.total > 1 ? Math.min(1, this.spawned / (this.total - 1)) : 0
-    return start + (end - start) * t
+    return (start + (end - start) * t) / this.pace
   }
 
   private pickLane(): number {

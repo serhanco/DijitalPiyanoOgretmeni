@@ -5,7 +5,9 @@ import type { SessionSummary } from './games/noteHunter/summary'
 import { attachComputerKeyboard, setComputerKeyboardBase } from './input/computerKeyboard'
 import { useMidi } from './midi/midiStore'
 import { buildReviewLesson, mapNodeOf } from './progress/curriculum'
-import { recordSession } from './progress/history'
+import { adaptsTempo, nextTempo } from './progress/adaptive'
+import { recordSession, reviewLesson } from './progress/history'
+import { cardResults, type CardMove } from './progress/srs'
 import { HomeScreen } from './screens/HomeScreen'
 import { LessonPlayer } from './screens/LessonPlayer'
 import { ProfileScreen } from './screens/ProfileScreen'
@@ -26,7 +28,17 @@ type Screen =
   | { name: 'profile' }
   | { name: 'calibrate' }
   | { name: 'play'; lesson: NoteLesson; run: number }
-  | { name: 'results'; lesson: NoteLesson; summary: SessionSummary; reward: Reward; trial: boolean }
+  | {
+      name: 'results'
+      lesson: NoteLesson
+      summary: SessionSummary
+      reward: Reward
+      trial: boolean
+      /** Where the spaced-repetition cards went (null until worked out). */
+      moves: CardMove[] | null
+      /** Rhythm lessons: the suggested tempo moved by how this play went. */
+      tempo?: { from: number; to: number }
+    }
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
@@ -90,14 +102,28 @@ export default function App() {
       bpm: summary.timing.bpm,
     }
     // Rhythm results say how well notes were timed, and scales and memory runs are known in
-    // advance: only note-reading lessons feed the note statistics.
-    const reading = !summary.timing && !PATTERN_KINDS.includes(lesson.kind ?? 'drill')
+    // advance: only note-reading lessons (and the mix's reading phase) feed the note statistics.
+    const reading = !summary.timing && (lesson.kind === 'mix' || !PATTERN_KINDS.includes(lesson.kind ?? 'drill'))
     if (!trial)
       void recordSession(
         { ...outcome, at: Date.now(), xp: reward.xpGained, timing },
         reading ? summary.perNote : [],
       ).catch((err) => console.error('Could not save the session', err))
-    setScreen({ name: 'results', lesson, summary, reward, trial })
+    // Rhythm lessons: three stars suggest a little faster next time, lost hearts a little slower.
+    let tempo: { from: number; to: number } | undefined
+    if (summary.timing && lesson.rhythm && adaptsTempo(lesson.kind, !!lesson.rhythm.tempoLadder)) {
+      const played = summary.timing.bpm
+      const to = nextTempo(lesson.rhythm.bpm, played, summary)
+      if (to !== null) {
+        tempo = { from: played, to }
+        if (!trial) useSettings.setState((st) => ({ tempo: { ...st.tempo, [lesson.id]: to } }))
+      }
+    }
+    setScreen({ name: 'results', lesson, summary, reward, trial, moves: null, tempo })
+    // The cards move to their new boxes (a test finish only shows where they would go).
+    void reviewLesson(cardResults(lesson, summary), new Date(), !trial)
+      .then((moves) => setScreen((sc) => (sc.name === 'results' && sc.summary === summary ? { ...sc, moves } : sc)))
+      .catch((err) => console.error('Could not update the review cards', err))
   }
 
   const home = () => setScreen({ name: 'home' })
@@ -145,6 +171,8 @@ export default function App() {
           summary={screen.summary}
           reward={screen.reward}
           trial={screen.trial}
+          moves={screen.moves}
+          tempo={screen.tempo}
           onRetry={() => start(screen.lesson)}
           onHome={backFrom(screen.lesson)}
           onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}

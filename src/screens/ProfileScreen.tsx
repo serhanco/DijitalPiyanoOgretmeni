@@ -5,6 +5,8 @@ import { BADGES, currentStreak, dayKey, levelFromXp } from '../progress/gamifica
 import { noteScores, recentSessions, rhythmSessions } from '../progress/history'
 import { rhythmTrend, type RhythmTrend } from '../progress/rhythmTrend'
 import { RhythmChart } from '../components/RhythmChart'
+import { ThisWeekCard } from '../components/WeekSummary'
+import { MIX_LESSON_ID } from '../progress/mix'
 import { type Clef, solfegeName } from '../music/notes'
 import { useProfile } from '../state/profile'
 
@@ -82,6 +84,8 @@ export function ProfileScreen({ onBack }: Props) {
         </div>
       </div>
 
+      <ThisWeekCard />
+
       <section className="card">
         <h2>Rozetler</h2>
         <div className="badge-grid">
@@ -140,7 +144,11 @@ export function ProfileScreen({ onBack }: Props) {
             {sessions.map((s) => (
               <li key={s.id}>
                 <span>
-                  {s.lessonId === REVIEW_LESSON_ID ? 'Zayıf Notalar' : (findLesson(s.lessonId)?.title ?? s.lessonId)}
+                  {s.lessonId === REVIEW_LESSON_ID
+                    ? 'Zayıf Notalar'
+                    : s.lessonId === MIX_LESSON_ID
+                      ? 'Günün Karışımı'
+                      : (findLesson(s.lessonId)?.title ?? s.lessonId)}
                   <span className="small muted"> · {new Date(s.at).toLocaleDateString('tr-TR')}</span>
                 </span>
                 <span className={s.failed ? 'bad' : ''}>

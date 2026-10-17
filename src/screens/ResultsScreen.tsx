@@ -19,6 +19,8 @@ import { Mascot, type MascotMood } from '../components/Mascot'
 import { GoalRing } from '../components/TopBar'
 import { type Clef, CLEF_NAMES, solfegeName } from '../music/notes'
 import type { Reward } from '../state/profile'
+import { paceText } from '../progress/adaptive'
+import { type CardMove, inDays, MAX_BOX } from '../progress/srs'
 
 interface Props {
   lesson: NoteLesson
@@ -30,6 +32,10 @@ interface Props {
   onHome: () => void
   /** Start a short drill on these notes, on their staff (or both staves). */
   onPractice: (notes: number[], clef: Clef | 'grand') => void
+  /** Where the spaced-repetition cards went; null while they are worked out. */
+  moves?: CardMove[] | null
+  /** Rhythm lessons: the suggested tempo moved by this play. */
+  tempo?: { from: number; to: number }
 }
 
 const pct = (x: number) => `%${Math.round(x * 100)}`
@@ -373,6 +379,97 @@ function QuestCard({ quests }: { quests: Reward['quests'] }) {
   )
 }
 
+/** Five little boxes, the card's one filled. */
+function BoxMeter({ box }: { box: number }) {
+  return (
+    <span className="box-meter" aria-label={`Kutu ${box}`}>
+      {Array.from({ length: MAX_BOX }, (_, i) => (
+        <span key={i} className={i < box ? 'on' : ''} />
+      ))}
+    </span>
+  )
+}
+
+const KIND_ICONS: Record<CardMove['kind'], string> = { note: '♪', chord: '🎼', scale: '🎹', arpeggio: '〰️' }
+
+const moveText = (m: CardMove) =>
+  m.from === null
+    ? `yeni kart, kutu ${m.to}`
+    : m.to > m.from
+      ? `kutu ${m.from} → ${m.to}`
+      : m.to < m.from
+        ? `kutu ${m.from} → ${m.to}, başa döndü`
+        : `kutu ${m.to}'de kaldı`
+
+/**
+ * Spaced repetition: where each card went and when it comes back. The mix
+ * lists every card; other lessons say it in one line.
+ */
+function ReviewCard({ moves, full }: { moves: CardMove[]; full: boolean }) {
+  if (!moves.length) return null
+  const up = moves.filter((m) => m.from !== null && m.to > m.from).length
+  const down = moves.filter((m) => m.from !== null && m.to < m.from).length
+  const fresh = moves.filter((m) => m.from === null).length
+  const parts = [
+    up && `${up} kart bir üst kutuya çıktı`,
+    down && `${down} kart başa döndü`,
+    fresh && `${fresh} yeni kart`,
+  ].filter(Boolean)
+  if (!full)
+    return (
+      <p className="review-line">
+        🗂️ Tekrar kartları: {parts.length ? parts.join(', ') : `${moves.length} kart yerinde kaldı`}. Zamanı gelince
+        Günün Karışımı'nda yine çıkacaklar.
+      </p>
+    )
+  // Cards that went back first, then the ones that moved up, then the rest.
+  const order = (m: CardMove) => (m.from !== null && m.to < m.from ? 0 : m.from !== null && m.to > m.from ? 1 : 2)
+  const sorted = [...moves].sort((a, b) => order(a) - order(b) || a.label.localeCompare(b.label, 'tr'))
+  return (
+    <section className="card review-card">
+      <h2>Aralıklı tekrar</h2>
+      {parts.length > 0 && <p>{parts.join(', ')}.</p>}
+      <ul className="review-moves">
+        {sorted.map((m) => (
+          <li key={m.key} data-move={order(m) === 0 ? 'down' : order(m) === 1 ? 'up' : 'stay'}>
+            <b>
+              <span aria-hidden>{KIND_ICONS[m.kind]}</span> {m.label}
+            </b>
+            <BoxMeter box={m.to} />
+            <span className="small muted">
+              {moveText(m)}, {inDays(m.days)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="small muted">İyi bildiğin kartlar daha seyrek, zorlandıkların daha sık gelir.</p>
+    </section>
+  )
+}
+
+/** Adaptive difficulty: the game's pace or the suggested tempo for next time. */
+function AdaptLine({ pace, tempo }: { pace?: Reward['pace']; tempo?: { from: number; to: number } }) {
+  if (!pace && !tempo) return null
+  return (
+    <section className="card adapt-card">
+      {pace && (
+        <p data-adapt="pace">
+          {pace.to > pace.from
+            ? `🚀 Çok iyiydi! Bu oyun bir dahaki sefere biraz daha hızlı: ${paceText(pace.to)}.`
+            : `🐢 Bir dahaki sefere biraz daha yavaş (${paceText(pace.to)}): önce rahatça oturt.`}
+        </p>
+      )}
+      {tempo && (
+        <p data-adapt="tempo">
+          {tempo.to > tempo.from
+            ? `🎵 Üç yıldız! Önerilen tempo ${tempo.from} → ${tempo.to} BPM.`
+            : `🎵 Önerilen tempo ${tempo.from} → ${tempo.to} BPM; oturunca yine hızlanır.`}
+        </p>
+      )}
+    </section>
+  )
+}
+
 /** The longest runs remembered in Melodi Hafızası. */
 function MemoryCard({ memory }: { memory: MemorySummary }) {
   if (memory.song)
@@ -428,7 +525,7 @@ function Comparison({ before, now }: { before: number | null; now: number }) {
   return <p className={`compare ${diff > 0 ? 'up' : ''}`}>{text}</p>
 }
 
-export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome, onPractice }: Props) {
+export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome, onPractice, moves, tempo }: Props) {
   const practiceNotes = [...new Set(summary.weakest.map((n) => n.midi))]
   const practiceClefs = new Set(summary.weakest.map((n) => n.clef))
   const practiceClef: Clef | 'grand' = practiceClefs.size === 1 ? [...practiceClefs][0] : 'grand'
@@ -534,6 +631,8 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
       )}
 
       {!trial && <QuestCard quests={reward.quests} />}
+      {!trial && <AdaptLine pace={reward.pace} tempo={tempo} />}
+      {moves && lesson.kind === 'mix' && <ReviewCard moves={moves} full />}
 
       {reward.newBadges.length > 0 && (
         <section className="card badges-new">
@@ -671,6 +770,8 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
           </div>
         </section>
       )}
+
+      {moves && lesson.kind !== 'mix' && <ReviewCard moves={moves} full={false} />}
 
       <div className="actions">
         <button className="btn btn-secondary" onClick={onHome}>

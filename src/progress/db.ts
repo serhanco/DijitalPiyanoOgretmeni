@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Clef } from '../music/notes'
+import type { Card } from './srs'
 
 export interface SessionRow {
   id?: number
@@ -37,12 +38,22 @@ export const db = new Dexie('dijital-piyano') as Dexie & {
   sessions: EntityTable<SessionRow, 'id'>
   noteStats: EntityTable<NoteStatRow, 'key'>
   kv: EntityTable<KvRow, 'key'>
+  /** Spaced-repetition cards (phase 12). */
+  review: EntityTable<Card, 'key'>
 }
 
 db.version(1).stores({
   sessions: '++id, lessonId, at',
   noteStats: 'key, clef',
   kv: 'key',
+})
+
+// Phase 12 adds the spaced-repetition cards; the other tables are unchanged.
+db.version(2).stores({
+  sessions: '++id, lessonId, at',
+  noteStats: 'key, clef',
+  kv: 'key',
+  review: 'key, kind, due',
 })
 
 export const noteStatKey = (clef: Clef, midi: number) => `${clef}:${midi}`

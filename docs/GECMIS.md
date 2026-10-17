@@ -101,7 +101,8 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-15 | Ritim müfredatı: ritim iki üniteye bölündü (Temel Vuruş 28 ders; Sekizlikler ve Noktalılar 25 ders). Her kalıp: teori, Yankı, tekrar, oyun, şarkının ritmi, şarkı. Telifsiz şarkılar orijinal adları ve kökenleriyle; eski ders kimlikleri korundu | dal `claude/project-thread-wprkex`     |
 | 2026-10-16 | Faz 9: Kulak Eğitimi ünitesi (24 ders), Kulak Dedektifi (yön, nota, aralık, akor rengi vakaları), aralıklar telifsiz şarkılarla, Melodi Hafızası'nda atlamalı, ters ve şarkı modları, Kulak raporu kartı, 3 yeni rozet                             | dal `claude/project-thread-ytjjkw`     |
 | 2026-10-16 | Faz 10: Şarkılar ünitesi (22 ders), Nota Şelalesi (bekleyen ve ritimli mod, bölüm tekrarı, yavaşlatma), 9 telifsiz şarkı ve Konser, tek elden iki ele, Şarkı kartı, 3 rozet                                                                        | PR #32                                 |
-| 2026-10-16 | Faz 11: her ünitenin sonunda üç aşamalı boss (10 canavar, can çubuğu, Boss kartı), günlük görevler (3 görev ve sandık), haftalık meydan okuma, 3 rozet                                                                                             | dal `claude/project-thread-ytjjkw`     |
+| 2026-10-16 | Faz 11: her ünitenin sonunda üç aşamalı boss (10 canavar, can çubuğu, Boss kartı), günlük görevler (3 görev ve sandık), haftalık meydan okuma, 3 rozet                                                                                             | PR #33                                 |
+| 2026-10-17 | Faz 12: aralıklı tekrar (nota, akor, gam, arpej kartları, 5 kutu), Günün Karışımı dersi, uyarlanabilir hız ve tempo, okuma alanının genişlemesi, haftalık özet (profil ve harita)                                                                  | dal `claude/project-thread-ytjjkw`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -209,6 +210,13 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   Boss sonraki ünitelerin kilidini tutmaz (Başlangıç'ı bitiren eski ilerleme kilitlenmesin diye); ek bir meydan
   okumadır. Kaybedilen boss yıldız vermez ama ilk denemede doğru notaların XP'si kalır. Görevler gün anahtarından
   seçilir (aynı gün hep aynı üç görev) ve sadece açık ünitelere uyanlar gelir. Görev XP'si günlük hedefe sayılır.
+
+- **Akıllı öğrenme (Faz 12):** Serhan Faz 11'in birleşmesinden sonra devam dedi (oyun ve arayüz fikirleri ayrı
+  thread'lerde). Aralıklı tekrar için Leitner kutuları seçildi: anlaşılır ("kutu 2 → 3, 4 gün sonra") ve sonuç
+  ekranında gösterilebilir. Kartın kutusu sadece zamanı gelince yükselir, yoksa aynı gün birkaç ders oynamak kartı
+  hemen 5. kutuya taşırdı. Ritim dersleri nota kartı üretmez (zamanlama ölçülür), kulaktan akorlar da akor kartı
+  üretmez. Karışım yıldız tutmaz (her gün değişir), canlar bitse de sonraki aşamaya geçer. Hız sadece nota okuma
+  oyunlarında değişir; ritim oyunlarında hız tempo demektir ve tempo zaten hatırlanıyordu.
 
 ## Açık konular
 

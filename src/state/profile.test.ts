@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { recordSession, noteScores } from '../progress/history'
+import { allCards, recordSession, noteScores, reviewLesson } from '../progress/history'
 import { db } from '../progress/db'
 import { useProfile } from './profile'
 
@@ -24,8 +24,11 @@ beforeEach(async () => {
     badges: {},
     quests: null,
     weekly: null,
+    pace: {},
+    mixDay: null,
+    weekSeen: null,
   })
-  await Promise.all([db.sessions.clear(), db.noteStats.clear()])
+  await Promise.all([db.sessions.clear(), db.noteStats.clear(), db.review.clear()])
 })
 
 describe('completeLesson', () => {
@@ -77,6 +80,53 @@ describe('completeLesson', () => {
     const s = useProfile.getState()
     expect(s.lessonsCompleted).toBe(0)
     expect(s.lessons['treble-1'].bestStars).toBe(0)
+  })
+})
+
+describe('smart learning', () => {
+  it('pays the mix bonus once a day and keeps no stars for the mix', () => {
+    const day = new Date(2026, 9, 7, 10)
+    const mix = { ...outcome, lessonId: 'mix', kind: 'mix' as const }
+    const r1 = useProfile.getState().completeLesson(mix, day)
+    expect(r1.xpLines).toContainEqual({ label: 'Günün karışımı', xp: 15 })
+    const r2 = useProfile.getState().completeLesson(mix, day)
+    expect(r2.xpLines.map((l) => l.label)).not.toContain('Günün karışımı')
+    expect(useProfile.getState().lessons.mix).toBeUndefined()
+    const r3 = useProfile.getState().completeLesson(mix, new Date(2026, 9, 8, 10))
+    expect(r3.xpLines.map((l) => l.label)).toContain('Günün karışımı')
+  })
+
+  it('moves an arcade lesson’s pace with how the game went', () => {
+    const bird = { ...outcome, lessonId: 'treble-bird', kind: 'bird' as const }
+    const r1 = useProfile.getState().completeLesson({ ...bird, accuracy: 1, firstTry: 10, stars: 3 })
+    expect(r1.pace).toEqual({ from: 1, to: 1.1 })
+    expect(useProfile.getState().pace['treble-bird']).toBe(1.1)
+    const r2 = useProfile.getState().completeLesson(bird)
+    expect(r2.pace).toBeUndefined()
+    useProfile.getState().completeLesson({ ...bird, failed: true, stars: 0 })
+    expect(useProfile.getState().pace['treble-bird']).toBe(1)
+    // Other kinds have no pace; a test finish keeps none.
+    useProfile.getState().completeLesson({ ...outcome, accuracy: 1, firstTry: 10, stars: 3, kind: 'drill' })
+    useProfile.getState().completeLesson({ ...bird, accuracy: 1, firstTry: 10, stars: 3 }, new Date(), false)
+    expect(useProfile.getState().pace).toEqual({ 'treble-bird': 1 })
+  })
+
+  it('stores review cards and moves them between boxes', async () => {
+    const r = {
+      key: 'note:treble:60',
+      label: 'Do4',
+      data: { kind: 'note' as const, clef: 'treble' as const, midi: 60 },
+      shown: 3,
+      accuracy: 1,
+    }
+    const day1 = new Date(2026, 9, 7, 10)
+    expect(await reviewLesson([r], day1)).toEqual([expect.objectContaining({ from: null, to: 2, due: '2026-10-09' })])
+    // Not due yet: played well again, it stays.
+    expect((await reviewLesson([r], new Date(2026, 9, 8)))[0]).toMatchObject({ from: 2, to: 2 })
+    // A trial only works the move out.
+    expect((await reviewLesson([r], new Date(2026, 9, 20), false))[0]).toMatchObject({ from: 2, to: 3 })
+    expect((await allCards())[0]).toMatchObject({ box: 2, shown: 6 })
+    expect((await reviewLesson([{ ...r, accuracy: 0.3 }], new Date(2026, 9, 20)))[0]).toMatchObject({ to: 1 })
   })
 })
 

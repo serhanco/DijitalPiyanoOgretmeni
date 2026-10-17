@@ -22,6 +22,7 @@ const ChordArcadeScreen = lazy(() => import('./ChordArcadeScreen').then((m) => (
 const RhythmScreen = lazy(() => import('./RhythmScreen').then((m) => ({ default: m.RhythmScreen })))
 const BeatArcadeScreen = lazy(() => import('./BeatArcadeScreen').then((m) => ({ default: m.BeatArcadeScreen })))
 const BossScreen = lazy(() => import('./BossScreen').then((m) => ({ default: m.BossScreen })))
+const MixScreen = lazy(() => import('./MixScreen').then((m) => ({ default: m.MixScreen })))
 
 export interface LessonScreenProps {
   lesson: NoteLesson
@@ -34,6 +35,8 @@ export function LessonPlayer({ lesson, onFinish, onExit }: LessonScreenProps) {
     <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
       {lesson.kind === 'boss' ? (
         <BossScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
+      ) : lesson.kind === 'mix' ? (
+        <MixScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'theory' ? (
         <TheoryScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'bird' || lesson.kind === 'balloon' || lesson.kind === 'bar' ? (

@@ -19,6 +19,8 @@ import {
   type XpLine,
 } from '../progress/gamification'
 import { BOSS_LESSON_IDS, questEligible, REVIEW_LESSON_ID } from '../progress/curriculum'
+import { nextPace, PACE_KINDS } from '../progress/adaptive'
+import { MIX_LESSON_ID, MIX_XP } from '../progress/mix'
 import {
   advanceQuests,
   dailyFor,
@@ -53,7 +55,12 @@ export interface Reward {
   lessonXp: number
   /** Quests this lesson moved on, the chest and the weekly challenge. */
   quests: { steps: QuestStep[]; chestOpened: boolean; weeklyDone: boolean }
+  /** Arcade games: the lesson's pace before and after this game, when it changed. */
+  pace?: { from: number; to: number }
 }
+
+/** Lessons that change every time keep no stars. */
+const UNSCORED = [REVIEW_LESSON_ID, MIX_LESSON_ID]
 
 interface ProfileState {
   totalXp: number
@@ -66,6 +73,13 @@ interface ProfileState {
   /** Today's quests and this week's challenge (picked when first needed). */
   quests: DailyQuests | null
   weekly: WeeklyQuest | null
+  /** Arcade note games: the pace of each lesson (1 = as written), set by how the last games went. */
+  pace: Record<string, number>
+  /** Day key of the last Günün Karışımı that earned its bonus. */
+  mixDay: string | null
+  /** Week key of the last weekly summary the learner closed on the map. */
+  weekSeen: string | null
+  closeWeekSummary: (week: string) => void
   /** Picks today's quests and this week's challenge when they are not picked yet. */
   ensureQuests: (now?: Date) => void
   /** `save: false` (a test finish) works the reward out without keeping it. */
@@ -96,6 +110,11 @@ export const useProfile = create<ProfileState>()(
       badges: {},
       quests: null,
       weekly: null,
+      pace: {},
+      mixDay: null,
+      weekSeen: null,
+
+      closeWeekSummary: (week) => set({ weekSeen: week }),
 
       ensureQuests(now = new Date()) {
         const s = get()
@@ -108,7 +127,10 @@ export const useProfile = create<ProfileState>()(
       completeLesson(outcome, now = new Date(), save = true) {
         const s = get()
         const today = dayKey(now)
-        const lessonLines = xpFor(outcome)
+        // The first mix finished each day earns a bonus.
+        const mixBonus =
+          outcome.lessonId === MIX_LESSON_ID && !outcome.failed && outcome.total > 0 && s.mixDay !== today
+        const lessonLines = [...xpFor(outcome), ...(mixBonus ? [{ label: 'Günün karışımı', xp: MIX_XP }] : [])]
         const lessonXp = sumXp(lessonLines)
 
         const streak = extendStreak(s.streak, today)
@@ -116,8 +138,8 @@ export const useProfile = create<ProfileState>()(
 
         const prev = s.lessons[outcome.lessonId]
         const lessons = { ...s.lessons }
-        // The review lesson changes every time, so it keeps no stars.
-        if (outcome.lessonId !== REVIEW_LESSON_ID) {
+        // The review lesson and the mix change every time, so they keep no stars.
+        if (!UNSCORED.includes(outcome.lessonId)) {
           const p = prev ?? { bestStars: 0, bestAccuracy: 0, plays: 0 }
           lessons[outcome.lessonId] = {
             bestStars: outcome.failed ? p.bestStars : Math.max(p.bestStars, outcome.stars),
@@ -133,7 +155,7 @@ export const useProfile = create<ProfileState>()(
           outcome,
           kind: outcome.kind ?? 'drill',
           xp: lessonXp,
-          isNew: !prev && outcome.lessonId !== REVIEW_LESSON_ID,
+          isNew: !prev && !UNSCORED.includes(outcome.lessonId),
           beatBest: !!prev && prev.plays > 0 && outcome.accuracy > prev.bestAccuracy,
           starsGained: Math.max(0, (lessons[outcome.lessonId]?.bestStars ?? 0) - (prev?.bestStars ?? 0)),
           firstOfDay: s.streak.lastDay !== today,
@@ -165,8 +187,14 @@ export const useProfile = create<ProfileState>()(
         const badges = { ...s.badges }
         for (const b of newBadges) badges[b.id] = now.getTime()
 
+        const paceBefore = s.pace[outcome.lessonId] ?? 1
+        const paceAfter = PACE_KINDS.includes(outcome.kind ?? 'drill') ? nextPace(paceBefore, outcome) : paceBefore
+        const pace = paceAfter === paceBefore ? s.pace : { ...s.pace, [outcome.lessonId]: paceAfter }
+
         if (save)
           set({
+            pace,
+            ...(mixBonus && { mixDay: today }),
             totalXp,
             streak,
             daily: { day: today, xp: dailyXp },
@@ -191,6 +219,7 @@ export const useProfile = create<ProfileState>()(
           previousBestAccuracy: prev && prev.plays > 0 ? prev.bestAccuracy : null,
           lessonXp,
           quests: { steps: q.steps, chestOpened: q.chestOpened, weeklyDone: q.weeklyDone },
+          ...(paceAfter !== paceBefore && { pace: { from: paceBefore, to: paceAfter } }),
         }
       },
 
@@ -199,7 +228,7 @@ export const useProfile = create<ProfileState>()(
     {
       name: 'profile',
       storage: createJSONStorage(() => idbStorage),
-      partialize: ({ completeLesson: _c, setDailyGoal: _s, ensureQuests: _e, ...data }) => data,
+      partialize: ({ completeLesson: _c, setDailyGoal: _s, ensureQuests: _e, closeWeekSummary: _w, ...data }) => data,
     },
   ),
 )

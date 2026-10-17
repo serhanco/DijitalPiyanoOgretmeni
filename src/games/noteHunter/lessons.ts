@@ -3,6 +3,7 @@ import type { RhythmValue } from '../../rhythm/rhythm'
 import type { Tune } from '../../rhythm/plan'
 import type { TempoLadderSpec } from '../../rhythm/tempoLadder'
 import type { BossSpec } from '../boss/bosses'
+import type { MixSpec } from '../../progress/mix'
 import type { ArpeggioPart } from '../chords/arpeggio'
 import type { ChordSpec } from '../chords/lessons'
 import type { EarSpec } from '../ear/session'
@@ -38,6 +39,7 @@ export type LessonKind =
   | 'ear'
   | 'waterfall'
   | 'boss'
+  | 'mix'
 
 /** Kinds played against a metronome. */
 export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'surf']
@@ -48,6 +50,7 @@ export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'su
  */
 export const PATTERN_KINDS: LessonKind[] = [
   'boss',
+  'mix',
   'waterfall',
   'theory',
   'scale',
@@ -118,6 +121,8 @@ export interface NoteLesson {
   song?: SongSpec
   /** Unit boss: the boss and its phases (lessons of the unit, shortened). */
   boss?: BossSpec
+  /** Günün Karışımı: the phases built from the due spaced-repetition cards. */
+  mix?: MixSpec
   /** Theory lessons: the explanation cards and the quiz. */
   theory?: TheorySpec
   /** Drill: new notes shown one by one (staff, key, where it sits) before the drill starts. */
