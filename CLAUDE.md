@@ -96,10 +96,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                |
-| ------ | ------------------------------------------------------------------------------------ |
-| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live    |
-| This   | Game round: Oyun Salonu, Nota Treni, Kayıp Kuş Sesi (`claude/project-thread-q9rplm`) |
+| Branch | State                                                                                                    |
+| ------ | -------------------------------------------------------------------------------------------------------- |
+| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live                        |
+| This   | Game round 2: golden targets, hint glow, wardrobe, Kurbağa, Davul Düeti (`claude/project-thread-q9rplm`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -525,13 +525,33 @@ Game round (`claude/project-thread-q9rplm`, the owner picked items from the game
 - `SMOKE_ONLY=games` plays Başlangıç, Nota Treni (checks each song is named) and two endless Salon games (a record,
   then not); layout cases `train`, `chirp` and the `salon` check (screen, pick, endless game, record, way back).
 
+Game round 2 (`claude/project-thread-q9rplm`, the owner's "yap gitsin" on the five deferred ideas):
+
+- `games/arcade/bonus.ts`: **golden targets** (`markGolden`: every `GOLDEN_EVERY` 7th from the 4th; `GOLDEN_POINTS` 3×
+  score) in Balon and Nota Barmeni; `goldenStats` → `ArcadeStats.golden`; `LessonOutcome.golden` gives `XP_GOLDEN` (5)
+  per golden target hit first try (XP line "Altın hedefler"). Scenes draw a halo / crown.
+- **Hint glow** (`settings.hintGlow`, default on): `PromptRecord.hinted` makes `firstTryOk` false. The drill glows the
+  key after `GLOW_AFTER_MS` (4 s); arcade engines have `hint()` (the target near danger, `hintFor` marks it) polled by
+  `useHint`; `.key[data-mark='glow']`. `SessionSummary.hinted` → results line `[data-hinted]`.
+- **Wardrobe** (`progress/wardrobe.ts`): ten costumes opened by level or badge; `profile.costume` / `setCostume`;
+  `Mascot` wears it unless given an `outfit`; `components/Wardrobe.tsx` on the profile; `Reward.costumes` → results
+  card `[data-new-costume]` with "… giydir".
+- **Kurbağa Atlayışı** (`kind: 'frog'`, `arcade/frog/`): lily pads carry the next note a jump away on white keys
+  (`frogPath`, never the same jump three times); the bubble names the jump ("↑ 3'lü"); a pad sinks when its time runs
+  out (heart). Report topics per jump size and direction (`jumpTopics`). Ear unit: `ear-frog-1`, `ear-frog-2`.
+- **Çift Kişilik Davul** (`kind: 'duet'`, `games/duet/session.ts` `DuetSession`, `screens/DuetScreen.tsx`): Notiş
+  plays a bar, the learner answers the next bar on any key; `echo` rounds copy the call (judged like `BeatTrack`),
+  `free` rounds need ≥ 3 on-grid notes (`own` when the rhythm differs). `duetReport` → results "Davul düeti" card.
+  Rhythm units: `rhythm-duet-1`, `rhythm-duet-2`. `window.__dpoDuet`. Both new kinds are in `PATTERN_KINDS`.
+- Smoke: ear and rhythm runs play the new lessons; layout cases `frog`, `duet`.
+
 Next: **phase 13, platforms** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
 ## Testing in a real browser
 
 `scripts/smoke.mjs` plays real lessons in Chromium: the treble unit (drills, Nota Kuşu, Balon Patlatma, a lesson that
-runs out of hearts), then all fifty-three lessons of the two rhythm units (theory, Yankı, patterns, games, songs incl. 3/4 and dotted ones) (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
+runs out of hearts), then all fifty-five lessons of the two rhythm units (theory, Yankı, patterns, games, songs incl. 3/4 and dotted ones) (the page presses keys on each beat with `setTimeout`, one run 60 ms late; one checks the remembered tempo), the bass unit (drills, bird, left-hand melody, balloon), the hands unit (grand staff, middle C on both staves, Nota Barmeni, melodies with two keys pressed 30 ms apart),
 all twenty-four scale lessons (scale drills with one and two hands and two octaves, four Gam Merdiveni runs at a faster
 tempo, two tempo ladders: one passed in three rounds whose raised tempo is checked on reopening, one with a late second
 round that stops the ladder; three Melodi Hafızası games, one with a wrong key, one by ear), all twenty-four chord lessons

@@ -12,6 +12,8 @@ import { BirdGame } from '../games/arcade/bird/engine'
 import { createBirdScene } from '../games/arcade/bird/scene'
 import { ChirpGame } from '../games/arcade/chirp/engine'
 import { createChirpScene } from '../games/arcade/chirp/scene'
+import { FrogGame, frogPath, jumpLabel, jumpTopics } from '../games/arcade/frog/engine'
+import { createFrogScene } from '../games/arcade/frog/scene'
 import { ENDLESS_RAMP } from '../games/arcade/ramp'
 import { TrainGame } from '../games/arcade/train/engine'
 import { createTrainScene } from '../games/arcade/train/scene'
@@ -19,7 +21,7 @@ import { tunePitches } from '../games/arcade/train/tunes'
 import { initPiano } from '../audio/piano'
 import { playParts } from '../audio/earSound'
 import { ArcadeChips } from './arcade/ArcadeChips'
-import { arcadeStats, FEVER_AT, useCombo, useSurprise } from './arcade/useArcade'
+import { arcadeStats, FEVER_AT, useCombo, useHint, useSurprise } from './arcade/useArcade'
 import { PixiStage } from '../games/arcade/PixiStage'
 import { noteSkill, type SkillProvider } from '../games/arcade/skill'
 import { type StaffLayout, stepY } from '../games/arcade/staffGeometry'
@@ -43,7 +45,7 @@ const CLEF = {
   bass: { glyph: '\uE062', step: 6 },
 }
 
-type ArcadeKind = 'bird' | 'balloon' | 'bar' | 'train' | 'chirp'
+type ArcadeKind = 'bird' | 'balloon' | 'bar' | 'train' | 'chirp' | 'frog'
 
 const HOW_TO: Record<ArcadeKind, string> = {
   bird: 'Borudaki boşluğun notasını çal, kuş oraya uçsun!',
@@ -51,9 +53,10 @@ const HOW_TO: Record<ArcadeKind, string> = {
   bar: 'Müşterinin notasını çal, içeceği kaysın! Üst tezgahlar sağ el, alt tezgahlar sol el.',
   train: 'Öndeki vagonun notasını çal, lokomotife bağlansın! Sıradakileri şimdiden oku.',
   chirp: 'Kuş bir nota ötüyor: kulağınla bul, tuşuna bas, yuvasına dönsün!',
+  frog: 'Kurbağa ne kadar zıplayacak? Çizgi ve araları say, indiği notayı çal!',
 }
 
-const KINDS: ArcadeKind[] = ['bird', 'balloon', 'bar', 'train', 'chirp']
+const KINDS: ArcadeKind[] = ['bird', 'balloon', 'bar', 'train', 'chirp', 'frog']
 
 /** Nota Treni with songs: the songs' notes in order, and the wagon each song starts at. */
 function trainSkill(lesson: NoteLesson, ignoreOctave: boolean): { skill: SkillProvider; starts: number[] } | null {
@@ -76,19 +79,32 @@ function trainSkill(lesson: NoteLesson, ignoreOctave: boolean): { skill: SkillPr
   }
 }
 
+/** Kurbağa Atlayışı: a path of jumps from the start note, inside the lesson's notes. */
+function frogSkill(lesson: NoteLesson, ignoreOctave: boolean): SkillProvider | null {
+  if (!lesson.frog) return null
+  const low = Math.min(...lesson.notes)
+  const high = Math.max(...lesson.notes)
+  return {
+    clef: lesson.clef,
+    range: [...lesson.notes].sort((a, b) => a - b),
+    targets: frogPath(lesson.frog.start, lesson.frog.sizes, low, high, lesson.length).map((midi) => ({ midi })),
+    matches: (t, pressed) => (ignoreOctave ? t.midi % 12 === pressed % 12 : t.midi === pressed),
+  }
+}
+
 interface Props {
   lesson: NoteLesson
   onFinish: (summary: SessionSummary) => void
   onExit: () => void
 }
 
-type Game = BirdGame | BalloonGame | BarGame | TrainGame | ChirpGame
+type Game = BirdGame | BalloonGame | BarGame | TrainGame | ChirpGame | FrogGame
 
 export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const kind: ArcadeKind = KINDS.find((k) => k === lesson.kind) ?? 'bird'
   const endless = !!lesson.salon?.endless
   const record = useProfile((s) => (lesson.salon ? (s.salon[lesson.id]?.best ?? 0) : undefined))
-  const { ignoreOctave, showKeyLabels } = useSettings()
+  const { ignoreOctave, showKeyLabels, hintGlow } = useSettings()
   // Adaptive difficulty: the lesson's pace from the last games, read once when the game starts.
   const [pace] = useState(() => useProfile.getState().pace[lesson.id] ?? 1)
   const tunes = useMemo(
@@ -96,8 +112,10 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
     [kind, lesson, ignoreOctave],
   )
   const game: Game = useMemo(() => {
+    const frog = kind === 'frog' ? frogSkill(lesson, ignoreOctave) : null
     const skill =
       tunes?.skill ??
+      frog ??
       noteSkill({
         clef: lesson.clef,
         notes: lesson.notes,
@@ -114,7 +132,9 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
             ? new TrainGame(skill, ARCADE_HEARTS)
             : kind === 'chirp'
               ? new ChirpGame(skill, ARCADE_HEARTS)
-              : new BalloonGame(skill, ARCADE_HEARTS)
+              : kind === 'frog' && lesson.frog
+                ? new FrogGame(skill, lesson.frog.start, ARCADE_HEARTS)
+                : new BalloonGame(skill, ARCADE_HEARTS)
     g.pace = pace
     if (endless) g.ramp = ENDLESS_RAMP
     return g
@@ -142,13 +162,15 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
     onFinishRef.current = onFinish
   })
 
-  const summary = useCallback(
-    (): SessionSummary => ({
-      ...summarize(game.attempted, lesson.clef, game.failed),
-      arcade: arcadeStats(game, bestCombo()),
-    }),
-    [game, lesson.clef, bestCombo],
-  )
+  const summary = useCallback((): SessionSummary => {
+    const base = summarize(game.attempted, lesson.clef, game.failed)
+    return {
+      ...base,
+      // Kurbağa Atlayışı is about the jumps: its topics are the jump sizes, not the lines and spaces.
+      ...(game instanceof FrogGame && lesson.frog && { perCategory: jumpTopics(game.records, lesson.frog.start) }),
+      arcade: arcadeStats(game, bestCombo(), game.records),
+    }
+  }, [game, lesson.clef, lesson.frog, bestCombo])
 
   useFinishRequest(() => {
     finished.current = true
@@ -156,6 +178,8 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   })
 
   const surprise = useSurprise(game, kind, (text) => setMessage(text ?? 'Sürpriz bitti, normal hıza döndük.'))
+  // İpucu parıltısı: the urgent note's key glows; Kayıp Kuş Sesi is played by ear, so it never glows.
+  const glow = useHint(game, hintGlow && kind !== 'chirp')
 
   const react = useCallback(
     (good: boolean, text?: string) => {
@@ -230,6 +254,20 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
           }
           return
         }
+        if (game instanceof FrogGame) {
+          const [ev] = game.press(e.midi, e.time)
+          if (!ev) return
+          if (ev.type === 'jump') {
+            sfx.correct()
+            setFlash({ midi: e.midi, mark: 'correct' })
+            react(true, `Hop! ${jumpLabel(ev.pad.from, ev.pad.record.target)}: ${solfegeName(ev.pad.record.target)}`)
+          } else if (ev.type === 'wrong') {
+            sfx.wrong()
+            setFlash({ midi: e.midi, mark: 'wrong' })
+            react(false, `${solfegeName(e.midi)} değil. ${solfegeName(ev.pad.from)}’dan başlayıp say.`)
+          }
+          return
+        }
         if (game instanceof TrainGame) {
           const [ev] = game.press(e.midi, e.time)
           if (!ev) return
@@ -248,9 +286,21 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
         const [ev] = game.press(e.midi, e.time)
         if (!ev) return
         if (ev.type === 'pop' || ev.type === 'serve') {
-          sfx.correct()
+          const record = 'balloon' in ev ? ev.balloon.record : ev.customer.record
+          const golden = record.golden && record.wrongPresses.length === 0 && !record.hinted
+          if (golden) sfx.combo()
+          else sfx.correct()
           setFlash({ midi: e.midi, mark: 'correct' })
-          react(true, ev.type === 'serve' ? 'Afiyet olsun!' : undefined)
+          react(
+            true,
+            golden
+              ? ev.type === 'serve'
+                ? '🌟 Altın müşteri! Bahşiş: bonus XP.'
+                : '🌟 Altın balon! Bonus XP kazandın.'
+              : ev.type === 'serve'
+                ? 'Afiyet olsun!'
+                : undefined,
+          )
         } else {
           sfx.wrong()
           setFlash({ midi: e.midi, mark: 'wrong' })
@@ -284,65 +334,86 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
               }
             },
           )
-        : game instanceof TrainGame
-          ? createTrainScene(
+        : game instanceof FrogGame
+          ? createFrogScene(
               app,
               game,
               lesson.clef,
               lesson.notes,
               (events) => {
                 for (const ev of events) {
-                  if (ev.type === 'derail') {
+                  if (ev.type === 'splash') {
                     sfx.wrong()
-                    react(false, `Vagon raydan çıktı: notası ${solfegeName(ev.wagon.record.target)} idi.`)
+                    react(
+                      false,
+                      `Yaprak battı! ${jumpLabel(ev.pad.from, ev.pad.record.target)}: ${solfegeName(ev.pad.record.target)} idi.`,
+                    )
                   }
                 }
-                announceTune()
               },
               setStaff,
             )
-          : game instanceof ChirpGame
-            ? createChirpScene(app, game, lesson.notes, (events) => {
-                for (const ev of events) {
-                  if (ev.type === 'sing') sing(ev.bird.record.target)
-                  else if (ev.type === 'lost') {
-                    sfx.wrong()
-                    react(false, `Kuş uçup gitti. ${solfegeName(ev.bird.record.target)} ötüyordu.`)
-                    sing(ev.bird.record.target, 300)
+          : game instanceof TrainGame
+            ? createTrainScene(
+                app,
+                game,
+                lesson.clef,
+                lesson.notes,
+                (events) => {
+                  for (const ev of events) {
+                    if (ev.type === 'derail') {
+                      sfx.wrong()
+                      react(false, `Vagon raydan çıktı: notası ${solfegeName(ev.wagon.record.target)} idi.`)
+                    }
                   }
-                }
-              })
-            : game instanceof BirdGame
-              ? createBirdScene(
-                  app,
-                  game,
-                  lesson.clef,
-                  lesson.notes,
-                  (events) => {
+                  announceTune()
+                },
+                setStaff,
+              )
+            : game instanceof ChirpGame
+              ? createChirpScene(app, game, lesson.notes, (events) => {
+                  for (const ev of events) {
+                    if (ev.type === 'sing') sing(ev.bird.record.target)
+                    else if (ev.type === 'lost') {
+                      sfx.wrong()
+                      react(false, `Kuş uçup gitti. ${solfegeName(ev.bird.record.target)} ötüyordu.`)
+                      sing(ev.bird.record.target, 300)
+                    }
+                  }
+                })
+              : game instanceof BirdGame
+                ? createBirdScene(
+                    app,
+                    game,
+                    lesson.clef,
+                    lesson.notes,
+                    (events) => {
+                      for (const ev of events) {
+                        if (ev.type === 'pass') {
+                          sfx.correct()
+                          react(true, 'Harika geçiş!')
+                        } else if (ev.type === 'crash') {
+                          sfx.wrong()
+                          react(false, `Bu boşluk ${solfegeName(ev.pipe.record.target)} idi.`)
+                        }
+                      }
+                    },
+                    setStaff,
+                  )
+                : createBalloonScene(app, game, lesson.clef, lesson.notes, (events) => {
                     for (const ev of events) {
-                      if (ev.type === 'pass') {
-                        sfx.correct()
-                        react(true, 'Harika geçiş!')
-                      } else if (ev.type === 'crash') {
+                      if (ev.type === 'escape') {
                         sfx.wrong()
-                        react(false, `Bu boşluk ${solfegeName(ev.pipe.record.target)} idi.`)
+                        react(false, `Kaçan balon ${solfegeName(ev.balloon.record.target)} idi.`)
                       }
                     }
-                  },
-                  setStaff,
-                )
-              : createBalloonScene(app, game, lesson.clef, lesson.notes, (events) => {
-                  for (const ev of events) {
-                    if (ev.type === 'escape') {
-                      sfx.wrong()
-                      react(false, `Kaçan balon ${solfegeName(ev.balloon.record.target)} idi.`)
-                    }
-                  }
-                }),
+                  }),
     [game, lesson.clef, lesson.notes, lesson.bothStaves, react, sing, announceTune],
   )
 
-  const marks: Partial<Record<number, KeyMark>> = flash ? { [flash.midi]: flash.mark } : {}
+  const marks: Partial<Record<number, KeyMark>> = {}
+  if (glow !== null) marks[glow] = 'glow'
+  if (flash) marks[flash.midi] = flash.mark
 
   return (
     <div className="game arcade">
@@ -392,7 +463,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
             🔊
           </button>
         )}
-        {staff && (kind === 'bird' || kind === 'train') && (
+        {staff && (kind === 'bird' || kind === 'train' || kind === 'frog') && (
           <svg className="clef-overlay" aria-hidden>
             <text
               x={staff.gap * 0.3}

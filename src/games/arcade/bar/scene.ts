@@ -27,6 +27,8 @@ export interface BarCustomer {
   look: number
   state: 'waiting' | 'served' | 'angry'
   leftFor: number
+  /** Altın müşteri: a bonus customer with a crown. */
+  golden?: boolean
 }
 
 /** The game the bar draws: Nota Barmeni or Akor Barmeni. */
@@ -206,6 +208,12 @@ export function createBarScene<C extends BarCustomer, E extends { type: string }
     const dark = c.state === 'angry' ? 0xcc3a3a : 0x000000
     const darkAlpha = c.state === 'angry' ? 1 : 0.18
     const fill = { color, alpha }
+    const golden = !!c.golden && c.state !== 'angry'
+    // Altın müşteri: a golden glow behind them
+    if (golden) {
+      const pulse = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(now / 200)
+      world.circle(x, y, r * (1.5 + pulse * 0.15)).fill({ color: 0xffe066, alpha: alpha * (0.3 + pulse * 0.2) })
+    }
     // ears and other things behind the head
     if (kind === 'cat') {
       for (const d of [-1, 1])
@@ -358,6 +366,29 @@ export function createBarScene<C extends BarCustomer, E extends { type: string }
       world
         .circle(x + r * 0.9, y - r * (0.9 + fx.rise * 1.3), r * 0.2)
         .stroke({ width: 1.5, color: 0xe0a800, alpha: fx.fade })
+    }
+    if (golden) {
+      // a little crown on top
+      const cy = y - r * 1.05
+      world
+        .poly([
+          x - r * 0.45,
+          cy + r * 0.25,
+          x - r * 0.45,
+          cy - r * 0.15,
+          x - r * 0.22,
+          cy + r * 0.05,
+          x,
+          cy - r * 0.3,
+          x + r * 0.22,
+          cy + r * 0.05,
+          x + r * 0.45,
+          cy - r * 0.15,
+          x + r * 0.45,
+          cy + r * 0.25,
+        ])
+        .fill({ color: GOLD_LED, alpha })
+        .stroke({ width: 1.5, color: 0xe0a800, alpha })
     }
     if (c.state === 'angry') {
       // the red "anger" mark

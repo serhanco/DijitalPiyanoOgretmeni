@@ -52,6 +52,11 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
           checked={settings.relaxedMode}
           onChange={(v) => settings.set({ relaxedMode: v })}
         />
+        <Toggle
+          label="İpucu parıltısı: takılınca doğru tuş parlasın"
+          checked={settings.hintGlow}
+          onChange={(v) => settings.set({ hintGlow: v })}
+        />
         <h3 className="settings-group">Ses</h3>
         <Toggle
           label="Ses efektleri"

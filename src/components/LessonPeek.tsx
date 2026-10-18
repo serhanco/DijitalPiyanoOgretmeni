@@ -26,6 +26,8 @@ const KIND_NAME: Record<LessonKind, string> = {
   mix: 'Günün tekrar karışımı',
   train: 'Oyun: Nota Treni',
   chirp: 'Oyun: Kayıp Kuş Sesi',
+  frog: 'Oyun: Kurbağa Atlayışı',
+  duet: 'Oyun: Çift Kişilik Davul',
 }
 
 interface Props {

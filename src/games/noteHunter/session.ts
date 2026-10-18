@@ -13,10 +13,14 @@ export interface PromptRecord {
   missed?: boolean
   /** Grand-staff lessons: the staff the note was shown on (otherwise the lesson's clef). */
   clef?: Clef
+  /** İpucu parıltısı: the right key glowed before it was played. Counts as not right on the first try. */
+  hinted?: boolean
+  /** Altın balon / altın müşteri: a bonus target, worth extra XP when played right on the first try. */
+  golden?: boolean
 }
 
-/** Right on the first try: no wrong key and not missed. */
-export const firstTryOk = (r: PromptRecord) => r.wrongPresses.length === 0 && !r.missed
+/** Right on the first try: no wrong key, no hint and not missed. */
+export const firstTryOk = (r: PromptRecord) => r.wrongPresses.length === 0 && !r.missed && !r.hinted
 
 export type PressResult = 'correct' | 'wrong' | 'ignored'
 

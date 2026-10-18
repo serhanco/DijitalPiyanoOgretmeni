@@ -5,11 +5,14 @@
 // costs none. Pure logic: time is passed in.
 
 import type { PromptRecord } from '../../noteHunter/session'
+import { hintFor } from '../bonus'
 import { rampAt, type Ramp, Surprise } from '../ramp'
 import type { SkillProvider } from '../skill'
 
 /** The signal on the left (0..1 of the width): the front wagon must be played before it gets here. */
 export const SIGNAL_X = 0.16
+/** İpucu parıltısı: a front wagon this close to the signal glows its key. */
+const HINT_AHEAD = 0.16
 /** Wagons enter on the right, this far apart. */
 export const ENTER_X = 1.06
 export const WAGON_GAP = 0.16
@@ -71,6 +74,12 @@ export class TrainGame {
 
   get progress(): number {
     return this.attempted.length / this.total
+  }
+
+  /** İpucu parıltısı: the front wagon, once it is close to the signal. */
+  hint(): PromptRecord | null {
+    const f = this.front
+    return f && f.x < SIGNAL_X + HINT_AHEAD ? hintFor(f.record) : null
   }
 
   /** The wagon to play now. */

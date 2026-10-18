@@ -28,6 +28,7 @@ beforeEach(async () => {
     mixDay: null,
     weekSeen: null,
     salon: {},
+    costume: null,
   })
   await Promise.all([db.sessions.clear(), db.noteStats.clear(), db.review.clear()])
 })

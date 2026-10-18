@@ -223,6 +223,19 @@ export function createBalloonScene(
           .roundRect(bx - rx * 0.3, by - rx * 0.02, rx * 0.6, rx * 0.07, rx * 0.04)
           .fill({ color: 0xffffff, alpha: 0.25 })
 
+        // Altın balon: a soft halo and twinkles around it
+        if (b.record.golden) {
+          const pulse = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(now / 180)
+          world.ellipse(x, y, rx * 1.35, ry * 1.3).fill({ color: 0xffe066, alpha: 0.25 + pulse * 0.2 })
+          for (let i = 0; i < 4; i++) {
+            const a = (i / 4) * Math.PI * 2 + (reduced ? 0 : now / 900)
+            const sx = x + Math.cos(a) * rx * 1.25
+            const sy = y + Math.sin(a) * ry * 1.2
+            const s = rx * (0.1 + 0.06 * pulse)
+            world.poly([sx, sy - s * 2, sx + s * 0.6, sy, sx, sy + s * 2, sx - s * 0.6, sy]).fill(0xfff3b0)
+          }
+        }
+
         // knot, balloon, shine
         world.poly([x - rx * 0.12, y + ry * 1.05, x + rx * 0.12, y + ry * 1.05, x, y + ry * 0.92]).fill(b.color)
         world.ellipse(x, y, rx, ry).fill(b.color)

@@ -4,6 +4,7 @@ import type { BossSummary } from '../games/boss/report'
 import type { SongSummary } from '../games/songs/report'
 import type { EarSummary } from '../games/ear/session'
 import type { MemorySummary } from '../games/memory/engine'
+import type { DuetSummary } from '../games/duet/session'
 import { type NoteLesson, PATTERN_KINDS } from '../games/noteHunter/lessons'
 import type { ScaleSummary } from '../games/scales/steps'
 import type { HandStat, SessionSummary, SyncSummary, TimingSummary } from '../games/noteHunter/summary'
@@ -18,7 +19,8 @@ import { burstConfetti } from '../components/confetti'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { GoalRing } from '../components/TopBar'
 import { type Clef, CLEF_NAMES, solfegeName } from '../music/notes'
-import type { Reward } from '../state/profile'
+import { type Reward, useProfile } from '../state/profile'
+import type { Costume } from '../progress/wardrobe'
 import { paceText } from '../progress/adaptive'
 import { type CardMove, inDays, MAX_BOX } from '../progress/srs'
 
@@ -519,6 +521,35 @@ function RecordCard({
   )
 }
 
+/** Çift Kişilik Davul: each round, and how many answers had a rhythm of their own. */
+function DuetCard({ duet }: { duet: DuetSummary }) {
+  const free = duet.rounds.filter((r) => r.turn === 'free')
+  return (
+    <section className="card duet-card" data-duet>
+      <h2>Davul düeti</h2>
+      <div className="duet-rounds">
+        {duet.rounds.map((r, i) => (
+          <span
+            key={i}
+            className={`memory-dot ${r.ok ? 'played' : 'half'}`}
+            title={`${i + 1}. tur: ${r.turn === 'echo' ? 'yankı' : 'cevap'} %${Math.round(r.score * 100)}`}
+          />
+        ))}
+      </div>
+      <p>
+        {free.length > 0 && (
+          <>
+            Kendi ritminle verdiğin cevap: <b>{duet.ownRhythms}</b> / {free.length}
+            {duet.ownRhythms === 0 && ' · bir dahaki sefere Notiş’ten farklı bir ritim dene!'}
+            <br />
+          </>
+        )}
+        {duet.meanOffsetMs !== null && <>Yankılarda notaların ortalama {describeOffset(duet.meanOffsetMs)}.</>}
+      </p>
+    </section>
+  )
+}
+
 /** The longest runs remembered in Melodi Hafızası. */
 function MemoryCard({ memory }: { memory: MemorySummary }) {
   if (memory.song)
@@ -560,6 +591,25 @@ function handAdvice(right: HandStat, left: HandStat): string {
   return diff > 0
     ? 'Sol elin biraz geride: fa anahtarı derslerini tekrar etmek iyi gelir.'
     : 'Sağ elin biraz geride: sol anahtarı derslerini tekrar etmek iyi gelir.'
+}
+
+/** Kostüm dolabı: a costume this lesson opened, with a button to put it on. */
+function NewCostumes({ costumes }: { costumes: Costume[] }) {
+  const wearing = useProfile((s) => s.costume)
+  const setCostume = useProfile((s) => s.setCostume)
+  const first = costumes[0]
+  return (
+    <section className="card costume-new" data-new-costume={first.id}>
+      <Mascot mood="cheer" size={84} costume={first.id} />
+      <div>
+        <h2>Yeni kostüm: {costumes.map((c) => `${c.icon} ${c.name}`).join(', ')}!</h2>
+        <p className="small muted">Kostüm dolabı profilinde. Hemen giydirmek ister misin?</p>
+        <button className="btn btn-small" disabled={wearing === first.id} onClick={() => setCostume(first.id)}>
+          {wearing === first.id ? 'Notiş giydi 🎉' : `${first.name} giydir`}
+        </button>
+      </div>
+    </section>
+  )
 }
 
 function Comparison({ before, now }: { before: number | null; now: number }) {
@@ -676,6 +726,18 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
           {summary.arcade.surprises > 0 ? `, ${summary.arcade.surprises} sürpriz atlattın` : ''}.
         </p>
       )}
+      {summary.arcade?.golden && (
+        <p className="compare up" data-golden={summary.arcade.golden.caught}>
+          🌟 {summary.arcade.golden.shown} altın hedeften {summary.arcade.golden.caught} tanesini ilk denemede yakaladın
+          {summary.arcade.golden.caught > 0 && !lesson.salon ? ', her biri bonus XP' : ''}.
+        </p>
+      )}
+      {summary.hinted && (
+        <p className="compare" data-hinted={summary.hinted.count}>
+          💡 {summary.hinted.count} notayı ipucu parıltısıyla buldun ({summary.hinted.notes.map(nameOf).join(', ')}).
+          Bunlar ilk deneme sayılmadı; bir dahakine parıltıdan önce bulmayı dene.
+        </p>
+      )}
 
       {/* A test finish keeps nothing, so it shows no reward. */}
       {!trial && (
@@ -729,6 +791,7 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
           </div>
         </section>
       )}
+      {!trial && reward.costumes && <NewCostumes costumes={reward.costumes} />}
 
       {summary.timing ? (
         <div className="stat-row">
@@ -810,6 +873,7 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
       )}
       {summary.ear && <EarCard ear={summary.ear} />}
       {summary.memory && <MemoryCard memory={summary.memory} />}
+      {summary.duet && <DuetCard duet={summary.duet} />}
       {summary.boss && <BossCard boss={summary.boss} look={lesson.boss?.look} />}
       {summary.song && <SongCard song={summary.song} />}
       {summary.tempoLadder && <TempoLadderCard ladder={summary.tempoLadder} />}

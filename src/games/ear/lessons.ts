@@ -277,6 +277,30 @@ const chirpLesson = (id: string, title: string, description: string, notes: numb
   keyboard: { low: C4, high: n('C5') },
 })
 
+/** Kurbağa Atlayışı: lily pads on the staff; the frog jumps by the given sizes, the player plays where it lands. */
+function frogLesson(
+  id: string,
+  title: string,
+  description: string,
+  sizes: number[],
+  low: number,
+  high: number,
+  start: number,
+): NoteLesson {
+  const notes = whiteKeysBetween(low, high)
+  return {
+    id,
+    kind: 'frog',
+    title,
+    description,
+    clef: 'treble',
+    notes,
+    length: 12,
+    keyboard: fitKeyboard(notes, { fromDo: true }),
+    frog: { start, sizes },
+  }
+}
+
 const OCTAVE_RANGE = { low: C4, high: n('C5') }
 const WIDE_RANGE = { low: n('G3'), high: n('G5') }
 const CHORD_RANGE = { low: n('F3'), high: n('E5') }
@@ -314,6 +338,15 @@ export const EAR_LESSONS: NoteLesson[] = [
   chirpLesson('ear-chirp-2', 'Kayıp Kuş Sesi: Bütün Oktav', "Do'dan ince Do'ya: her kuş kendi notasını öter", OCTAVE),
   songLesson('ear-song-1', 'Şarkı Hafızası: Küçük Yıldız', 'Cümle cümle dinle ve ezberden çal', TWINKLE),
   theoryLesson('ear-intervals', 'Aralıklar ve Şarkıları', 'Her aralığı bir şarkıyla hatırla', INTERVALS),
+  frogLesson(
+    'ear-frog-1',
+    'Kurbağa Atlayışı',
+    "2'li ve 3'lü zıplamalar: kurbağanın notasından say, indiği notayı çal",
+    [2, 3],
+    C4,
+    n('C5'),
+    n('E4'),
+  ),
   earLesson('ear-int-1', 'İkili mi Üçlü mü?', 'Büyük ikili ve büyük üçlü, çıkan', {
     cases: [{ task: 'interval', intervals: [2, 4], ways: ['up'], ...OCTAVE_RANGE, count: 10 }],
   }),
@@ -323,6 +356,15 @@ export const EAR_LESSONS: NoteLesson[] = [
   earLesson('ear-int-3', 'Dörtlü, Beşli, Oktav', 'Geniş aralıklar, çıkan', {
     cases: [{ task: 'interval', intervals: [5, 7, 12], ways: ['up'], ...OCTAVE_RANGE, count: 12 }],
   }),
+  frogLesson(
+    'ear-frog-2',
+    'Kurbağa: Büyük Zıplamalar',
+    "4'lü ve 5'li zıplamalar: çizgiden çizgiye mi, aradan araya mı?",
+    [4, 5],
+    C4,
+    n('G5'),
+    n('G4'),
+  ),
   earLesson('ear-sing-1', 'Aralık Avı', 'İlk nota yanar; ikincisini kulağınla bul', {
     cases: [{ task: 'sing', intervals: [2, 4, 5, 7], ways: ['up'], ...OCTAVE_RANGE, count: 10 }],
   }),

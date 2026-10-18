@@ -6,6 +6,7 @@ import { noteScores, recentSessions, rhythmSessions } from '../progress/history'
 import { rhythmTrend, type RhythmTrend } from '../progress/rhythmTrend'
 import { RhythmChart } from '../components/RhythmChart'
 import { ThisWeekCard } from '../components/WeekSummary'
+import { Wardrobe } from '../components/Wardrobe'
 import { MIX_LESSON_ID } from '../progress/mix'
 import { type Clef, solfegeName } from '../music/notes'
 import { useProfile } from '../state/profile'
@@ -85,6 +86,8 @@ export function ProfileScreen({ onBack }: Props) {
       </div>
 
       <ThisWeekCard />
+
+      <Wardrobe />
 
       <section className="card">
         <h2>Rozetler</h2>

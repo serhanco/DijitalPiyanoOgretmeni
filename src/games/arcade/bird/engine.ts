@@ -6,10 +6,13 @@
 import type { PromptRecord } from '../../noteHunter/session'
 import type { SkillProvider } from '../skill'
 import { staffStep } from '../staffGeometry'
+import { hintFor } from '../bonus'
 import { rampAt, type Ramp, Surprise } from '../ramp'
 
 export const BIRD_X = 0.25 // fraction of the width
 const SPAWN_X = 1.1
+/** İpucu parıltısı: a pipe this close to the bird glows its key. */
+const HINT_AHEAD = 0.2
 /** Seconds a pipe needs to cross the screen, at the start and at the end. */
 const CROSS_START_S = 6.5
 const CROSS_END_S = 4.2
@@ -72,6 +75,12 @@ export class BirdGame {
   /** Progress through the game, 0..1. */
   get progress(): number {
     return this.pipes.filter((p) => p.state !== 'flying').length / this.total
+  }
+
+  /** İpucu parıltısı: the current pipe, once it is close to the bird. */
+  hint(): PromptRecord | null {
+    const cur = this.current
+    return cur && cur.x < BIRD_X + HINT_AHEAD ? hintFor(cur.record) : null
   }
 
   /** The first pipe still flying towards the bird: what the player should play now. */
