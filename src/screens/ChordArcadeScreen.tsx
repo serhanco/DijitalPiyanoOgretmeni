@@ -23,6 +23,10 @@ import { subscribe } from '../input/inputBus'
 import { chordSymbol, chordTitle, INVERSION_LABELS } from '../music/chords'
 import { solfegeName } from '../music/notes'
 import { useSettings } from '../state/settings'
+import { useProfile } from '../state/profile'
+import { ENDLESS_RAMP } from '../games/arcade/ramp'
+import { ArcadeChips } from './arcade/ArcadeChips'
+import { arcadeStats, FEVER_AT, useCombo, useSurprise } from './arcade/useArcade'
 
 const ARCADE_HEARTS = 3
 
@@ -43,15 +47,20 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const chef = lesson.kind === 'chef'
   const bar = lesson.kind === 'chordbar'
   const { ignoreOctave, showKeyLabels } = useSettings()
+  const endless = !!lesson.salon?.endless
+  const record = useProfile((s) => (lesson.salon ? (s.salon[lesson.id]?.best ?? 0) : undefined))
   const game: Game = useMemo(() => {
     const chords = chordSequence(spec)
     const options = { mode: spec.mode, hearts: ARCADE_HEARTS, ignoreOctave }
-    return chef
+    const g = chef
       ? new ChefGame(chords, options)
       : bar
         ? new ChordBarGame(chords, options)
         : new SpaceGame(chords, options)
-  }, [spec, chef, bar, ignoreOctave])
+    if (endless) g.ramp = ENDLESS_RAMP
+    return g
+  }, [spec, chef, bar, ignoreOctave, endless])
+  const { combo, bestCombo, hit, miss } = useCombo()
 
   useEffect(() => {
     ;(window as unknown as { __dpoChordArcade?: Game }).__dpoChordArcade = game
@@ -76,10 +85,20 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
   useEffect(() => {
     onFinishRef.current = onFinish
   })
+  const summary = useCallback(
+    (): SessionSummary => ({
+      ...summarizeChords(game.attempted, game.failed),
+      arcade: arcadeStats(game, bestCombo()),
+    }),
+    [game, bestCombo],
+  )
   useFinishRequest(() => {
     finished.current = true
-    onFinishRef.current(summarizeChords(game.attempted, game.failed))
+    onFinishRef.current(summary())
   })
+  const surprise = useSurprise(game, lesson.kind ?? 'chef', (text) =>
+    setMessage(text ?? 'Sürpriz bitti, normal hıza döndük.'),
+  )
 
   const react = useCallback(
     (events: GameEvent[]) => {
@@ -90,6 +109,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
           case 'serve':
           case 'shoot':
             sfx.correct()
+            hit()
             setMood((m) => ({ mood: ev.together ? 'happy' : 'think', pulse: m.pulse + 1 }))
             setMessage(
               ev.together
@@ -105,6 +125,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
           case 'land':
           case 'angry':
             sfx.wrong()
+            miss()
             setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
             setMessage(
               ev.type === 'burn'
@@ -117,6 +138,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
           case 'spill':
           case 'wrong':
             sfx.wrong()
+            miss()
             setFlash({ midi: ev.midi, mark: 'wrong' })
             setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
             setMessage(
@@ -127,6 +149,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
             break
           case 'inversion':
             sfx.wrong()
+            miss()
             setMood((m) => ({ mood: 'sad', pulse: m.pulse + 1 }))
             setMessage(
               `Notalar doğru, ama en altta ${solfegeName(ev.bottom, false)} var. ${INVERSION_LABELS[record.chord.inversion]} istendi.`,
@@ -140,10 +163,10 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
       setHud({ score: game.score, hearts: game.hearts, progress: game.progress })
       if (game.done && !finished.current) {
         finished.current = true
-        window.setTimeout(() => onFinishRef.current(summarizeChords(game.attempted, game.failed)), 900)
+        window.setTimeout(() => onFinishRef.current(summary()), 900)
       }
     },
-    [game, chef, bar, spec.mode],
+    [game, chef, bar, spec.mode, hit, miss, summary],
   )
 
   useEffect(() => {
@@ -209,9 +232,15 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
         <button className="icon-btn" onClick={onExit} aria-label="Oyundan çık">
           ✕
         </button>
-        <div className="progress" role="progressbar" aria-valuenow={Math.round(hud.progress * 100)}>
-          <div className="progress-fill" style={{ width: `${hud.progress * 100}%` }} />
-        </div>
+        {endless ? (
+          <div className="endless-bar" aria-label="Sonsuz oyun">
+            ♾️ Sonsuz oyun{record ? ` · rekor ${record}` : ''}
+          </div>
+        ) : (
+          <div className="progress" role="progressbar" aria-valuenow={Math.round(hud.progress * 100)}>
+            <div className="progress-fill" style={{ width: `${hud.progress * 100}%` }} />
+          </div>
+        )}
         <span className="hearts" aria-label={`${hud.hearts} can`}>
           ❤️ {hud.hearts}
         </span>
@@ -220,10 +249,11 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
       <div className="arcade-info">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={56} />
         <p className="arcade-message">{message}</p>
+        <ArcadeChips combo={combo} record={endless ? undefined : record} />
         <span className="arcade-score">⭐ {hud.score}</span>
       </div>
 
-      <PixiStage create={create} className="pixi-stage" />
+      <PixiStage create={create} className="pixi-stage" fever={combo >= FEVER_AT} surprise={surprise} />
 
       <PianoKeyboard low={lesson.keyboard.low} high={lesson.keyboard.high} marks={marks} showLabels={showKeyLabels} />
     </div>

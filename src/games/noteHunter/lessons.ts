@@ -12,6 +12,16 @@ import type { ScalePart } from '../scales/steps'
 import type { SongSpec } from '../songs/song'
 import type { TheorySpec } from '../theory/quiz'
 import { withKeyboards } from './keyboard'
+import {
+  ALOUETTE,
+  BRAHMS_LULLABY,
+  GOING_HOME,
+  MORNING_MOOD,
+  OLD_MACDONALD,
+  ROW_BOAT,
+  SUSANNA,
+  tunePitches,
+} from '../arcade/train/tunes'
 
 /**
  * How a lesson is played: the staff drill, a melody read note by note, a
@@ -40,6 +50,8 @@ export type LessonKind =
   | 'waterfall'
   | 'boss'
   | 'mix'
+  | 'train'
+  | 'chirp'
 
 /** Kinds played against a metronome. */
 export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'surf']
@@ -63,6 +75,7 @@ export const PATTERN_KINDS: LessonKind[] = [
   'arpeggio',
   'surf',
   'ear',
+  'chirp',
 ]
 
 /** Chord kinds: judged per chord, reported with the chord card. */
@@ -129,6 +142,10 @@ export interface NoteLesson {
   introduce?: number[]
   /** Drill: notes asked twice as often (the ones just introduced). */
   focus?: number[]
+  /** Nota Treni: songs whose notes ride the wagons, in order (otherwise `notes` are drawn at random). */
+  tunes?: Tune[]
+  /** Oyun Salonu: the game and skill picked; endless games run until the hearts are gone. */
+  salon?: { game: LessonKind; skill: string; endless: boolean }
 }
 
 export interface Melody {
@@ -139,6 +156,21 @@ export interface Melody {
    * (treble) staff; otherwise middle C and up go to treble.
    */
   notes: string
+}
+
+/** Nota Treni: the songs' notes ride the wagons in order. */
+function trainLesson(id: string, title: string, tunes: Tune[]): Omit<NoteLesson, 'keyboard'> {
+  const pitches = tunes.flatMap(tunePitches)
+  return {
+    id,
+    kind: 'train',
+    title,
+    description: `Vagonlardaki notaları sırayla çal, şarkı çıksın: ${tunes.map((t) => t.original).join(', ')}`,
+    clef: 'treble',
+    notes: [...new Set(pitches)].sort((a, b) => a - b),
+    length: pitches.length,
+    tunes,
+  }
 }
 
 export const TREBLE_LESSONS: NoteLesson[] = withKeyboards([
@@ -158,6 +190,7 @@ export const TREBLE_LESSONS: NoteLesson[] = withKeyboards([
     notes: whiteKeysBetween(parseNote('C4'), parseNote('C5')),
     length: 20,
   },
+  trainLesson('treble-train-1', 'Nota Treni', [GOING_HOME, ROW_BOAT, OLD_MACDONALD]),
   {
     id: 'treble-bird-1',
     kind: 'bird',
@@ -209,4 +242,5 @@ export const TREBLE_LESSONS: NoteLesson[] = withKeyboards([
     notes: whiteKeysBetween(parseNote('C4'), parseNote('G5')),
     length: 25,
   },
+  trainLesson('treble-train-2', 'Nota Treni: Ekspres', [MORNING_MOOD, SUSANNA, ALOUETTE, BRAHMS_LULLABY]),
 ])

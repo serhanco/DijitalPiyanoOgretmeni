@@ -8,6 +8,7 @@ import type { ChordTarget } from '../../../music/chords'
 import type { Clef } from '../../../music/notes'
 import { ChordListener, type ChordMatchMode, type ChordRecord, judgeAmong, newChordRecord } from '../../chords/session'
 import { BAR_X, ENTER_X } from './engine'
+import { rampAt, type Ramp, Surprise } from '../ramp'
 
 /** Seconds a customer needs to reach the bartender, at the start and at the end. */
 const WALK_START_S = 15
@@ -118,9 +119,14 @@ export class ChordBarGame {
     return this.listener.active(now).map((p) => p.midi)
   }
 
+  /** Oyun Salonu: an endless game ramps its speed over a number of targets instead of the whole list. */
+  ramp: Ramp | null = null
+  /** Short surprises that speed the game up and double the points for a few seconds. */
+  readonly surprise = new Surprise()
+
   private lerp(start: number, end: number) {
-    const t = this.total > 1 ? Math.min(1, this.spawned / (this.total - 1)) : 0
-    return start + (end - start) * t
+    const t = rampAt(this.spawned, this.total, this.ramp)
+    return (start + (end - start) * t) / this.surprise.boost
   }
 
   /** The counter of the chord's staff with the most room near the door. */
@@ -136,6 +142,7 @@ export class ChordBarGame {
     const events: ChordBarEvent[] = []
     if (this.done) return events
     const dt = dtMs / 1000
+    this.surprise.tick(dt)
 
     this.sinceSpawnS += dt
     const empty = this.waiting.length === 0
@@ -207,7 +214,7 @@ export class ChordBarGame {
     const { target: customer, event: ev } = judged
     if (ev.type === 'chord') {
       customer.state = 'served'
-      this.score++
+      this.score += this.surprise.points
       this.drinks.push({ counter: customer.counter, toX: customer.x, x: BAR_X })
       return [{ type: 'serve', customer, together: ev.together }]
     }

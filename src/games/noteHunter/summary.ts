@@ -86,6 +86,14 @@ export interface SessionSummary {
   quiz?: { missed: string[] }
   /** Written names of black keys when they differ from the sharp name (Si♭, not La#). */
   noteNames?: Record<number, string>
+  /** Arcade games: the points (doubled during surprises), the longest run of right answers and the surprises met. */
+  arcade?: ArcadeStats
+}
+
+export interface ArcadeStats {
+  score: number
+  bestCombo: number
+  surprises: number
 }
 
 export interface HandStat {

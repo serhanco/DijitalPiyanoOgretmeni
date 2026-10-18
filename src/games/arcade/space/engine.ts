@@ -5,6 +5,7 @@
 
 import type { ChordTarget } from '../../../music/chords'
 import { ChordListener, type ChordMatchMode, type ChordRecord, judgeAmong, newChordRecord } from '../../chords/session'
+import { rampAt, type Ramp, Surprise } from '../ramp'
 
 export const SPACE_LANES = 3
 /** Seconds an invader takes from the top to the base, at the start and at the end. */
@@ -104,9 +105,14 @@ export class SpaceGame {
     return this.records.filter((r) => r.answeredAt !== null || r.missed)
   }
 
+  /** Oyun Salonu: an endless game ramps its speed over a number of targets instead of the whole list. */
+  ramp: Ramp | null = null
+  /** Short surprises that speed the game up and double the points for a few seconds. */
+  readonly surprise = new Surprise()
+
   private lerp(start: number, end: number) {
-    const t = this.total > 1 ? Math.min(1, this.spawned / (this.total - 1)) : 0
-    return start + (end - start) * t
+    const t = rampAt(this.spawned, this.total, this.ramp)
+    return (start + (end - start) * t) / this.surprise.boost
   }
 
   private pickLane(): number {
@@ -122,6 +128,7 @@ export class SpaceGame {
     const events: SpaceEvent[] = []
     if (this.done) return events
     const dt = dtMs / 1000
+    this.surprise.tick(dt)
 
     this.sinceSpawnS += dt
     const nothingFlying = this.flying.length === 0
@@ -172,7 +179,7 @@ export class SpaceGame {
     const { target, event: ev } = judged
     if (ev.type === 'chord') {
       target.state = 'hit'
-      this.score++
+      this.score += this.surprise.points
       this.lastShot = { invader: target, lane: target.lane }
       return [{ type: 'shoot', invader: target, together: ev.together }]
     }

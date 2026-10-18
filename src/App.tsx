@@ -11,6 +11,7 @@ import { cardResults, type CardMove } from './progress/srs'
 import { HomeScreen } from './screens/HomeScreen'
 import { LessonPlayer } from './screens/LessonPlayer'
 import { ProfileScreen } from './screens/ProfileScreen'
+import { isSalonId, salonResult } from './games/salon/salon'
 import { ResultsScreen } from './screens/ResultsScreen'
 import { type Reward, useProfile } from './state/profile'
 import { useSettings } from './state/settings'
@@ -21,6 +22,7 @@ import { type Place, TestTools } from './testing/TestTools'
 
 // The note-reading drill is the most played screen: load it right after the map.
 const loadGame = () => import('./screens/NoteHunterScreen')
+const SalonScreen = lazy(() => import('./screens/SalonScreen').then((m) => ({ default: m.SalonScreen })))
 const CalibrationScreen = lazy(() =>
   import('./screens/CalibrationScreen').then((m) => ({ default: m.CalibrationScreen })),
 )
@@ -29,6 +31,7 @@ type Screen =
   | { name: 'home'; focus?: string }
   | { name: 'profile' }
   | { name: 'calibrate' }
+  | { name: 'salon'; last?: string }
   | { name: 'play'; lesson: NoteLesson; run: number }
   | {
       name: 'results'
@@ -103,6 +106,7 @@ export default function App() {
       kind: lesson.kind,
       ...(summary.boss && { boss: { defeated: summary.boss.defeated } }),
       tempoRaised: !!summary.tempoLadder?.raisedTo,
+      ...(lesson.salon && { salon: salonResult(lesson.salon.endless, summary) }),
     }
     // "Dersi bitir" in test mode shows the results but keeps them out of the progress.
     const trial = consumeFinishRequest()
@@ -118,7 +122,9 @@ export default function App() {
     }
     // Rhythm results say how well notes were timed, and scales and memory runs are known in
     // advance: only note-reading lessons (and the mix's reading phase) feed the note statistics.
-    const reading = !summary.timing && (lesson.kind === 'mix' || !PATTERN_KINDS.includes(lesson.kind ?? 'drill'))
+    // Salon games are play: an endless one always ends with misses, so they leave the statistics and cards alone.
+    const reading =
+      !summary.timing && !lesson.salon && (lesson.kind === 'mix' || !PATTERN_KINDS.includes(lesson.kind ?? 'drill'))
     if (!trial)
       void recordSession(
         { ...outcome, at: Date.now(), xp: reward.xpGained, timing },
@@ -136,14 +142,16 @@ export default function App() {
     }
     setScreen({ name: 'results', lesson, summary, reward, trial, moves: null, tempo })
     // The cards move to their new boxes (a test finish only shows where they would go).
-    void reviewLesson(cardResults(lesson, summary), new Date(), !trial)
+    void reviewLesson(lesson.salon ? [] : cardResults(lesson, summary), new Date(), !trial)
       .then((moves) => setScreen((sc) => (sc.name === 'results' && sc.summary === summary ? { ...sc, moves } : sc)))
       .catch((err) => console.error('Could not update the review cards', err))
   }
 
   const home = () => setScreen({ name: 'home' })
   // Finished, failed or left halfway: the map comes back at the lesson's node.
-  const backFrom = (lesson: NoteLesson) => () => setScreen({ name: 'home', focus: mapNodeOf(lesson) })
+  // Salon games go back to the salon, with the game just played still picked.
+  const backFrom = (lesson: NoteLesson) => () =>
+    setScreen(isSalonId(lesson.id) ? { name: 'salon', last: lesson.id } : { name: 'home', focus: mapNodeOf(lesson) })
 
   const place: Place =
     screen.name === 'play'
@@ -154,7 +162,16 @@ export default function App() {
             lesson: screen.lesson,
             detail: `${screen.summary.failed ? 'canlar bitti, ' : ''}doğruluk %${Math.round(screen.summary.accuracy * 100)}, ${screen.summary.stars} yıldız`,
           }
-        : { screen: screen.name === 'profile' ? 'Profil' : screen.name === 'calibrate' ? 'Gecikme ayarı' : 'Harita' }
+        : {
+            screen:
+              screen.name === 'profile'
+                ? 'Profil'
+                : screen.name === 'calibrate'
+                  ? 'Gecikme ayarı'
+                  : screen.name === 'salon'
+                    ? 'Oyun Salonu'
+                    : 'Harita',
+          }
 
   return (
     <main className="app">
@@ -163,10 +180,16 @@ export default function App() {
           onStart={start}
           onProfile={() => setScreen({ name: 'profile' })}
           onCalibrate={() => setScreen({ name: 'calibrate' })}
+          onSalon={() => setScreen({ name: 'salon' })}
           focus={screen.focus}
         />
       )}
       {screen.name === 'profile' && <ProfileScreen onBack={home} />}
+      {screen.name === 'salon' && (
+        <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+          <SalonScreen onStart={start} onBack={home} last={screen.last} />
+        </Suspense>
+      )}
       {screen.name === 'calibrate' && (
         <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
           <CalibrationScreen onBack={home} />

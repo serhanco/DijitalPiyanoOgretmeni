@@ -6,6 +6,7 @@
 import type { PromptRecord } from '../../noteHunter/session'
 import type { SkillProvider } from '../skill'
 import { staffStep } from '../staffGeometry'
+import { rampAt, type Ramp, Surprise } from '../ramp'
 
 export const BIRD_X = 0.25 // fraction of the width
 const SPAWN_X = 1.1
@@ -42,6 +43,10 @@ export class BirdGame {
   private readonly skill: SkillProvider
   /** Adaptive difficulty: every duration is divided by this (1.1 = 10% faster). */
   pace = 1
+  /** Oyun Salonu: an endless game ramps its speed over a number of targets instead of the whole list. */
+  ramp: Ramp | null = null
+  /** Short surprises that speed the game up and double the points for a few seconds. */
+  readonly surprise = new Surprise()
 
   constructor(skill: SkillProvider, hearts = 3) {
     this.skill = skill
@@ -76,14 +81,15 @@ export class BirdGame {
 
   /** Speed ramps up as the game goes on. */
   private lerp(start: number, end: number) {
-    const t = this.total > 1 ? Math.min(1, this.spawned / (this.total - 1)) : 0
-    return (start + (end - start) * t) / this.pace
+    const t = rampAt(this.spawned, this.total, this.ramp)
+    return (start + (end - start) * t) / (this.pace * this.surprise.boost)
   }
 
   update(dtMs: number, now: number): BirdEvent[] {
     const events: BirdEvent[] = []
     if (this.done) return events
     const dt = dtMs / 1000
+    this.surprise.tick(dt)
 
     this.sinceSpawnS += dt
     if (this.spawned < this.total && this.sinceSpawnS >= this.lerp(SPACING_START_S, SPACING_END_S)) {
@@ -109,7 +115,7 @@ export class BirdGame {
       if (p.x <= BIRD_X) {
         if (this.birdStep === p.step) {
           p.state = 'passed'
-          this.score++
+          this.score += this.surprise.points
           // The bird was already at the right height: that counts as played.
           p.record.answeredAt ??= now
           p.record.shownAt ??= now

@@ -8,6 +8,7 @@
 import type { Clef } from '../../../music/notes'
 import type { PromptRecord } from '../../noteHunter/session'
 import type { SkillProvider } from '../skill'
+import { rampAt, type Ramp, Surprise } from '../ramp'
 
 export const COUNTERS = 4
 /** Counters of each staff, top to bottom. */
@@ -62,6 +63,10 @@ export class BarGame {
   private readonly skill: SkillProvider
   /** Adaptive difficulty: every duration is divided by this (1.1 = 10% faster). */
   pace = 1
+  /** Oyun Salonu: an endless game ramps its speed over a number of targets instead of the whole list. */
+  ramp: Ramp | null = null
+  /** Short surprises that speed the game up and double the points for a few seconds. */
+  readonly surprise = new Surprise()
   private readonly random: () => number
 
   constructor(skill: SkillProvider, hearts = 3, random: () => number = Math.random) {
@@ -102,8 +107,8 @@ export class BarGame {
   }
 
   private lerp(start: number, end: number) {
-    const t = this.total > 1 ? Math.min(1, this.spawned / (this.total - 1)) : 0
-    return (start + (end - start) * t) / this.pace
+    const t = rampAt(this.spawned, this.total, this.ramp)
+    return (start + (end - start) * t) / (this.pace * this.surprise.boost)
   }
 
   /** The counter of the customer's staff with the most room near the door. */
@@ -119,6 +124,7 @@ export class BarGame {
     const events: BarEvent[] = []
     if (this.done) return events
     const dt = dtMs / 1000
+    this.surprise.tick(dt)
 
     this.sinceSpawnS += dt
     if (
@@ -181,7 +187,7 @@ export class BarGame {
     if (hit) {
       hit.state = 'served'
       hit.record.answeredAt = now
-      this.score++
+      this.score += this.surprise.points
       this.drinks.push({ counter: hit.counter, toX: hit.x, x: BAR_X, customer: hit })
       return [{ type: 'serve', customer: hit }]
     }

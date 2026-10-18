@@ -40,6 +40,8 @@ const CASES = [
   { id: 'bird', name: 'Nota Kuşu', title: 'Nota Kuşu', drive: 'arcade', area: '.pixi-stage' },
   { id: 'balloon', name: 'Balon Patlatma', title: 'Balon Patlatma', drive: 'arcade', area: '.pixi-stage' },
   { id: 'bar', name: 'Nota Barmeni', title: 'Nota Barmeni', drive: 'arcade', area: '.pixi-stage' },
+  { id: 'train', name: 'Nota Treni', title: 'Nota Treni', drive: 'arcade', area: '.pixi-stage' },
+  { id: 'chirp', name: 'Kayıp Kuş Sesi', title: 'Kayıp Kuş Sesi', drive: 'arcade', area: '.pixi-stage' },
   { id: 'melody', name: 'İki el melodi', title: 'İki El Birlikte', drive: 'melody', area: '.melody-wrap' },
   { id: 'rhythm', name: 'Ritim (porte)', title: 'Dörtlükler', drive: 'beat', area: '.beat-field' },
   { id: 'echo', name: 'Yankı', title: 'Yankı: İkilikler', drive: 'beat', area: '.beat-field' },
@@ -479,6 +481,47 @@ async function smartMap(page, snap, vpId) {
   return checks
 }
 
+/**
+ * Oyun Salonu: the screen from the map card, an endless Nota Kuşu with bass notes, its
+ * results with the record, and the way back (to the salon, then to the map).
+ */
+async function salon(page, snap, vpId, check) {
+  await page.getByRole('button', { name: 'Oyun Salonu’na gir', exact: true }).click()
+  await page.waitForSelector('.salon-game')
+  await snap('salon', true)
+  const checks = [{ ...(await check('salon', { play: false })), shot: `${vpId}-salon.png` }]
+  await page.click('.salon-game[data-game="space"]')
+  await page.click('.salon-skill[data-skill="minör"]')
+  await page.waitForTimeout(200)
+  await snap('salon-secim')
+  checks.push({ ...(await check('salon-secim', { play: false })), shot: `${vpId}-salon-secim.png` })
+  await page.click('.salon-game[data-game="bird"]')
+  await page.click('.salon-skill[data-skill="fa"]')
+  await page.click('.salon-play')
+  await page.waitForSelector('.pixi-stage canvas')
+  checks.push(
+    ...(await DRIVERS.arcade(page, async () => {
+      await snap('salon-oyun')
+      return {
+        ...(await check('salon-oyun', { area: '.pixi-stage', play: true, keyboard: true, minShare: MIN_AREA_SHARE })),
+        shot: `${vpId}-salon-oyun.png`,
+      }
+    })),
+  )
+  if (!(await page.$('.endless-bar')))
+    checks.push({ name: 'sonsuz', errors: ['Sonsuz oyunun şeridi yok'], warnings: [] })
+  await page.getByLabel('Dersi bitir').click()
+  await page.waitForSelector('.results .record-card')
+  await page.waitForTimeout(900)
+  await snap('salon-sonuc', true)
+  checks.push({ ...(await check('salon-sonuc', { play: false })), shot: `${vpId}-salon-sonuc.png` })
+  await page.getByText('Salona dön').click()
+  await page.waitForSelector('.salon-game[data-game="bird"].on')
+  await page.getByLabel('Haritaya dön').click()
+  await page.waitForSelector('.home')
+  return checks
+}
+
 /** Wait until the map stops gliding (the smooth scroll back to the lesson). */
 async function settle(page) {
   await page.waitForSelector('.home')
@@ -720,6 +763,8 @@ const DRIVERS = {
       const target = await page.evaluate(() => {
         const g = window.__dpoArcade
         if (!g) return null
+        if ('wagons' in g) return g.front && g.front.x < 0.75 ? g.front.record.target : null
+        if ('nests' in g) return g.waiting?.record.target ?? null
         if ('customers' in g) {
           const next = g.waiting.sort((a, b) => b.x - a.x)[0]
           return next && next.x > 0.3 ? next.record.target : null
@@ -951,6 +996,26 @@ async function runViewport(vp) {
     })
     await page.goto(url)
     await page.waitForTimeout(800)
+  }
+
+  if (!vp.cases && (!process.env.LAYOUT_ONLY || process.env.LAYOUT_ONLY.split(',').includes('salon'))) {
+    const hall = { id: 'salon', name: 'Oyun Salonu', checks: [] }
+    results.push(hall)
+    const before = pageErrors.length
+    try {
+      hall.checks.push(...(await salon(page, snap, vp.id, check)))
+    } catch (e) {
+      hall.checks.push({ name: 'çalıştırma', errors: [`Salon denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
+      await snap('salon-hata')
+      await page.goto(url)
+      await page.waitForTimeout(800)
+    }
+    if (pageErrors.length > before)
+      hall.checks.push({
+        name: 'konsol',
+        errors: pageErrors.slice(before).map((e) => `Sayfa hatası: ${e}`),
+        warnings: [],
+      })
   }
 
   for (const c of CASES.filter((c) => !vp.cases || vp.cases.includes(c.id))) {

@@ -14,10 +14,14 @@ interface Props {
   className?: string
   /** Overlays drawn above the canvas (e.g. SVG text), positioned in canvas pixels. */
   children?: ReactNode
+  /** A long run of right answers: the stage glows (`[data-fever]`). */
+  fever?: boolean
+  /** A surprise is on: its weather effect over the stage (`[data-surprise]`). */
+  surprise?: string | null
 }
 
 /** A Pixi canvas that fills its container and runs a scene. */
-export function PixiStage({ create, className, children }: Props) {
+export function PixiStage({ create, className, children, fever, surprise }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const createRef = useRef(create)
 
@@ -69,7 +73,12 @@ export function PixiStage({ create, className, children }: Props) {
   }, [])
 
   return (
-    <div ref={ref} className={className ?? 'pixi-stage'}>
+    <div
+      ref={ref}
+      className={className ?? 'pixi-stage'}
+      data-fever={fever || undefined}
+      data-surprise={surprise ?? undefined}
+    >
       {children}
     </div>
   )
