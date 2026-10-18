@@ -7,6 +7,8 @@ interface Props {
   onProfile: () => void
   onCalibrate: () => void
   onUnits: () => void
+  /** Tapping a stat chip explains it (the map shows the text in its toast). */
+  onHint?: (text: string) => void
 }
 
 /** Ring that fills up as today's XP approaches the daily goal. */
@@ -30,7 +32,7 @@ export function GoalRing({ value, goal, size = 40 }: { value: number; goal: numb
 }
 
 /** The map's top bar: sticks to the top of the screen while the map scrolls. */
-export function TopBar({ onProfile, onCalibrate, onUnits }: Props) {
+export function TopBar({ onProfile, onCalibrate, onUnits, onHint }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { totalXp, streak, daily, dailyGoal } = useProfile()
   const [today] = useState(() => dayKey(new Date()))
@@ -40,17 +42,31 @@ export function TopBar({ onProfile, onCalibrate, onUnits }: Props) {
 
   return (
     <div className="top-bar">
-      <span className={`chip streak ${streak.lastDay === today ? 'lit' : ''}`} title="Günlük seri">
+      <button
+        className={`chip streak ${streak.lastDay === today ? 'lit' : ''}`}
+        onClick={() =>
+          onHint?.(
+            streakNow > 0
+              ? `Seri: ${streakNow} gündür her gün çalışıyorsun. Bugün bir ders yaparsan seri sürer.`
+              : 'Seri: art arda kaç gün çalıştığın. Bugün bir ders yap, serin başlasın.',
+          )
+        }
+      >
         🔥 {streakNow}
-      </span>
-      <span className="chip xp" title="Toplam XP">
+      </button>
+      <button className="chip xp" onClick={() => onHint?.(`XP: ders bitirerek kazandığın puan. Toplam ${totalXp} XP.`)}>
         ⚡ {totalXp}
-      </span>
-      <span className="chip goal" title={`Günlük hedef: ${xpToday}/${dailyGoal} XP`}>
+      </button>
+      <button
+        className="chip goal"
+        onClick={() =>
+          onHint?.(`Günlük hedef: bugün ${xpToday} / ${dailyGoal} XP. Hedefi Ayarlar'dan değiştirebilirsin.`)
+        }
+      >
         <GoalRing value={xpToday} goal={dailyGoal} size={28} />
         {xpToday}/{dailyGoal}
-      </span>
-      <button className="chip level" onClick={onProfile} aria-label="Profil">
+      </button>
+      <button className="chip level" onClick={onProfile} aria-label="Profil" title={`Seviye ${level}`}>
         Sv. {level} 👤
       </button>
       <button className="chip units-btn" onClick={onUnits} aria-label="Üniteler">

@@ -38,6 +38,7 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
             ✕
           </button>
         </header>
+        <h3 className="settings-group">Ders</h3>
         <div className="goal-picker">
           <span>Günlük hedef</span>
           {[10, 20, 30, 50].map((xp) => (
@@ -46,17 +47,12 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
             </button>
           ))}
         </div>
-        <div className="goal-picker">
-          <span>Ritim gecikmesi</span>
-          <button className="pill" onClick={onCalibrate}>
-            ⏱ Ölç ve ayarla
-          </button>
-        </div>
         <Toggle
           label="Rahat mod: hata yapınca can gitmesin"
           checked={settings.relaxedMode}
           onChange={(v) => settings.set({ relaxedMode: v })}
         />
+        <h3 className="settings-group">Ses</h3>
         <Toggle
           label="Ses efektleri"
           checked={settings.soundEffects}
@@ -73,14 +69,21 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
           onChange={(v) => settings.set({ vibration: v })}
         />
         <Toggle
-          label="Ekran klavyesinde nota adlarını göster"
-          checked={settings.showKeyLabels}
-          onChange={(v) => settings.set({ showKeyLabels: v })}
-        />
-        <Toggle
           label="Ekran ve bilgisayar klavyesi için ses"
           checked={settings.soundForScreen}
           onChange={(v) => settings.set({ soundForScreen: v })}
+        />
+        <h3 className="settings-group">Klavye ve MIDI</h3>
+        <div className="goal-picker">
+          <span>Ritim gecikmesi</span>
+          <button className="pill" onClick={onCalibrate}>
+            ⏱ Ölç ve ayarla
+          </button>
+        </div>
+        <Toggle
+          label="Ekran klavyesinde nota adlarını göster"
+          checked={settings.showKeyLabels}
+          onChange={(v) => settings.set({ showKeyLabels: v })}
         />
         <Toggle
           label="MIDI klavye için de uygulamadan ses çal (Akai gibi sessiz klavyelerde hep açık)"
@@ -92,6 +95,7 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
           checked={settings.ignoreOctave}
           onChange={(v) => settings.set({ ignoreOctave: v })}
         />
+        <h3 className="settings-group">Gelişmiş</h3>
         <Toggle
           label="Test modu: bütün dersler açık, her ekranda 📝 not düğmesi"
           checked={settings.testMode}

@@ -465,6 +465,10 @@ Map tour (`claude/project-thread-u0kytq`, interface polish after phase 11):
   (`HomeShortcuts`, `[data-shortcut="quests" | "midi"]`); the 🧭 chip in the top bar opens `UnitNav` (progress per unit,
   tap to jump). A finished unit (boss included, not in test mode, not the unit just left) folds into its banner
   (`[data-unit-fold]`); `openedUnits` remembers the ones opened again.
+- Round 2: unit banners show a star bar (`.unit-progress`, 🏅 when finished); the stat chips are buttons whose `onHint`
+  explains them in the map's toast; settings are grouped (Ders, Ses, Klavye ve MIDI, Gelişmiş); from 1100 px wide
+  (`useWide` in `HomeScreen`) the quest board and MIDI panel sit in a sticky side panel (`.home.wide > .home-side`)
+  instead of the two shortcut cards.
 - `components/Welcome.tsx`: first launch only (`dpo-welcomed` in localStorage, and no finished lesson): Notiş, keyboard
   kind (a 25-key controller turns on `ignoreOctave`), daily goal. The scripts set the key before loading.
 

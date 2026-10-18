@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
 import { DailyMixCard } from '../components/DailyMixCard'
 import { HomeShortcuts } from '../components/HomeShortcuts'
+import { MidiPanel } from '../components/MidiPanel'
+import { QuestBoard } from '../components/QuestBoard'
 import { LessonPeek } from '../components/LessonPeek'
 import { LastWeekCard } from '../components/WeekSummary'
 import { MIX_LESSON_ID } from '../progress/mix'
@@ -52,6 +54,20 @@ function useMapScroll(focus: string | undefined) {
   }, [focus])
 }
 
+/** A wide window (desktop) puts the quests and the keyboard in a side panel instead of two short cards. */
+const WIDE = '(min-width: 1100px)'
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => window.matchMedia?.(WIDE).matches ?? false)
+  useEffect(() => {
+    const mq = window.matchMedia?.(WIDE)
+    if (!mq) return
+    const on = () => setWide(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return wide
+}
+
 /** Finished units that the learner opened again, kept while the app runs. */
 const openedUnits = new Set<string>()
 
@@ -92,6 +108,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
   const [toast, setToast] = useState<string | null>(null)
   const [peek, setPeek] = useState<NoteLesson | null>(null)
   const [navOpen, setNavOpen] = useState(false)
+  const wide = useWide()
   const [, rerender] = useState(0)
   useMapScroll(focus)
 
@@ -125,6 +142,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
     !unit.comingSoon &&
     unit.lessons.every((l) => bestStars(l.id) > 0) &&
     !unit.lessons.some((l) => mapNodeOf(l) === focus || l.id === focus)
+  const stars = (unit: (typeof UNITS)[number]) => unit.lessons.reduce((n, l) => n + bestStars(l.id), 0)
   const folded = (unit: (typeof UNITS)[number]) => finished(unit) && !openedUnits.has(unit.id)
   const toggleUnit = (id: string) => {
     if (openedUnits.has(id)) openedUnits.delete(id)
@@ -154,8 +172,14 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
   }
 
   return (
-    <div className="home">
-      <TopBar onProfile={onProfile} onCalibrate={onCalibrate} onUnits={() => setNavOpen(true)} />
+    <div className={`home ${wide ? 'wide' : ''}`}>
+      <TopBar onProfile={onProfile} onCalibrate={onCalibrate} onUnits={() => setNavOpen(true)} onHint={setToast} />
+      {wide && (
+        <aside className="home-side" aria-label="Günlük özet">
+          <QuestBoard />
+          <MidiPanel />
+        </aside>
+      )}
       {testMode && (
         <p className="test-banner">
           🧪 <b>Test modu açık:</b> bütün dersler açık. Bir şey görünce sağdaki 📝 ile not bırak.
@@ -164,7 +188,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
       <Greeting />
       <LastWeekCard />
       <DailyMixCard onStart={onStart} back={focus === MIX_LESSON_ID} />
-      <HomeShortcuts />
+      {!wide && <HomeShortcuts />}
 
       {UNITS.map((unit) => {
         // A unit waiting for another one (Başlangıç) says so on its banner.
@@ -235,6 +259,16 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
             <header className="unit-banner" style={{ background: unit.comingSoon ? undefined : unit.color }}>
               <h2>{unit.title}</h2>
               <p>{unit.comingSoon ? 'Yakında' : unit.subtitle}</p>
+              {!unit.comingSoon && !waiting && (
+                <p className="unit-progress" aria-label={`${stars(unit)} / ${unit.lessons.length * 3} yıldız`}>
+                  <span className="unit-progress-bar" aria-hidden>
+                    <span style={{ width: `${(stars(unit) / (unit.lessons.length * 3)) * 100}%` }} />
+                  </span>
+                  <span>
+                    {finished(unit) ? '🏅 ' : ''}★ {stars(unit)}/{unit.lessons.length * 3}
+                  </span>
+                </p>
+              )}
               {waiting && <p className="unit-lock">🔒 {requiredTitle} bitince açılır</p>}
               {finished(unit) && (
                 <button
@@ -243,9 +277,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
                   aria-expanded={!folded(unit)}
                   data-unit-fold={unit.id}
                 >
-                  {folded(unit)
-                    ? `✓ Bitti, ★ ${unit.lessons.reduce((n, l) => n + bestStars(l.id), 0)}/${unit.lessons.length * 3} · aç`
-                    : 'Katla'}
+                  {folded(unit) ? '✓ Bitti · aç' : 'Katla'}
                 </button>
               )}
             </header>
