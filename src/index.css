@@ -3233,3 +3233,72 @@ button.chip {
   gap: 8px;
   text-align: center;
 }
+
+/* Map tour 2: settings groups, unit progress, desktop side panel */
+.settings-group {
+  margin: 16px 0 6px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.settings-head + .settings-group {
+  margin-top: 4px;
+}
+button.chip {
+  font-family: inherit;
+  line-height: inherit;
+}
+button.chip:not(.streak):not(.xp) {
+  color: inherit;
+}
+.unit-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+.unit-progress-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.2);
+  overflow: hidden;
+}
+.unit-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #fff;
+}
+@media (min-width: 1100px) {
+  .app:has(.home.wide) {
+    max-width: 1140px;
+  }
+  .home.wide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    column-gap: 28px;
+    align-items: start;
+  }
+  .home.wide > * {
+    grid-column: 1;
+  }
+  .home.wide > .top-bar {
+    grid-column: 1 / -1;
+  }
+  .home.wide > .home-side {
+    grid-column: 2;
+    grid-row: 2 / span 40;
+    position: sticky;
+    top: 76px;
+    max-height: calc(100dvh - 92px);
+    overflow-y: auto;
+  }
+  .home-side .card:first-child {
+    margin-top: 16px;
+  }
+}
