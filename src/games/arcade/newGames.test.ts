@@ -123,6 +123,15 @@ describe('Kayıp Kuş Sesi', () => {
     expect(game.nests.get(E4)).toBe(1)
   })
 
+  it('is done as soon as the last bird is home, while it flies on', () => {
+    const game = new ChirpGame(fixed([G4]))
+    run(game, 2000)
+    expect(game.press(G4, 2100)[0].type).toBe('home')
+    expect(game.done).toBe(true)
+    game.update(200, 2300)
+    expect(game.bird?.since).toBeCloseTo(0.2)
+  })
+
   it('loses a bird that waits too long', () => {
     const game = new ChirpGame(fixed([G4]))
     const events = run(game, 15000) as { type: string }[]

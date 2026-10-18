@@ -73,9 +73,7 @@ export class ChirpGame {
   get done(): boolean {
     return (
       this.failed ||
-      (this.next === this.total &&
-        (!this.bird || this.bird.state === 'home' || this.bird.state === 'lost') &&
-        (this.bird?.since ?? LEAVE_S) >= LEAVE_S)
+      (this.next === this.total && (!this.bird || this.bird.state === 'home' || this.bird.state === 'lost'))
     )
   }
 
@@ -105,10 +103,11 @@ export class ChirpGame {
 
   update(dtMs: number, now: number): ChirpEvent[] {
     const events: ChirpEvent[] = []
-    if (this.done) return events
     const dt = dtMs / 1000
     const b = this.bird
+    // The last bird keeps flying to its nest while the results open.
     if (b) b.since += dt
+    if (this.done) return events
 
     if (!b || b.state === 'home' || b.state === 'lost') {
       this.waitS += dt
