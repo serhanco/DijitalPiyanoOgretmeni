@@ -18,6 +18,8 @@ const CORRECT_PAUSE_MS = 450
 const WRONG_FLASH_MS = 500
 /** Show the answer on the keyboard after this many wrong tries. */
 const HINT_AFTER = 2
+/** İpucu parıltısı: the right key glows when a note waits this long (the answer is then not a first-try one). */
+const GLOW_AFTER_MS = 4000
 
 const GREEN = '#22a559'
 const BLUE = '#1cb0f6'
@@ -31,7 +33,7 @@ interface Props {
 }
 
 export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
-  const { ignoreOctave, showKeyLabels, relaxedMode } = useSettings()
+  const { ignoreOctave, showKeyLabels, relaxedMode, hintGlow } = useSettings()
   const session = useMemo(
     () =>
       new NoteHunterSession({
@@ -54,6 +56,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
   const [wrongKey, setWrongKey] = useState<number | null>(null)
   const [wrongCount, setWrongCount] = useState(0)
   const [shake, setShake] = useState(0)
+  const [glowing, setGlowing] = useState<number | null>(null)
   const [combo, setCombo] = useState(0)
   const comboRef = useRef(0)
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
@@ -77,6 +80,17 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
   useEffect(() => {
     if (solved === null && !inIntro) session.markShown(gameNow())
   }, [session, position, solved, inIntro])
+
+  // İpucu parıltısı: a note left unanswered for a while lights its key.
+  useEffect(() => {
+    const cur = session.current
+    if (!hintGlow || inIntro || solved !== null || !cur) return
+    return gameTimeout(() => {
+      if (cur.answeredAt !== null) return
+      cur.hinted = true
+      setGlowing(position)
+    }, GLOW_AFTER_MS)
+  }, [session, position, solved, inIntro, hintGlow])
 
   useEffect(() => {
     const later = (fn: () => void, ms: number) => timers.current.push(gameTimeout(fn, ms))
@@ -107,7 +121,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
       if (result === 'correct') {
         setSolved(cur.target)
         setWrongKey(null)
-        const firstTry = cur.wrongPresses.length === 0
+        const firstTry = cur.wrongPresses.length === 0 && !cur.hinted
         const next = firstTry ? comboRef.current + 1 : 0
         comboRef.current = next
         setCombo(next)
@@ -146,6 +160,7 @@ export function NoteHunterScreen({ lesson, onFinish, onExit }: Props) {
 
   const marks: Partial<Record<number, KeyMark>> = {}
   if (target !== null && (inIntro || wrongCount >= HINT_AFTER) && solved === null) marks[target] = 'hint'
+  else if (target !== null && glowing === position && solved === null) marks[target] = 'glow'
   if (wrongKey !== null) marks[wrongKey] = 'wrong'
   if (solved !== null) marks[solved] = 'correct'
 

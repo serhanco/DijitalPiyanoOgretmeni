@@ -107,6 +107,7 @@ export default function App() {
       ...(summary.boss && { boss: { defeated: summary.boss.defeated } }),
       tempoRaised: !!summary.tempoLadder?.raisedTo,
       ...(lesson.salon && { salon: salonResult(lesson.salon.endless, summary) }),
+      ...(summary.arcade?.golden?.caught && { golden: summary.arcade.golden.caught }),
     }
     // "Dersi bitir" in test mode shows the results but keeps them out of the progress.
     const trial = consumeFinishRequest()

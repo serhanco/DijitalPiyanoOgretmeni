@@ -8,6 +8,7 @@
 import type { Clef } from '../../../music/notes'
 import type { PromptRecord } from '../../noteHunter/session'
 import type { SkillProvider } from '../skill'
+import { GOLDEN_POINTS, hintFor, markGolden } from '../bonus'
 import { rampAt, type Ramp, Surprise } from '../ramp'
 
 export const COUNTERS = 4
@@ -18,6 +19,8 @@ export const clefOfCounter = (counter: number): Clef => (counter < 2 ? 'treble' 
 /** Where customers enter and where the bartender stands (0..1 along the counter). */
 export const ENTER_X = 0
 export const BAR_X = 0.86
+/** İpucu parıltısı: a customer this close to the bar glows their key. */
+const HINT_LEFT = 0.2
 /** Seconds a customer needs to reach the bartender, at the start and at the end. */
 const WALK_START_S = 11
 const WALK_END_S = 7
@@ -39,6 +42,8 @@ export interface Customer {
   state: 'waiting' | 'served' | 'angry'
   /** Seconds since being served or getting angry. */
   leftFor: number
+  /** Altın müşteri: worth extra points and XP. */
+  golden: boolean
 }
 
 export interface Drink {
@@ -80,6 +85,7 @@ export class BarGame {
       answeredAt: null,
       wrongPresses: [],
     }))
+    markGolden(this.records)
   }
 
   get total(): number {
@@ -104,6 +110,12 @@ export class BarGame {
 
   get attempted(): PromptRecord[] {
     return this.records.filter((r) => r.answeredAt !== null || r.missed)
+  }
+
+  /** İpucu parıltısı: the customer closest to the bar, once they are almost there. */
+  hint(): PromptRecord | null {
+    const next = this.waiting.sort((a, b) => b.x - a.x)[0]
+    return next && next.x > BAR_X - HINT_LEFT ? hintFor(next.record) : null
   }
 
   private lerp(start: number, end: number) {
@@ -140,6 +152,7 @@ export class BarGame {
         x: ENTER_X,
         look: Math.floor(this.random() * 6),
         record,
+        golden: !!record.golden,
         state: 'waiting',
         leftFor: 0,
       })
@@ -187,7 +200,7 @@ export class BarGame {
     if (hit) {
       hit.state = 'served'
       hit.record.answeredAt = now
-      this.score += this.surprise.points
+      this.score += this.surprise.points * (hit.record.golden ? GOLDEN_POINTS : 1)
       this.drinks.push({ counter: hit.counter, toX: hit.x, x: BAR_X, customer: hit })
       return [{ type: 'serve', customer: hit }]
     }

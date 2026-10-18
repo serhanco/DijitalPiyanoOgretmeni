@@ -13,6 +13,8 @@ interface SettingsState {
   ignoreOctave: boolean
   /** Practice without hearts: mistakes never end a lesson. */
   relaxedMode: boolean
+  /** İpucu parıltısı: the right key glows when a note waits too long (that answer is not a first-try one). */
+  hintGlow: boolean
   /** Short synthesized sounds for right/wrong answers and celebrations. */
   soundEffects: boolean
   /** Vibrate on mistakes (Android). */
@@ -40,6 +42,7 @@ export const useSettings = create<SettingsState>()(
       showKeyLabels: true,
       ignoreOctave: false,
       relaxedMode: false,
+      hintGlow: true,
       soundEffects: true,
       vibration: true,
       metronome: true,

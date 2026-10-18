@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { heldNotes, noteOff, noteOn, subscribe } from '../input/inputBus'
 import { isBlackKey, MIN_KEYBOARD_WHITES, solfegeName } from '../music/notes'
 
-export type KeyMark = 'correct' | 'wrong' | 'hint'
+/** `glow` is İpucu parıltısı: a soft golden glow on a note that waited too long. */
+export type KeyMark = 'correct' | 'wrong' | 'hint' | 'glow'
 
 interface PianoKeyboardProps {
   low: number

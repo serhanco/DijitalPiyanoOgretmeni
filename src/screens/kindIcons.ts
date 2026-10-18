@@ -26,4 +26,6 @@ export const KIND_ICON: Record<LessonKind, string> = {
   mix: '🔀',
   train: '🚂',
   chirp: '🐤',
+  frog: '🐸',
+  duet: '🪘',
 }

@@ -123,7 +123,8 @@ describe('BalloonGame', () => {
       }
       expect(game.press(b.record.target, clock.now + 100)[0].type).toBe('pop')
     }
-    expect(game.score).toBe(5)
+    // The fifth balloon is golden: 3 points.
+    expect(game.score).toBe(7)
     const s = summarize(game.attempted, 'treble')
     expect(s.total).toBe(5)
     expect(s.firstTry).toBe(wrongOnce ? 4 : 5)
@@ -168,7 +169,8 @@ describe('BarGame', () => {
       if (next) expect(game.press(next.record.target, clock.now)[0].type).toBe('serve')
     }
     expect(game.failed).toBe(false)
-    expect(game.score).toBe(12)
+    // Customers 5 and 12 are golden: 3 points each.
+    expect(game.score).toBe(16)
     const summary = summarize(game.attempted, 'treble', game.failed)
     expect(summary.accuracy).toBe(1)
     expect(summary.hands?.map((h) => h.shown).reduce((a, b) => a + b)).toBe(12)

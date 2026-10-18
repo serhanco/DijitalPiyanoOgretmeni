@@ -5,6 +5,7 @@
 // Ritim 1: quarters, halves, wholes, rests. Ritim 2: eighths, 3/4, dotted notes.
 // Lessons kept from the first rhythm unit keep their ids (stars and history).
 
+import type { DuetTurn } from '../games/duet/session'
 import type { NoteLesson, RhythmSpec } from '../games/noteHunter/lessons'
 import type { TheorySpec } from '../games/theory/quiz'
 import { fitKeyboard, parseNote, whiteKeysBetween } from '../music/notes'
@@ -51,6 +52,23 @@ function beatLesson(
     length: 0,
     keyboard: SMALL_KEYBOARD,
     rhythm: { beatsPerBar: 4, bars: 4, values: ['q'], anyKey: notes.length === 1, ...rhythm },
+  }
+}
+
+/** Çift Kişilik Davul: copy Notiş's calls first, then answer them in a rhythm of one's own. */
+const DUET_TURNS: DuetTurn[] = ['echo', 'echo', 'echo', 'free', 'echo', 'free', 'free', 'free']
+
+function duet(id: string, title: string, description: string, calls: string, bpm: number): NoteLesson {
+  return {
+    id,
+    kind: 'duet',
+    title,
+    description,
+    clef: 'treble',
+    notes: C4,
+    length: DUET_TURNS.length,
+    keyboard: SMALL_KEYBOARD,
+    duet: { bpm, beatsPerBar: 4, calls, turns: DUET_TURNS },
   }
 }
 
@@ -456,6 +474,13 @@ export const RHYTHM_LESSONS: NoteLesson[] = [
     { bpm: 70, bars: 6, values: values('q', 'h', 'qr') },
     whiteKeysBetween(parseNote('C4'), parseNote('G4')),
   ),
+  duet(
+    'rhythm-duet-1',
+    'Çift Kişilik Davul',
+    'Notiş çalar, sen cevap verirsin: önce aynısı, sonra kendi ritmin',
+    'q q h | h q q | q qr q qr | q q q q | h h | q q h | q qr h | h q q',
+    76,
+  ),
   beatLesson('rhythm-review-1', 'rhythm', 'Büyük Tekrar', 'Dörtlük, ikilik, birlik ve es; tempo yükselir', {
     bpm: 72,
     bars: 4,
@@ -519,6 +544,13 @@ export const RHYTHM2_LESSONS: NoteLesson[] = [
   song('rhythm-tune-ode', ODE, 80),
 
   // Büyük tekrar
+  duet(
+    'rhythm-duet-2',
+    'Davul Düeti: Sekizlikler',
+    'Sekizlikli sorulara önce aynısıyla, sonra kendi ritminle cevap ver',
+    'q e e q q | e e q e e q | q q e e q | e e e e h | q e e h | e e q q q | q q e e q | h e e q',
+    72,
+  ),
   beatLesson('rhythm-5', 'rhythm', 'Karışık Ritim', 'Dörtlük, ikilik, sekizlik ve es bir arada', {
     bpm: 76,
     values: values('q', 'h', 'e', 'qr'),

@@ -11,6 +11,8 @@ export const SPEED_BONUS_MS = 1500
 export const DEFAULT_DAILY_GOAL = 30
 export const HEARTS_PER_LESSON = 5
 export const XP_BOSS_BONUS = 30
+/** Altın balon / altın müşteri played right on the first try. */
+export const XP_GOLDEN = 5
 
 export interface LessonOutcome {
   lessonId: string
@@ -46,6 +48,8 @@ export interface LessonOutcome {
   boss?: { defeated: boolean }
   /** Oyun Salonu: the game's score (points, or the timing in percent) and its longest run. */
   salon?: { score: number; combo: number }
+  /** Altın balonlar / müşteriler played right on the first try. */
+  golden?: number
 }
 
 export interface XpLine {
@@ -66,6 +70,7 @@ export function xpFor(outcome: LessonOutcome): XpLine[] {
             ? 'Şelalede ilk denemede doğru basılanlar'
             : 'İlk denemede doğru notalar'
   const lines: XpLine[] = [{ label, xp: outcome.firstTry * XP_PER_FIRST_TRY }]
+  if (outcome.golden) lines.push({ label: 'Altın hedefler', xp: outcome.golden * XP_GOLDEN })
   if (outcome.failed) return lines
   lines.push({ label: 'Ders tamamlandı', xp: XP_LESSON_COMPLETE })
   if (outcome.boss?.defeated) lines.push({ label: 'Boss yenildi', xp: XP_BOSS_BONUS })

@@ -115,6 +115,8 @@ async function playArcade(lessonTitle, shotName) {
     const target = await page.evaluate(() => {
       const g = window.__dpoArcade
       if (!g) return null
+      // Kurbağa Atlayışı: the floating lily pad.
+      if ('pad' in g) return g.pad && g.pad.state === 'floating' && g.pad.since > 0.4 ? g.pad.record.target : null
       if ('wagons' in g) return g.front && g.front.x < 0.7 ? g.front.record.target : null
       // Kayıp Kuş Sesi: answer once the bird has sung.
       if ('nests' in g) return g.waiting && g.waiting.since > 0.3 ? g.waiting.record.target : null
@@ -206,6 +208,38 @@ async function playBeat(
   }
   await page.waitForTimeout(800)
   return rounds
+}
+
+/**
+ * Play Çift Kişilik Davul: echo rounds copy Notiş's call, free rounds answer with
+ * a quarter on every beat (a rhythm of their own unless the call was all quarters).
+ * The page presses the drum key on time itself.
+ */
+async function playDuet(lessonTitle, shotName) {
+  await openLesson(lessonTitle, true)
+  await page.waitForSelector('.duet-ready .beat-start')
+  await page.click('.beat-start')
+  await page.waitForFunction(() => window.__dpoDuet)
+  const lengthMs = await page.evaluate(() => {
+    const s = window.__dpoDuet
+    const el = document.querySelector('.key[data-midi]')
+    const press = (at) =>
+      window.setTimeout(() => {
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7, isPrimary: true }))
+        window.setTimeout(() => el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7 })), 80)
+      }, at - performance.now())
+    for (const r of s.rounds) {
+      const beats = r.turn === 'echo' ? r.onsets : Array.from({ length: s.beatsPerBar }, (_, i) => i)
+      for (const b of beats) press(r.answerStart + b * s.beatMs)
+    }
+    return s.endAt - performance.now()
+  })
+  if (shotName) {
+    await page.waitForTimeout(lengthMs * 0.3)
+    await page.screenshot({ path: `${out}/${shotName}.png` })
+  }
+  await page.waitForSelector('.results', { timeout: lengthMs + 10000 })
+  await page.waitForTimeout(800)
 }
 
 /**
@@ -765,6 +799,11 @@ async function rhythmUnits() {
   await backToMap()
   await playBeat('Dino Koşusu: Notalı')
   await backToMap()
+  await playDuet('Çift Kişilik Davul', 'rhythm-duet')
+  const duetText = (await page.textContent('.duet-card')) ?? ''
+  if (!/Kendi ritminle verdiğin cevap: [1-9]/.test(duetText)) errors.push(`Duet card: ${duetText}`)
+  await page.screenshot({ path: `${out}/results-duet.png`, fullPage: true })
+  await backToMap()
   const reviewRounds = await playBeat('Büyük Tekrar')
   if (reviewRounds !== 3) errors.push(`Büyük Tekrar played ${reviewRounds} rounds, not 3`)
   await backToMap()
@@ -831,6 +870,8 @@ async function rhythmUnits() {
   await backToMap()
 
   // Review: mixed rhythm, a song, a song with a tempo ladder, everything mixed.
+  await playDuet('Davul Düeti: Sekizlikler')
+  await backToMap()
   await playBeat('Karışık Ritim')
   await backToMap()
   await playSong('Çanlar Çalıyor', 'Jingle Bells', 'song-jingle')
@@ -1004,12 +1045,17 @@ async function earUnit() {
   await done('results-memory-song')
   await playTheory('Aralıklar ve Şarkıları', 'theory-intervals', { shots: [1, 2, 5], wrongAt: 0 })
   await done()
+  await playArcade('Kurbağa Atlayışı', 'game-frog')
+  await expectText('.results', /3'lü/, 'Frog report names the jumps')
+  await done('results-frog')
   await playEar('İkili mi Üçlü mü?', 'ear-interval')
   await done()
   await playEar('Büyük mü Küçük mü?', '', { wrongAt: 0 })
   await expectText('.ear-card', /şarkısının başıyla hatırla/, 'Interval tip')
   await done('results-ear-interval')
   await playEar('Dörtlü, Beşli, Oktav')
+  await done()
+  await playArcade('Kurbağa: Büyük Zıplamalar')
   await done()
   await playEar('Aralık Avı', 'ear-sing', { wrongAt: 1 })
   await expectText('.ear-card', /sandın/, 'Aralık Avı counts the wrong key')

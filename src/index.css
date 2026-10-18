@@ -502,8 +502,33 @@ kbd {
   background: color-mix(in srgb, var(--hint) 45%, var(--key-white));
   animation: pulse 1s infinite;
 }
+.key[data-mark='glow'] {
+  background: color-mix(in srgb, #ffc800 40%, var(--key-white));
+  box-shadow:
+    0 0 14px 4px rgb(255 200 0 / 0.75),
+    inset 0 -4px 0 rgb(255 170 0 / 0.6);
+  animation: glow 1.1s ease-in-out infinite;
+}
+.key.black[data-mark='glow'] {
+  background: #b88a00;
+}
+@keyframes glow {
+  50% {
+    box-shadow:
+      0 0 22px 8px rgb(255 200 0 / 0.9),
+      inset 0 -4px 0 rgb(255 170 0 / 0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .key[data-mark='glow'] {
+    animation: none;
+  }
+}
 .key[data-mark] .key-label {
   color: #fff;
+}
+.key[data-mark='glow'] .key-label {
+  color: #6b4b00;
 }
 @keyframes pulse {
   50% {
@@ -940,6 +965,49 @@ button.chip {
 }
 .badge-icon {
   font-size: 2rem;
+}
+
+/* Kostüm dolabı */
+.wardrobe-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+.costume {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.costume.on {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.costume.locked {
+  opacity: 0.55;
+  cursor: default;
+}
+.costume-icon {
+  font-size: 1.7rem;
+}
+.costume-new {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Profile */
@@ -3539,4 +3607,126 @@ button.chip:not(.streak):not(.xp) {
   .combo-chip {
     animation: none;
   }
+}
+
+/* Çift Kişilik Davul */
+.duet-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+.duet-turn {
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.duet-turn[data-turn='echo'] {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary-dark);
+}
+.duet-turn[data-turn='free'] {
+  background: color-mix(in srgb, var(--warn) 22%, transparent);
+  color: #9a6b00;
+}
+.duet-drums {
+  display: flex;
+  gap: clamp(24px, 10vw, 80px);
+}
+.duet-drum {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.duet-stage[data-turn='listen'] .duet-drum.notis,
+.duet-stage[data-turn='echo'] .duet-drum.me,
+.duet-stage[data-turn='free'] .duet-drum.me {
+  opacity: 1;
+}
+.drum-face {
+  width: clamp(56px, 14vmin, 96px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #fff8e6 0 55%, #e9d3a6 56% 62%, #c0392b 63%);
+  box-shadow: 0 6px 0 #8e2a1f;
+  transition: transform 0.08s;
+}
+.duet-drum.me .drum-face {
+  background: radial-gradient(circle at 50% 45%, #f2fbff 0 55%, #b9dff2 56% 62%, #1c7fc0 63%);
+  box-shadow: 0 6px 0 #135a88;
+}
+.duet-drum.hit .drum-face {
+  transform: translateY(4px) scale(0.94);
+  box-shadow: 0 2px 0 #555;
+}
+.duet-strip {
+  display: grid;
+  width: min(100%, 520px);
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.duet-cell {
+  position: relative;
+  border-left: 1px solid var(--border);
+}
+.duet-cell.beat {
+  border-left: 2px solid var(--muted);
+}
+.duet-cell:first-child {
+  border-left: none;
+}
+.duet-cell.now {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.duet-cell i {
+  position: absolute;
+  left: 4px;
+  top: 12px;
+  height: 20px;
+  border-radius: 6px;
+  background: #c0392b;
+}
+.duet-cell[data-note='ghost'] i {
+  background: color-mix(in srgb, #c0392b 30%, transparent);
+}
+.duet-cell[data-tap]::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.duet-cell[data-tap='off']::after {
+  background: var(--warn);
+}
+.duet-legend {
+  margin: 0;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drum-face {
+    transition: none;
+  }
+}
+.duet-rounds {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: 8px 0;
 }

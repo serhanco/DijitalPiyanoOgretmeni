@@ -7,6 +7,7 @@ import type { MixSpec } from '../../progress/mix'
 import type { ArpeggioPart } from '../chords/arpeggio'
 import type { ChordSpec } from '../chords/lessons'
 import type { EarSpec } from '../ear/session'
+import type { DuetSpec } from '../duet/session'
 import type { MemorySpec } from '../memory/engine'
 import type { ScalePart } from '../scales/steps'
 import type { SongSpec } from '../songs/song'
@@ -52,6 +53,8 @@ export type LessonKind =
   | 'mix'
   | 'train'
   | 'chirp'
+  | 'frog'
+  | 'duet'
 
 /** Kinds played against a metronome. */
 export const BEAT_KINDS: LessonKind[] = ['rhythm', 'dino', 'drum', 'ladder', 'surf']
@@ -76,6 +79,8 @@ export const PATTERN_KINDS: LessonKind[] = [
   'surf',
   'ear',
   'chirp',
+  'frog',
+  'duet',
 ]
 
 /** Chord kinds: judged per chord, reported with the chord card. */
@@ -142,6 +147,10 @@ export interface NoteLesson {
   introduce?: number[]
   /** Drill: notes asked twice as often (the ones just introduced). */
   focus?: number[]
+  /** Çift Kişilik Davul: Notiş's calls and the turns (copy or answer freely). */
+  duet?: DuetSpec
+  /** Kurbağa Atlayışı: the note the frog starts on and the jump sizes (2 = to the neighbour, 3 = a third...). */
+  frog?: { start: number; sizes: number[] }
   /** Nota Treni: songs whose notes ride the wagons, in order (otherwise `notes` are drawn at random). */
   tunes?: Tune[]
   /** Oyun Salonu: the game and skill picked; endless games run until the hearts are gone. */

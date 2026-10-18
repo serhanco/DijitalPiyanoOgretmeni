@@ -15,6 +15,7 @@ const ChordScreen = lazy(() => import('./ChordScreen').then((m) => ({ default: m
 const TheoryScreen = lazy(() => import('./TheoryScreen').then((m) => ({ default: m.TheoryScreen })))
 const EarScreen = lazy(() => import('./EarScreen').then((m) => ({ default: m.EarScreen })))
 const SongScreen = lazy(() => import('./SongScreen').then((m) => ({ default: m.SongScreen })))
+const DuetScreen = lazy(() => import('./DuetScreen').then((m) => ({ default: m.DuetScreen })))
 const MemoryScreen = lazy(() => import('./MemoryScreen').then((m) => ({ default: m.MemoryScreen })))
 const ArcadeScreen = lazy(() => import('./ArcadeScreen').then((m) => ({ default: m.ArcadeScreen })))
 const ChordArcadeScreen = lazy(() => import('./ChordArcadeScreen').then((m) => ({ default: m.ChordArcadeScreen })))
@@ -43,7 +44,8 @@ export function LessonPlayer({ lesson, onFinish, onExit }: LessonScreenProps) {
         lesson.kind === 'balloon' ||
         lesson.kind === 'bar' ||
         lesson.kind === 'train' ||
-        lesson.kind === 'chirp' ? (
+        lesson.kind === 'chirp' ||
+        lesson.kind === 'frog' ? (
         <ArcadeScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'melody' || lesson.kind === 'scale' || lesson.kind === 'arpeggio' ? (
         <MelodyScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
@@ -57,6 +59,8 @@ export function LessonPlayer({ lesson, onFinish, onExit }: LessonScreenProps) {
         <EarScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'waterfall' ? (
         <SongScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
+      ) : lesson.kind === 'duet' ? (
+        <DuetScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'memory' ? (
         <MemoryScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'dino' || lesson.kind === 'drum' || lesson.kind === 'ladder' || lesson.kind === 'surf' ? (

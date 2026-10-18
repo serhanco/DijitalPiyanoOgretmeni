@@ -3,6 +3,7 @@
 
 import type { PromptRecord } from '../../noteHunter/session'
 import type { SkillProvider } from '../skill'
+import { GOLDEN_POINTS, hintFor, markGolden } from '../bonus'
 import { rampAt, type Ramp, Surprise } from '../ramp'
 
 export const LANES = 4
@@ -14,6 +15,8 @@ const SPAWN_START_S = 2.4
 const SPAWN_END_S = 1.4
 /** Never more balloons than this at once. */
 const MAX_AIRBORNE = 4
+/** İpucu parıltısı: a balloon above this height glows its key. */
+const HINT_Y = 0.3
 const START_Y = 1.15 // below the bottom edge (y grows downwards, 0 = top)
 const ESCAPE_Y = -0.15
 
@@ -30,7 +33,9 @@ export interface Balloon {
 
 export type BalloonEvent = { type: 'pop' | 'escape' | 'wrong'; balloon: Balloon }
 
-const COLORS = [0xff4b4b, 0x1cb0f6, 0xffc800, 0x58cc02, 0xce82ff, 0xff9600]
+const COLORS = [0xff4b4b, 0x1cb0f6, 0x58cc02, 0xce82ff, 0xff9600]
+/** Altın balon: the only gold one. */
+export const GOLD = 0xffc800
 
 export class BalloonGame {
   readonly records: PromptRecord[]
@@ -54,6 +59,7 @@ export class BalloonGame {
     this.hearts = hearts
     this.random = random
     this.records = skill.targets.map((t) => ({ target: t.midi, shownAt: null, answeredAt: null, wrongPresses: [] }))
+    markGolden(this.records)
   }
 
   get total(): number {
@@ -106,7 +112,7 @@ export class BalloonGame {
         index: this.spawned,
         lane: this.pickLane(),
         y: START_Y,
-        color: COLORS[this.spawned % COLORS.length],
+        color: record.golden ? GOLD : COLORS[this.spawned % COLORS.length],
         record,
         state: 'flying',
         poppedFor: 0,
@@ -143,11 +149,17 @@ export class BalloonGame {
     if (hit) {
       hit.state = 'popped'
       hit.record.answeredAt = now
-      this.score += this.surprise.points
+      this.score += this.surprise.points * (hit.record.golden ? GOLDEN_POINTS : 1)
       return [{ type: 'pop', balloon: hit }]
     }
     flying[0].record.wrongPresses.push(midi)
     return [{ type: 'wrong', balloon: flying[0] }]
+  }
+
+  /** İpucu parıltısı: the highest balloon, once it is close to getting away. */
+  hint(): PromptRecord | null {
+    const top = this.flying.sort((a, b) => a.y - b.y)[0]
+    return top && top.y < HINT_Y ? hintFor(top.record) : null
   }
 
   get attempted(): PromptRecord[] {

@@ -5,7 +5,7 @@
 
 import { BEAT_KINDS, type LessonKind } from '../games/noteHunter/lessons'
 
-export const PACE_KINDS: LessonKind[] = ['bird', 'balloon', 'bar', 'train', 'chirp']
+export const PACE_KINDS: LessonKind[] = ['bird', 'balloon', 'bar', 'train', 'chirp', 'frog']
 export const PACE_MIN = 0.8
 export const PACE_MAX = 1.3
 export const PACE_STEP = 0.1

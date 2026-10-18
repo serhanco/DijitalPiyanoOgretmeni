@@ -1,5 +1,7 @@
 import { motion, type TargetAndTransition } from 'motion/react'
 import { useEffect, useState } from 'react'
+import type { CostumeId } from '../progress/wardrobe'
+import { useProfile } from '../state/profile'
 
 // Notiş: the app's mascot, a little eighth note with a waving flag.
 
@@ -15,6 +17,8 @@ interface Props {
   className?: string
   /** Dress-up: the detective hat and magnifier of Kulak Dedektifi. */
   outfit?: 'detective'
+  /** Kostüm dolabı: the costume to wear; by default the one picked in the wardrobe (`null` = none). */
+  costume?: CostumeId | null
 }
 
 const BODY = '#7c4dff'
@@ -115,7 +119,116 @@ function DetectiveOutfit({ mood }: { mood: MascotMood }) {
   )
 }
 
-export function Mascot({ mood = 'idle', pulse = 0, size = 120, say, className, outfit }: Props) {
+/** Kostüm dolabı: each costume drawn on the 120×120 Notiş (the head's top is near (58, 42)). */
+function Costume({ id, mood }: { id: CostumeId; mood: MascotMood }) {
+  switch (id) {
+    case 'party':
+      return (
+        <g transform="rotate(-14 52 40)">
+          <path d="M38 44 L52 6 L66 44 z" fill="#ff6fa8" />
+          <path d="M42 34 L62 34 M45 24 L59 24 M48 15 L56 15" stroke="#ffd84d" strokeWidth={4} />
+          <circle cx={52} cy={6} r={5} fill="#ffd84d" />
+        </g>
+      )
+    case 'flower':
+      return (
+        <g>
+          {[0, 72, 144, 216, 288].map((a) => (
+            <circle
+              key={a}
+              cx={30 + Math.cos((a * Math.PI) / 180) * 6}
+              cy={45 + Math.sin((a * Math.PI) / 180) * 6}
+              r={5}
+              fill="#ff8fc8"
+            />
+          ))}
+          <circle cx={30} cy={45} r={4} fill="#ffd84d" />
+        </g>
+      )
+    case 'scarf':
+      return (
+        <g>
+          <path d="M24 95 q34 16 70 -6 l2 9 q-38 22 -74 5 z" fill="#ff4b4b" />
+          <path d="M30 100 l-6 18 l9 2 l4 -17 z" fill="#ff4b4b" />
+          <path d="M36 99 l70 -9" stroke="#fff" strokeWidth={2} strokeDasharray="4 5" opacity={0.7} />
+        </g>
+      )
+    case 'bow':
+      return (
+        <g>
+          <path d="M58 100 l-15 -8 v16 z" fill="#1cb0f6" />
+          <path d="M58 100 l15 -8 v16 z" fill="#1cb0f6" />
+          <circle cx={58} cy={100} r={4} fill="#0a86c2" />
+        </g>
+      )
+    case 'glasses':
+      return (
+        <g>
+          <rect x={31} y={58} width={26} height={16} rx={7} fill="#1d1f2b" opacity={0.92} />
+          <rect x={60} y={57} width={26} height={16} rx={7} fill="#1d1f2b" opacity={0.92} />
+          <path d="M57 64 h3" stroke="#1d1f2b" strokeWidth={3} />
+          <path d="M35 62 l7 -1" stroke="#fff" strokeWidth={2} opacity={0.6} strokeLinecap="round" />
+        </g>
+      )
+    case 'headphones':
+      return (
+        <g>
+          <path d="M20 70 q2 -46 40 -46 q36 0 38 42" stroke="#2b2f3a" strokeWidth={6} fill="none" />
+          <rect x={12} y={62} width={14} height={22} rx={6} fill="#ff4b4b" />
+          <rect x={92} y={58} width={14} height={22} rx={6} fill="#ff4b4b" />
+          {(mood === 'happy' || mood === 'cheer') && (
+            <text x={100} y={44} fontSize={14} fill="#7c4dff">
+              ♪
+            </text>
+          )}
+        </g>
+      )
+    case 'chef':
+      return (
+        <g transform="rotate(-10 56 36)">
+          <rect x={38} y={30} width={36} height={14} rx={3} fill="#fff" stroke="#d8dde6" />
+          <circle cx={42} cy={22} r={10} fill="#fff" stroke="#d8dde6" />
+          <circle cx={56} cy={16} r={12} fill="#fff" stroke="#d8dde6" />
+          <circle cx={70} cy={22} r={10} fill="#fff" stroke="#d8dde6" />
+          <rect x={39} y={24} width={34} height={12} fill="#fff" />
+        </g>
+      )
+    case 'detective':
+      return <DetectiveOutfit mood={mood} />
+    case 'wizard':
+      return (
+        <g transform="rotate(-12 54 40)">
+          <ellipse cx={54} cy={44} rx={26} ry={6} fill="#3b2a8f" />
+          <path d="M36 44 Q52 30 54 2 Q60 30 72 44 z" fill="#4b39b8" />
+          <text x={48} y={34} fontSize={10} fill="#ffd84d">
+            ★
+          </text>
+          <text x={57} y={22} fontSize={7} fill="#ffd84d">
+            ✦
+          </text>
+        </g>
+      )
+    case 'crown':
+      return (
+        <g transform="rotate(-12 56 38)">
+          <path
+            d="M38 46 L38 26 L47 36 L56 20 L65 36 L74 26 L74 46 z"
+            fill="#ffc800"
+            stroke="#e0a800"
+            strokeWidth={2}
+          />
+          <circle cx={56} cy={38} r={3} fill="#ff4b4b" />
+          <circle cx={45} cy={41} r={2.2} fill="#1cb0f6" />
+          <circle cx={67} cy={41} r={2.2} fill="#58cc02" />
+        </g>
+      )
+  }
+}
+
+export function Mascot({ mood = 'idle', pulse = 0, size = 120, say, className, outfit, costume }: Props) {
+  const picked = useProfile((s) => s.costume)
+  // The game's own outfit (Kulak Dedektifi) wins over the wardrobe.
+  const wear = outfit ? null : costume === undefined ? picked : costume
   const [blink, setBlink] = useState(false)
 
   // Blink now and then while idle.
@@ -192,6 +305,7 @@ export function Mascot({ mood = 'idle', pulse = 0, size = 120, say, className, o
           <circle cx={84} cy={78} r={5} fill="#ff8fb1" opacity={0.7} />
           <Mouth mood={mood} />
           {outfit === 'detective' && <DetectiveOutfit mood={mood} />}
+          {wear && <Costume id={wear} mood={mood} />}
         </motion.g>
         {mood === 'sleep' && (
           <motion.text

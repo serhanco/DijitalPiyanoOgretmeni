@@ -22,6 +22,7 @@ import { BOSS_LESSON_IDS, questEligible, REVIEW_LESSON_ID } from '../progress/cu
 import { nextPace, PACE_KINDS } from '../progress/adaptive'
 import { MIX_LESSON_ID, MIX_XP } from '../progress/mix'
 import { isSalonId, nextRecord, type SalonRecord } from '../games/salon/salon'
+import { type Costume, type CostumeId, newCostumes } from '../progress/wardrobe'
 import {
   advanceQuests,
   dailyFor,
@@ -60,6 +61,8 @@ export interface Reward {
   pace?: { from: number; to: number }
   /** Oyun Salonu: the score, the record before this game and whether it was beaten. */
   record?: { score: number; combo: number; before: number; isNew: boolean }
+  /** Kostüm dolabı: costumes this lesson opened (a level or a badge). */
+  costumes?: Costume[]
 }
 
 /** Lessons that change every time keep no stars. */
@@ -84,6 +87,9 @@ interface ProfileState {
   weekSeen: string | null
   /** Oyun Salonu: the record of each game with each skill, by its lesson id. */
   salon: Record<string, SalonRecord>
+  /** Kostüm dolabı: the costume Notiş wears, or none. */
+  costume: CostumeId | null
+  setCostume: (id: CostumeId | null) => void
   closeWeekSummary: (week: string) => void
   /** Picks today's quests and this week's challenge when they are not picked yet. */
   ensureQuests: (now?: Date) => void
@@ -119,7 +125,9 @@ export const useProfile = create<ProfileState>()(
       mixDay: null,
       weekSeen: null,
       salon: {},
+      costume: null,
 
+      setCostume: (id) => set({ costume: id }),
       closeWeekSummary: (week) => set({ weekSeen: week }),
 
       ensureQuests(now = new Date()) {
@@ -194,6 +202,11 @@ export const useProfile = create<ProfileState>()(
         const badges = { ...s.badges }
         for (const b of newBadges) badges[b.id] = now.getTime()
 
+        const costumes = newCostumes(
+          { level: levelFromXp(s.totalXp).level, badges: Object.keys(s.badges) },
+          { level: levelFromXp(totalXp).level, badges: Object.keys(badges) },
+        )
+
         const paceBefore = s.pace[outcome.lessonId] ?? 1
         // Endless Salon games always end with the hearts gone: their pace stays as it is.
         const paceAfter =
@@ -233,6 +246,7 @@ export const useProfile = create<ProfileState>()(
           lessonXp,
           quests: { steps: q.steps, chestOpened: q.chestOpened, weeklyDone: q.weeklyDone },
           ...(paceAfter !== paceBefore && { pace: { from: paceBefore, to: paceAfter } }),
+          ...(costumes.length && { costumes }),
           ...(salonNext &&
             outcome.salon && {
               record: {
@@ -249,7 +263,14 @@ export const useProfile = create<ProfileState>()(
     {
       name: 'profile',
       storage: createJSONStorage(() => idbStorage),
-      partialize: ({ completeLesson: _c, setDailyGoal: _s, ensureQuests: _e, closeWeekSummary: _w, ...data }) => data,
+      partialize: ({
+        completeLesson: _c,
+        setDailyGoal: _s,
+        ensureQuests: _e,
+        closeWeekSummary: _w,
+        setCostume: _k,
+        ...data
+      }) => data,
     },
   ),
 )

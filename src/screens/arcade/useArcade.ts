@@ -2,8 +2,10 @@
 // surprises ("💨 Rüzgâr!") and, in the Oyun Salonu, the record to beat.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { goldenStats } from '../../games/arcade/bonus'
 import type { Surprise } from '../../games/arcade/ramp'
 import type { LessonKind } from '../../games/noteHunter/lessons'
+import type { PromptRecord } from '../../games/noteHunter/session'
 import type { ArcadeStats } from '../../games/noteHunter/summary'
 
 /** A run this long sets the game on fire: a glow around it and a flame on the HUD. */
@@ -60,6 +62,23 @@ export function useSurprise(
   return active ? (SURPRISES[kind]?.fx ?? 'rush') : null
 }
 
-export function arcadeStats(game: { score: number; surprise: Surprise }, bestCombo: number): ArcadeStats {
-  return { score: game.score, bestCombo, surprises: game.surprise.count }
+/** İpucu parıltısı: the key that glows now (the game marks its target as hinted), or null. */
+export function useHint(game: object, enabled: boolean): number | null {
+  const [key, setKey] = useState<number | null>(null)
+  useEffect(() => {
+    const hinting = game as { hint?: () => PromptRecord | null }
+    if (!enabled || !hinting.hint) return
+    const t = window.setInterval(() => setKey(hinting.hint?.()?.target ?? null), 200)
+    return () => clearInterval(t)
+  }, [game, enabled])
+  return enabled ? key : null
+}
+
+export function arcadeStats(
+  game: { score: number; surprise: Surprise },
+  bestCombo: number,
+  records?: PromptRecord[],
+): ArcadeStats {
+  const golden = records ? goldenStats(records) : null
+  return { score: game.score, bestCombo, surprises: game.surprise.count, ...(golden?.shown && { golden }) }
 }

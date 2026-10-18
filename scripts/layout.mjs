@@ -41,6 +41,8 @@ const CASES = [
   { id: 'balloon', name: 'Balon Patlatma', title: 'Balon Patlatma', drive: 'arcade', area: '.pixi-stage' },
   { id: 'bar', name: 'Nota Barmeni', title: 'Nota Barmeni', drive: 'arcade', area: '.pixi-stage' },
   { id: 'train', name: 'Nota Treni', title: 'Nota Treni', drive: 'arcade', area: '.pixi-stage' },
+  { id: 'frog', name: 'Kurbağa Atlayışı', title: 'Kurbağa Atlayışı', drive: 'arcade', area: '.pixi-stage' },
+  { id: 'duet', name: 'Çift Kişilik Davul', title: 'Çift Kişilik Davul', drive: 'duet', area: '.duet-stage' },
   { id: 'chirp', name: 'Kayıp Kuş Sesi', title: 'Kayıp Kuş Sesi', drive: 'arcade', area: '.pixi-stage' },
   { id: 'melody', name: 'İki el melodi', title: 'İki El Birlikte', drive: 'melody', area: '.melody-wrap' },
   { id: 'rhythm', name: 'Ritim (porte)', title: 'Dörtlükler', drive: 'beat', area: '.beat-field' },
@@ -763,6 +765,7 @@ const DRIVERS = {
       const target = await page.evaluate(() => {
         const g = window.__dpoArcade
         if (!g) return null
+        if ('pad' in g) return g.pad?.state === 'floating' && g.pad.since > 0.4 ? g.pad.record.target : null
         if ('wagons' in g) return g.front && g.front.x < 0.75 ? g.front.record.target : null
         if ('nests' in g) return g.waiting?.record.target ?? null
         if ('customers' in g) {
@@ -859,6 +862,21 @@ const DRIVERS = {
       await page.waitForTimeout(250)
     }
     await page.waitForTimeout(300)
+    checks.push(await shot())
+    return checks
+  },
+  async duet(page, shot) {
+    await page.waitForSelector('.duet-ready .beat-start')
+    const checks = [await shot('hazir')]
+    await page.click('.beat-start')
+    await page.waitForFunction(() => window.__dpoDuet)
+    const r = await page.evaluate(() => window.__dpoDuet.rounds[0].answerStart - performance.now())
+    // Mid-answer of the first round: Notiş's call shown as ghosts, the taps landing.
+    await page.waitForTimeout(r + 800)
+    for (let i = 0; i < 2; i++) {
+      await page.click('.key[data-midi]')
+      await page.waitForTimeout(300)
+    }
     checks.push(await shot())
     return checks
   },

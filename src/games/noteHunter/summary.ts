@@ -20,6 +20,7 @@ import type { BossSummary } from '../boss/report'
 import type { SongSummary } from '../songs/report'
 import type { CardResult } from '../../progress/srs'
 import type { MixSummary } from '../../progress/mix'
+import type { DuetSummary } from '../duet/session'
 import { firstTryOk, type PromptRecord } from './session'
 
 export interface NoteStat {
@@ -88,12 +89,18 @@ export interface SessionSummary {
   noteNames?: Record<number, string>
   /** Arcade games: the points (doubled during surprises), the longest run of right answers and the surprises met. */
   arcade?: ArcadeStats
+  /** Çift Kişilik Davul: each round's turn and score, and the free answers in the learner's own rhythm. */
+  duet?: DuetSummary
+  /** İpucu parıltısı: the notes found after their key glowed (not counted as first-try answers). */
+  hinted?: { count: number; notes: number[] }
 }
 
 export interface ArcadeStats {
   score: number
   bestCombo: number
   surprises: number
+  /** Altın balonlar / müşteriler: shown, and played right on the first try. */
+  golden?: { shown: number; caught: number }
 }
 
 export interface HandStat {
@@ -153,6 +160,12 @@ function messageFor(accuracy: number, avgReactionMs: number | null): string {
   if (accuracy >= 0.8) return 'Çok iyi gidiyorsun. Zorlandığın notaları bir tur daha çalış.'
   if (accuracy >= 0.6) return 'Güzel ilerleme. Aşağıdaki notalar üzerinde biraz daha durmaya değer.'
   return 'Her tekrar seni güçlendirir. Acele etme, önce doğru notayı bulmaya odaklan.'
+}
+
+/** The notes found after their key glowed, for the report. */
+function hintedOf(records: PromptRecord[]): Pick<SessionSummary, 'hinted'> {
+  const rs = records.filter((r) => r.hinted && r.answeredAt !== null)
+  return rs.length ? { hinted: { count: rs.length, notes: [...new Set(rs.map((r) => r.target))] } } : {}
 }
 
 export function summarize(records: PromptRecord[], clef: Clef, failed = false): SessionSummary {
@@ -247,6 +260,7 @@ export function summarize(records: PromptRecord[], clef: Clef, failed = false): 
     perCategory,
     weakest,
     ...(hands && { hands }),
+    ...hintedOf(records),
     message: failed
       ? 'Sorun değil, hata yapa yapa öğreniyoruz. Notaları acele etmeden bulmaya odaklanıp tekrar dene.'
       : messageFor(accuracy, avgReactionMs),
