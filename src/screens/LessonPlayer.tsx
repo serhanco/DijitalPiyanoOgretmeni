@@ -39,7 +39,11 @@ export function LessonPlayer({ lesson, onFinish, onExit }: LessonScreenProps) {
         <MixScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'theory' ? (
         <TheoryScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
-      ) : lesson.kind === 'bird' || lesson.kind === 'balloon' || lesson.kind === 'bar' ? (
+      ) : lesson.kind === 'bird' ||
+        lesson.kind === 'balloon' ||
+        lesson.kind === 'bar' ||
+        lesson.kind === 'train' ||
+        lesson.kind === 'chirp' ? (
         <ArcadeScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'melody' || lesson.kind === 'scale' || lesson.kind === 'arpeggio' ? (
         <MelodyScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />

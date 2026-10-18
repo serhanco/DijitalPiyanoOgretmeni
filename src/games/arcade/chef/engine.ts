@@ -5,6 +5,7 @@
 
 import type { ChordTarget } from '../../../music/chords'
 import { ChordListener, type ChordMatchMode, type ChordRecord, judgePress, newChordRecord } from '../../chords/session'
+import { rampAt, type Ramp, Surprise } from '../ramp'
 
 /** Seconds an order waits, at the start and at the end. */
 const PATIENCE_START_S = 12
@@ -90,15 +91,21 @@ export class ChefGame {
     return this.records.filter((r) => r.answeredAt !== null || r.missed)
   }
 
+  /** Oyun Salonu: an endless game ramps its speed over a number of targets instead of the whole list. */
+  ramp: Ramp | null = null
+  /** Short surprises that speed the game up and double the points for a few seconds. */
+  readonly surprise = new Surprise()
+
   private patience() {
-    const t = this.total > 1 ? Math.min(1, this.next / (this.total - 1)) : 0
-    return PATIENCE_START_S + (PATIENCE_END_S - PATIENCE_START_S) * t
+    const t = rampAt(this.next, this.total, this.ramp)
+    return (PATIENCE_START_S + (PATIENCE_END_S - PATIENCE_START_S) * t) / this.surprise.boost
   }
 
   update(dtMs: number, now: number): ChefEvent[] {
     const events: ChefEvent[] = []
     if (this.done) return events
     const dt = dtMs / 1000
+    this.surprise.tick(dt)
     const order = this.order
     if (order && order.state !== 'cooking') order.since += dt
 
@@ -138,7 +145,7 @@ export class ChefGame {
     switch (ev.type) {
       case 'chord':
         order.state = 'served'
-        this.score++
+        this.score += this.surprise.points
         this.waitS = 0
         return [{ type: 'serve', order, together: ev.together }]
       case 'wrong':

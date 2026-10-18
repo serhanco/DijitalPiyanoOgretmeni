@@ -115,6 +115,9 @@ async function playArcade(lessonTitle, shotName) {
     const target = await page.evaluate(() => {
       const g = window.__dpoArcade
       if (!g) return null
+      if ('wagons' in g) return g.front && g.front.x < 0.7 ? g.front.record.target : null
+      // Kayıp Kuş Sesi: answer once the bird has sung.
+      if ('nests' in g) return g.waiting && g.waiting.since > 0.3 ? g.waiting.record.target : null
       if ('customers' in g) {
         const next = g.waiting.sort((a, b) => b.x - a.x)[0]
         return next && next.x > 0.3 ? next.record.target : null
@@ -984,12 +987,17 @@ async function earUnit() {
   await done('results-ear-pitch')
   await playEar('Dedektif: Do, Mi, Sol')
   await done()
+  await playArcade('Kayıp Kuş Sesi', 'game-chirp')
+  await expectText('.results h1', /tamamlandı/, 'Kayıp Kuş Sesi finished')
+  await done('results-chirp')
   await playMemory('Atlamalı Hafıza', 'memory-leaps')
   await expectText('.results', /akor notasına sıçrama/, 'Leap memory report')
   await done()
   await playEar('Dedektif: Do Pozisyonu')
   await done()
   await playEar('Dedektif: Bütün Oktav', 'ear-pitch-octave', { shotAt: 4 })
+  await done()
+  await playArcade('Kayıp Kuş Sesi: Bütün Oktav', 'game-chirp-octave')
   await done()
   await playMemory('Şarkı Hafızası: Küçük Yıldız', 'memory-song', { wrongInRound: 2 })
   await expectText('.memory-card', /Küçük Yıldız.*3 dizinin 2 tanesini/s, 'Song memory card')
@@ -1473,6 +1481,96 @@ if (process.env.SMOKE_ONLY === 'smart') {
   console.log(`Smoke test (smart learning) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
+/**
+ * Nota Treni (each song named as its first wagon comes up) and the Oyun Salonu: an endless
+ * Nota Kuşu with bass notes is not open yet, the treble one is; a first game sets a record,
+ * a weaker one does not beat it.
+ */
+async function gamesRound() {
+  for (const t of ['İlk Adımlar', 'Bir Oktav']) {
+    await play(t)
+    await dismissOverlay()
+    await page.getByText('Derslere dön').click()
+  }
+  await openLesson('Nota Treni')
+  await page.waitForSelector('.pixi-stage canvas')
+  const titles = new Set()
+  for (let i = 0; i < 3000 && !(await page.$('.results')); i++) {
+    const target = await page.evaluate(() => {
+      const g = window.__dpoArcade
+      return g.front && g.front.x < 0.7 ? g.front.record.target : null
+    })
+    const msg = (await page.textContent('.arcade-message').catch(() => '')) ?? ''
+    if (msg.startsWith('🎵')) titles.add(msg)
+    if (target !== null) await page.click(`.key[data-midi="${target}"]`)
+    if (i === 30) await page.screenshot({ path: `${out}/game-train.png` })
+    await page.waitForTimeout(90)
+  }
+  for (const original of ['Goin’ Home', 'Row, Row, Row Your Boat', 'Old MacDonald Had a Farm'])
+    if (![...titles].some((t) => t.includes(original)))
+      errors.push(`Nota Treni never named ${original}: ${[...titles]}`)
+  if (!(await page.textContent('.results h1'))?.includes('tamamlandı')) errors.push('Nota Treni did not finish')
+  await page.screenshot({ path: `${out}/results-train.png`, fullPage: true })
+  await dismissOverlay()
+  await page.getByText('Derslere dön').click()
+  await page.waitForTimeout(500)
+
+  await page.getByRole('button', { name: 'Oyun Salonu’na gir', exact: true }).click()
+  await page.waitForSelector('.salon-game')
+  if (!(await page.$('.salon-game[data-game="bird"]:not([disabled])'))) errors.push('Salon: Nota Kuşu is not open')
+  if (!(await page.$('.salon-game[data-game="space"][disabled]'))) errors.push('Salon: Uzay Savunması should be locked')
+  await page.click('.salon-game[data-game="bird"]')
+  if (!(await page.$('.salon-skill[data-skill="fa"][disabled]'))) errors.push('Salon: bass notes should be locked')
+  await page.screenshot({ path: `${out}/salon.png`, fullPage: true })
+
+  /** An endless Nota Kuşu: `right` pipes played, then the hearts run out. Returns the record card text. */
+  const endless = async (right) => {
+    await page.click('.salon-skill[data-skill="oktav"]')
+    await page.click('.salon-play')
+    await page.waitForSelector('.pixi-stage canvas')
+    if (!(await page.$('.endless-bar'))) errors.push('Salon: no endless bar')
+    let played = 0
+    for (let i = 0; i < 3000 && !(await page.$('.results')); i++) {
+      if (played < right) {
+        const target = await page.evaluate(() => {
+          const cur = window.__dpoArcade.current
+          return cur && cur.record.answeredAt === null ? cur.record.target : null
+        })
+        if (target !== null) {
+          await page.click(`.key[data-midi="${target}"]`)
+          played++
+        }
+      }
+      await page.waitForTimeout(100)
+    }
+    await page.waitForSelector('.results .record-card')
+    await page.waitForTimeout(900)
+    return page.textContent('.record-card')
+  }
+  const first = await endless(6)
+  if (!/Yeni rekor/.test(first)) errors.push(`Salon: no new record: ${first}`)
+  await page.screenshot({ path: `${out}/results-salon.png`, fullPage: true })
+  await dismissOverlay()
+  await page.getByText('Salona dön').click()
+  await page.waitForSelector('.salon-game[data-game="bird"].on')
+  const second = await endless(2)
+  if (/Yeni rekor/.test(second) || !/önceki rekor/.test(second)) errors.push(`Salon: second game: ${second}`)
+  await page.getByText('Salona dön').click()
+  const card = await page.textContent('.salon-game[data-game="bird"]')
+  if (!/🏆 [1-9]/.test(card)) errors.push(`Salon: the game card shows no record: ${card}`)
+  await page.getByLabel('Haritaya dön').click()
+  await page.waitForSelector('.home')
+}
+
+// SMOKE_ONLY=games plays Başlangıç, Nota Treni and the Oyun Salonu.
+if (process.env.SMOKE_ONLY === 'games') {
+  await page.waitForTimeout(800)
+  await basicsUnit()
+  await gamesRound()
+  await finish()
+  console.log(`Smoke test (games) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
 // SMOKE_ONLY=basics plays only the Başlangıç unit.
 if (process.env.SMOKE_ONLY === 'basics') {
   await page.waitForTimeout(800)
@@ -1492,6 +1590,10 @@ await page.screenshot({ path: `${out}/results.png`, fullPage: true })
 await page.getByText('Derslere dön').click()
 
 await play('Bir Oktav')
+await dismissOverlay()
+await page.getByText('Derslere dön').click()
+
+await playArcade('Nota Treni', 'game-train')
 await dismissOverlay()
 await page.getByText('Derslere dön').click()
 

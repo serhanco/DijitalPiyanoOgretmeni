@@ -27,6 +27,7 @@ beforeEach(async () => {
     pace: {},
     mixDay: null,
     weekSeen: null,
+    salon: {},
   })
   await Promise.all([db.sessions.clear(), db.noteStats.clear(), db.review.clear()])
 })
@@ -80,6 +81,38 @@ describe('completeLesson', () => {
     const s = useProfile.getState()
     expect(s.lessonsCompleted).toBe(0)
     expect(s.lessons['treble-1'].bestStars).toBe(0)
+  })
+})
+
+describe('Oyun Salonu', () => {
+  const game = {
+    ...outcome,
+    lessonId: 'salon-bird-sol',
+    kind: 'bird' as const,
+    failed: true,
+    stars: 0,
+    salon: { score: 14, combo: 6 },
+  }
+
+  it('keeps a record instead of stars and leaves the pace alone', () => {
+    const first = useProfile.getState().completeLesson(game, new Date(2026, 9, 18))
+    expect(first.record).toEqual({ score: 14, combo: 6, before: 0, isNew: true })
+    const s = useProfile.getState()
+    expect(s.salon['salon-bird-sol']).toEqual({ best: 14, bestCombo: 6, plays: 1 })
+    expect(s.lessons['salon-bird-sol']).toBeUndefined()
+    expect(s.pace['salon-bird-sol']).toBeUndefined()
+    // Only the first-try notes earn XP: an endless game always ends with the hearts gone.
+    expect(first.xpLines.map((l) => l.label)).toContain('İlk denemede doğru notalar')
+    expect(first.xpLines.map((l) => l.label)).not.toContain('Ders tamamlandı')
+  })
+
+  it('says when the record was not beaten', () => {
+    useProfile.getState().completeLesson(game, new Date(2026, 9, 18))
+    const second = useProfile
+      .getState()
+      .completeLesson({ ...game, salon: { score: 9, combo: 3 } }, new Date(2026, 9, 18))
+    expect(second.record).toEqual({ score: 9, combo: 3, before: 14, isNew: false })
+    expect(useProfile.getState().salon['salon-bird-sol']).toEqual({ best: 14, bestCombo: 6, plays: 2 })
   })
 })
 

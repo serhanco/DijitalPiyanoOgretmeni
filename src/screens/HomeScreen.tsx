@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
 import { DailyMixCard } from '../components/DailyMixCard'
+import { SalonCard } from '../components/SalonCard'
+import { KIND_ICON } from './kindIcons'
 import { HomeShortcuts } from '../components/HomeShortcuts'
 import { MidiPanel } from '../components/MidiPanel'
 import { QuestBoard } from '../components/QuestBoard'
@@ -9,7 +11,7 @@ import { LastWeekCard } from '../components/WeekSummary'
 import { MIX_LESSON_ID } from '../progress/mix'
 import { TopBar } from '../components/TopBar'
 import { UnitNav, type UnitRow } from '../components/UnitNav'
-import type { LessonKind, NoteLesson } from '../games/noteHunter/lessons'
+import type { NoteLesson } from '../games/noteHunter/lessons'
 import { type Clef, CLEF_NAMES } from '../music/notes'
 import { buildReviewLesson, isUnlocked, mapNodeOf, UNITS, weakestNotes } from '../progress/curriculum'
 import { noteScores } from '../progress/history'
@@ -20,6 +22,7 @@ interface Props {
   onStart: (lesson: NoteLesson) => void
   onProfile: () => void
   onCalibrate: () => void
+  onSalon: () => void
   /** The node of the lesson the learner comes back from (`mapNodeOf` in curriculum): the map scrolls to it. */
   focus?: string
 }
@@ -74,32 +77,8 @@ const openedUnits = new Set<string>()
 /** Horizontal offsets that make the lesson path zigzag, Duolingo style. */
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
-const KIND_ICON: Record<LessonKind, string> = {
-  theory: '📖',
-  drill: '♪',
-  melody: '🎶',
-  bird: '🐦',
-  bar: '🍹',
-  balloon: '🎈',
-  rhythm: '🎵',
-  dino: '🦖',
-  drum: '🥁',
-  scale: '🎹',
-  ladder: '🪜',
-  memory: '🧠',
-  chord: '🎼',
-  chef: '🍳',
-  space: '🚀',
-  chordbar: '🍸',
-  arpeggio: '〰️',
-  surf: '🏄',
-  ear: '🔍',
-  waterfall: '🌊',
-  boss: '👾',
-  mix: '🔀',
-}
 
-export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
+export function HomeScreen({ onStart, onProfile, onCalibrate, onSalon, focus }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const testMode = useSettings((s) => s.testMode)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
@@ -188,6 +167,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, focus }: Props) {
       <Greeting />
       <LastWeekCard />
       <DailyMixCard onStart={onStart} back={focus === MIX_LESSON_ID} />
+      <SalonCard onOpen={onSalon} />
       {!wide && <HomeShortcuts />}
 
       {UNITS.map((unit) => {

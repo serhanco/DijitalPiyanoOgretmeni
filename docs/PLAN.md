@@ -30,7 +30,8 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 9 Kulak eğitimi ve hafıza                     | Birleşti (PR #31) |
 | 10 Şarkılar                                   | Birleşti (PR #32) |
 | 11 Boss'lar, günlük görevler, haftalık        | Birleşti (PR #33) |
-| 12 Akıllı öğrenme                             | Bu dal            |
+| 12 Akıllı öğrenme                             | Birleşti (PR #34) |
+| Oyun turu (Salon, Nota Treni, Kuş Sesi)       | Bu dal            |
 | 13                                            | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
@@ -77,6 +78,9 @@ anahtarı, fa anahtarı, gamlar ya da akorlarla oynanabilir; her yeni oyun tüm 
 | Kulak Dedektifi         | Bulmaca                 | Bir nota, aralık ya da akor duyulur, aynısını bul                                         | Kulak eğitimi                      |
 | Akor Aşçısı             | Yemek oyunları          | Tarif bir akor (ör. Re minör); malzemeleri (notaları) aynı anda bas                       | Akor kurma                         |
 | Ünite Boss'u            | Boss savaşları          | Ünite sonunda, ünitenin tüm becerilerini karıştıran zorlu bölüm                           | Tekrar ve pekiştirme               |
+| Nota Treni              | Tren oyunları           | Bir şarkının notaları vagonlarda sırayla gelir; öndekini çal, sıradakileri önceden oku    | Deşifre, ileriyi okuma             |
+| Kayıp Kuş Sesi          | Kuş sesi tanıma         | Kuş bir nota öter, tuşunu kulakla bul; kuş notanın adı yazılı yuvasına uçar               | Kulaktan nota bulma                |
+| Oyun Salonu             | Arcade salonları        | Açılmış her oyun açılmış her beceriyle; sonsuz mod, kişisel rekor                         | Tekrar, istekle oynama             |
 
 Oyun adları geçicidir; görseller ve isimler özgün olacak, esin alınan oyunların varlıkları kullanılmayacak.
 

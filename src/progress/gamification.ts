@@ -44,6 +44,8 @@ export interface LessonOutcome {
   noneMissed?: boolean
   /** Unit boss: beaten or not. */
   boss?: { defeated: boolean }
+  /** Oyun Salonu: the game's score (points, or the timing in percent) and its longest run. */
+  salon?: { score: number; combo: number }
 }
 
 export interface XpLine {

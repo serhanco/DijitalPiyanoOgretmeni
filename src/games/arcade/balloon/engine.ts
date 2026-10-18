@@ -3,6 +3,7 @@
 
 import type { PromptRecord } from '../../noteHunter/session'
 import type { SkillProvider } from '../skill'
+import { rampAt, type Ramp, Surprise } from '../ramp'
 
 export const LANES = 4
 /** Seconds a balloon needs to rise through the screen, at the start and at the end. */
@@ -42,6 +43,10 @@ export class BalloonGame {
   private readonly skill: SkillProvider
   /** Adaptive difficulty: every duration is divided by this (1.1 = 10% faster). */
   pace = 1
+  /** Oyun Salonu: an endless game ramps its speed over a number of targets instead of the whole list. */
+  ramp: Ramp | null = null
+  /** Short surprises that speed the game up and double the points for a few seconds. */
+  readonly surprise = new Surprise()
   private readonly random: () => number
 
   constructor(skill: SkillProvider, hearts = 3, random: () => number = Math.random) {
@@ -72,8 +77,8 @@ export class BalloonGame {
   }
 
   private lerp(start: number, end: number) {
-    const t = this.total > 1 ? Math.min(1, this.spawned / (this.total - 1)) : 0
-    return (start + (end - start) * t) / this.pace
+    const t = rampAt(this.spawned, this.total, this.ramp)
+    return (start + (end - start) * t) / (this.pace * this.surprise.boost)
   }
 
   private pickLane(): number {
@@ -87,6 +92,7 @@ export class BalloonGame {
     const events: BalloonEvent[] = []
     if (this.done) return events
     const dt = dtMs / 1000
+    this.surprise.tick(dt)
 
     this.sinceSpawnS += dt
     if (
@@ -137,7 +143,7 @@ export class BalloonGame {
     if (hit) {
       hit.state = 'popped'
       hit.record.answeredAt = now
-      this.score++
+      this.score += this.surprise.points
       return [{ type: 'pop', balloon: hit }]
     }
     flying[0].record.wrongPresses.push(midi)

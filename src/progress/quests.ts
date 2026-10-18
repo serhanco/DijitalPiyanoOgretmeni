@@ -48,6 +48,8 @@ const ARCADE_KINDS: LessonKind[] = [
   'space',
   'chordbar',
   'surf',
+  'train',
+  'chirp',
 ]
 
 const passed = (e: QuestEvent) => !e.outcome.failed

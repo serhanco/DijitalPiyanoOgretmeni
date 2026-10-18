@@ -1,11 +1,11 @@
-// Adaptive difficulty. The arcade note games (Nota Kuşu, Balon, Nota Barmeni)
+// Adaptive difficulty. The arcade note games (Nota Kuşu, Balon, Nota Barmeni, Nota Treni, Kayıp Kuş Sesi)
 // keep a pace per lesson that rises after a very good game and falls after a
 // lost or hard one; rhythm lessons move their remembered tempo the same way.
 // Pure.
 
 import { BEAT_KINDS, type LessonKind } from '../games/noteHunter/lessons'
 
-export const PACE_KINDS: LessonKind[] = ['bird', 'balloon', 'bar']
+export const PACE_KINDS: LessonKind[] = ['bird', 'balloon', 'bar', 'train', 'chirp']
 export const PACE_MIN = 0.8
 export const PACE_MAX = 1.3
 export const PACE_STEP = 0.1

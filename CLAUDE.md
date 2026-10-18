@@ -96,10 +96,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                             |
-| ------ | --------------------------------------------------------------------------------- |
-| `main` | Phases 0–11, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live |
-| This   | Phase 12: smart learning (`claude/project-thread-ytjjkw`)                         |
+| Branch | State                                                                                |
+| ------ | ------------------------------------------------------------------------------------ |
+| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live    |
+| This   | Game round: Oyun Salonu, Nota Treni, Kayıp Kuş Sesi (`claude/project-thread-q9rplm`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -496,6 +496,35 @@ Phase 12 (smart learning, `claude/project-thread-ytjjkw`):
 - `SMOKE_ONLY=smart` plays Başlangıç, makes its cards due (plus a chord and a scale), plays the mix, checks the boxes,
   the pace after a perfect Nota Kuşu and both weekly summaries; layout case `mix` and the `akilli` map check seed IndexedDB.
 
+Game round (`claude/project-thread-q9rplm`, the owner picked items from the game ideas list):
+
+- `games/arcade/ramp.ts`: `rampAt(spawned, total, ramp)` (lessons ramp over their targets; `ENDLESS_RAMP` = 30
+  targets, up to 1.6× the lesson curve) and **`Surprise`** (after `SURPRISE_FIRST_S` 20 s of play, then every 45 s,
+  for 8 s: speed ×`SURPRISE_BOOST` 1.2 and `points` 2). Every note and chord arcade engine has `ramp`, `surprise`
+  (ticked in `update`, divides its durations, `score += surprise.points`).
+- `screens/arcade/useArcade.ts`: `useCombo` (combo, `bestCombo()`), `useSurprise` (polls the game, the HUD message
+  per kind, `.pixi-stage[data-surprise="wind | storm | rush | meteor"]` CSS weather), `arcadeStats` →
+  `SessionSummary.arcade { score, bestCombo, surprises }`. `FEVER_AT` 5: `.pixi-stage[data-fever]` glow and
+  `ArcadeChips` 🔥. Results show the longest run for lessons.
+- **Nota Treni** (`kind: 'train'`, `arcade/train/`): wagons in a row (`WAGON_GAP`) ride to the signal (`SIGNAL_X`);
+  the front one is played (`shownAt` when it becomes the front), a wagon at the signal derails (heart). `NoteLesson.tunes`
+  puts songs on the wagons in order (`train/tunes.ts`: seven new public-domain songs, `tunePitches`); the HUD names
+  each song (Turkish title, original, origin) as its first wagon comes up. Treble unit: `treble-train-1`, `-2`.
+- **Kayıp Kuş Sesi** (`kind: 'chirp'`, `arcade/chirp/`, in `PATTERN_KINDS`): one bird at a time sings its note
+  (`sing` event → `playParts`), the player finds it by ear (a wrong key costs nothing, the bird sings again; the 🔊
+  button `replay()`s), patience runs out → heart. Nests labelled with the note names fill up. No surprises.
+  Ear unit: `ear-chirp-1` (Do Mi Sol), `ear-chirp-2` (octave). Both new kinds play in `ArcadeScreen` and adapt pace.
+- **Oyun Salonu** (`games/salon/salon.ts`, `screens/SalonScreen.tsx`, map `components/SalonCard.tsx`
+  `[data-node="salon"]`): `SALON_GAMES` (template lesson per game) × `SALON_SKILLS` (source lesson whose notes, chords
+  or rhythm are played); a game opens when a lesson of its kind has a star, a skill when its source does.
+  `salonLesson` builds `salon-<kind>-<skill>` with `NoteLesson.salon { endless }`: note and chord games are endless
+  (`ENDLESS_LENGTH`, `ENDLESS_RAMP`, `.endless-bar`, no stars), beat games play 8 random bars. `profile.salon` keeps
+  `SalonRecord { best, bestCombo, plays }` (`LessonOutcome.salon`, `Reward.record`); Salon games keep no lesson
+  progress, pace, note statistics or review cards. Results: `RecordCard`, "Salona dön" (back to the salon with the
+  game picked). Lesson icons moved to `screens/kindIcons.ts`.
+- `SMOKE_ONLY=games` plays Başlangıç, Nota Treni (checks each song is named) and two endless Salon games (a record,
+  then not); layout cases `train`, `chirp` and the `salon` check (screen, pick, endless game, record, way back).
+
 Next: **phase 13, platforms** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
 
@@ -516,7 +545,7 @@ CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run smoke -
 ```
 
 `scripts/layout.mjs` (**layout suite**, in CI) opens one lesson of every game type (theory, drills incl. intro, wide
-keyboard and grand staff, Nota Kuşu, Balon, Nota Barmeni, melody, rhythm, Dino, Davulcu, scales incl. two octaves with
+keyboard and grand staff, Nota Kuşu, Balon, Nota Barmeni, Nota Treni, Kayıp Kuş Sesi, melody, rhythm, Dino, Davulcu, scales incl. two octaves with
 two hands, Gam Merdiveni, both memory games, chords, Kulaktan Akor, Aşçı, Uzay, Akor Barmeni, arpeggio, Sörf, Nota Şelalesi in both modes) in test
 mode on a desktop window (1366×700), a phone upright (390×844) and sideways (844×390, touch), plus the screens with a
 staff once in dark mode (`koyu`: the inverted notation must sit on a dark box), plays a little, ends it
@@ -530,7 +559,7 @@ It writes `rapor.md` / `rapor.json` and screenshots. Warnings (⚠️) and
 `KNOWN` problems (🟠, already reported) do not fail the run; remove a `KNOWN` entry when its fix lands. `LAYOUT_ONLY=space,bird`
 and `LAYOUT_VIEWPORTS=yatay` narrow a run.
 
-`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=songs` plays Başlangıç and unit 9 (a section repeat, both hands, the Kanon tempo ladder, Konser); `SMOKE_ONLY=test` checks test mode and the progress code. Look at the screenshots after UI
+`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=songs` plays Başlangıç and unit 9 (a section repeat, both hands, the Kanon tempo ladder, Konser); `SMOKE_ONLY=games` plays Nota Treni and the Oyun Salonu; `SMOKE_ONLY=test` checks test mode and the progress code. Look at the screenshots after UI
 changes. Piano samples fail to load in a sandbox without network; the script ignores
 that error.
 

@@ -265,6 +265,18 @@ const CHORDS: TheorySpec = {
   ],
 }
 
+/** Kayıp Kuş Sesi: birds sing the notes, the player finds them on the keys. */
+const chirpLesson = (id: string, title: string, description: string, notes: number[]): NoteLesson => ({
+  id,
+  kind: 'chirp',
+  title,
+  description,
+  clef: 'treble',
+  notes,
+  length: notes.length <= 3 ? 10 : 14,
+  keyboard: { low: C4, high: n('C5') },
+})
+
 const OCTAVE_RANGE = { low: C4, high: n('C5') }
 const WIDE_RANGE = { low: n('G3'), high: n('G5') }
 const CHORD_RANGE = { low: n('F3'), high: n('E5') }
@@ -288,12 +300,18 @@ export const EAR_LESSONS: NoteLesson[] = [
     [n('G3'), C4, n('E4'), n('G4'), n('C5'), n('E5')],
     { startLength: 3, maxLength: 7, leaps: true },
   ),
+  chirpLesson('ear-chirp-1', 'Kayıp Kuş Sesi', 'Kuşlar Do, Mi ya da Sol öter: sesi bul, yuvasına dönsün', [
+    C4,
+    n('E4'),
+    n('G4'),
+  ]),
   earLesson('ear-pitch-3', 'Dedektif: Do Pozisyonu', "Do'dan Sol'a beş nota", {
     cases: [{ task: 'pitch', pool: whiteKeysBetween(C4, n('G4')), count: 10 }],
   }),
   earLesson('ear-pitch-4', 'Dedektif: Bütün Oktav', "Do'dan ince Do'ya sekiz nota", {
     cases: [{ task: 'pitch', pool: OCTAVE, count: 12 }],
   }),
+  chirpLesson('ear-chirp-2', 'Kayıp Kuş Sesi: Bütün Oktav', "Do'dan ince Do'ya: her kuş kendi notasını öter", OCTAVE),
   songLesson('ear-song-1', 'Şarkı Hafızası: Küçük Yıldız', 'Cümle cümle dinle ve ezberden çal', TWINKLE),
   theoryLesson('ear-intervals', 'Aralıklar ve Şarkıları', 'Her aralığı bir şarkıyla hatırla', INTERVALS),
   earLesson('ear-int-1', 'İkili mi Üçlü mü?', 'Büyük ikili ve büyük üçlü, çıkan', {

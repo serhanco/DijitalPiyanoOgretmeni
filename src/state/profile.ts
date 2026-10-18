@@ -21,6 +21,7 @@ import {
 import { BOSS_LESSON_IDS, questEligible, REVIEW_LESSON_ID } from '../progress/curriculum'
 import { nextPace, PACE_KINDS } from '../progress/adaptive'
 import { MIX_LESSON_ID, MIX_XP } from '../progress/mix'
+import { isSalonId, nextRecord, type SalonRecord } from '../games/salon/salon'
 import {
   advanceQuests,
   dailyFor,
@@ -57,6 +58,8 @@ export interface Reward {
   quests: { steps: QuestStep[]; chestOpened: boolean; weeklyDone: boolean }
   /** Arcade games: the lesson's pace before and after this game, when it changed. */
   pace?: { from: number; to: number }
+  /** Oyun Salonu: the score, the record before this game and whether it was beaten. */
+  record?: { score: number; combo: number; before: number; isNew: boolean }
 }
 
 /** Lessons that change every time keep no stars. */
@@ -79,6 +82,8 @@ interface ProfileState {
   mixDay: string | null
   /** Week key of the last weekly summary the learner closed on the map. */
   weekSeen: string | null
+  /** Oyun Salonu: the record of each game with each skill, by its lesson id. */
+  salon: Record<string, SalonRecord>
   closeWeekSummary: (week: string) => void
   /** Picks today's quests and this week's challenge when they are not picked yet. */
   ensureQuests: (now?: Date) => void
@@ -113,6 +118,7 @@ export const useProfile = create<ProfileState>()(
       pace: {},
       mixDay: null,
       weekSeen: null,
+      salon: {},
 
       closeWeekSummary: (week) => set({ weekSeen: week }),
 
@@ -138,8 +144,9 @@ export const useProfile = create<ProfileState>()(
 
         const prev = s.lessons[outcome.lessonId]
         const lessons = { ...s.lessons }
-        // The review lesson and the mix change every time, so they keep no stars.
-        if (!UNSCORED.includes(outcome.lessonId)) {
+        // The review lesson and the mix change every time, so they keep no stars; Salon games keep a record instead.
+        const salonGame = isSalonId(outcome.lessonId)
+        if (!UNSCORED.includes(outcome.lessonId) && !salonGame) {
           const p = prev ?? { bestStars: 0, bestAccuracy: 0, plays: 0 }
           lessons[outcome.lessonId] = {
             bestStars: outcome.failed ? p.bestStars : Math.max(p.bestStars, outcome.stars),
@@ -155,7 +162,7 @@ export const useProfile = create<ProfileState>()(
           outcome,
           kind: outcome.kind ?? 'drill',
           xp: lessonXp,
-          isNew: !prev && !UNSCORED.includes(outcome.lessonId),
+          isNew: !prev && !UNSCORED.includes(outcome.lessonId) && !salonGame,
           beatBest: !!prev && prev.plays > 0 && outcome.accuracy > prev.bestAccuracy,
           starsGained: Math.max(0, (lessons[outcome.lessonId]?.bestStars ?? 0) - (prev?.bestStars ?? 0)),
           firstOfDay: s.streak.lastDay !== today,
@@ -188,12 +195,18 @@ export const useProfile = create<ProfileState>()(
         for (const b of newBadges) badges[b.id] = now.getTime()
 
         const paceBefore = s.pace[outcome.lessonId] ?? 1
-        const paceAfter = PACE_KINDS.includes(outcome.kind ?? 'drill') ? nextPace(paceBefore, outcome) : paceBefore
+        // Endless Salon games always end with the hearts gone: their pace stays as it is.
+        const paceAfter =
+          PACE_KINDS.includes(outcome.kind ?? 'drill') && !salonGame ? nextPace(paceBefore, outcome) : paceBefore
         const pace = paceAfter === paceBefore ? s.pace : { ...s.pace, [outcome.lessonId]: paceAfter }
+
+        const salonBefore = s.salon[outcome.lessonId]
+        const salonNext = salonGame && outcome.salon ? nextRecord(salonBefore, outcome.salon) : null
 
         if (save)
           set({
             pace,
+            ...(salonNext && { salon: { ...s.salon, [outcome.lessonId]: salonNext.record } }),
             ...(mixBonus && { mixDay: today }),
             totalXp,
             streak,
@@ -220,6 +233,14 @@ export const useProfile = create<ProfileState>()(
           lessonXp,
           quests: { steps: q.steps, chestOpened: q.chestOpened, weeklyDone: q.weeklyDone },
           ...(paceAfter !== paceBefore && { pace: { from: paceBefore, to: paceAfter } }),
+          ...(salonNext &&
+            outcome.salon && {
+              record: {
+                ...outcome.salon,
+                before: salonBefore?.best ?? 0,
+                isNew: salonNext.isNew,
+              },
+            }),
         }
       },
 

@@ -103,6 +103,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-16 | Faz 10: Şarkılar ünitesi (22 ders), Nota Şelalesi (bekleyen ve ritimli mod, bölüm tekrarı, yavaşlatma), 9 telifsiz şarkı ve Konser, tek elden iki ele, Şarkı kartı, 3 rozet                                                                        | PR #32                                 |
 | 2026-10-16 | Faz 11: her ünitenin sonunda üç aşamalı boss (10 canavar, can çubuğu, Boss kartı), günlük görevler (3 görev ve sandık), haftalık meydan okuma, 3 rozet                                                                                             | PR #33                                 |
 | 2026-10-17 | Faz 12: aralıklı tekrar (nota, akor, gam, arpej kartları, 5 kutu), Günün Karışımı dersi, uyarlanabilir hız ve tempo, okuma alanının genişlemesi, haftalık özet (profil ve harita)                                                                  | dal `claude/project-thread-ytjjkw`     |
+| 2026-10-18 | Oyun turu: Oyun Salonu (9 oyun × açılmış beceriler, sonsuz mod, rekorlar), combo ateşi ve oyun içi sürprizler, yeni oyunlar Nota Treni (7 telifsiz yeni şarkıyla) ve Kayıp Kuş Sesi                                                                | dal `claude/project-thread-q9rplm`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -217,6 +218,14 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   hemen 5. kutuya taşırdı. Ritim dersleri nota kartı üretmez (zamanlama ölçülür), kulaktan akorlar da akor kartı
   üretmez. Karışım yıldız tutmaz (her gün değişir), canlar bitse de sonraki aşamaya geçer. Hız sadece nota okuma
   oyunlarında değişir; ritim oyunlarında hız tempo demektir ve tempo zaten hatırlanıyordu.
+
+- **Oyun turu:** Serhan ayrı bir başlıkta oyun fikirleri istedi, 15 fikirden önerilen sırayı "hadi yapalım" diye
+  onayladı ve "lisanssız, bilindik yeni melodiler" eklenmesini istedi. Salon'daki oyunlar yıldız vermez, kendi
+  rekorunu tutar; sonsuz oyun hep canlar bitince biter, bu yüzden aralıklı tekrar kartlarına ve nota
+  istatistiklerine yazılmaz, hızı da uyarlanmaz. Sürprizler (8 sn, %20 hızlı, puan iki kat) yalnızca oyun puanını
+  değiştirir, XP'yi değil; kulak oyunu sakin kalsın diye Kayıp Kuş Sesi'nde sürpriz yok. Altın balon ve ipucu
+  parıltısı XP'yi ve ilk deneme doğruluğunu değiştirdiği için yapılmadı. Yeni şarkılar: Dvořák (Goin' Home), Grieg
+  (Sabah), Brahms (Ninni), Stephen Foster (Oh! Susanna), Row Row Row Your Boat, Old MacDonald, Alouette.
 
 ## Açık konular
 

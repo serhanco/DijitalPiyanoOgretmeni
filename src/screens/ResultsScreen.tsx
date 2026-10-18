@@ -470,6 +470,55 @@ function AdaptLine({ pace, tempo }: { pace?: Reward['pace']; tempo?: { from: num
   )
 }
 
+function salonMessage(record: Reward['record'], summary: SessionSummary): string {
+  if (!record) return summary.message
+  if (record.isNew)
+    return record.before > 0 ? `Yeni rekor! ${record.before} puanı geçtin.` : 'İlk rekorun! Şimdi onu geçmeye çalış.'
+  return `Rekorun ${record.before}. ${record.before - record.score <= 3 ? 'Az kaldı!' : 'Bir dahakine!'}`
+}
+
+/** Oyun Salonu: the score against the record. */
+function RecordCard({
+  record,
+  endless,
+  summary,
+}: {
+  record?: Reward['record']
+  endless: boolean
+  summary: SessionSummary
+}) {
+  const unit = endless ? ' puan' : '%'
+  return (
+    <section className="card record-card" data-new={record?.isNew || undefined}>
+      <h2>{record?.isNew ? '🏆 Yeni rekor!' : '🏆 Rekor'}</h2>
+      <p>
+        Bu oyun:{' '}
+        <b>
+          {record?.score ?? (endless ? (summary.arcade?.score ?? 0) : Math.round(summary.accuracy * 100))}
+          {unit}
+        </b>
+        {record && record.before > 0 && (
+          <>
+            {' '}
+            · önceki rekor{' '}
+            <b>
+              {record.before}
+              {unit}
+            </b>
+          </>
+        )}
+      </p>
+      {endless && summary.arcade && (
+        <p className="small muted">
+          En uzun seri {summary.arcade.bestCombo}
+          {summary.arcade.surprises > 0 ? ` · ${summary.arcade.surprises} sürpriz` : ''} · ilk denemede doğru{' '}
+          {summary.firstTry}/{summary.total}
+        </p>
+      )}
+    </section>
+  )
+}
+
 /** The longest runs remembered in Melodi Hafızası. */
 function MemoryCard({ memory }: { memory: MemorySummary }) {
   if (memory.song)
@@ -537,17 +586,29 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
   const canPractice = !PATTERN_KINDS.includes(lesson.kind ?? 'drill')
   const leveledUp = reward.levelAfter > reward.levelBefore
   const [showLevelUp, setShowLevelUp] = useState(leveledUp)
-  const mood: MascotMood = summary.failed || summary.stars === 0 ? 'sad' : summary.stars >= 2 ? 'cheer' : 'happy'
+  // An endless Salon game always ends with the hearts gone: it is judged by its record, not by stars.
+  const endless = !!lesson.salon?.endless
+  const newRecord = !!reward.record?.isNew && !trial
+  const mood: MascotMood = endless
+    ? newRecord
+      ? 'cheer'
+      : 'happy'
+    : summary.failed || summary.stars === 0
+      ? 'sad'
+      : summary.stars >= 2
+        ? 'cheer'
+        : 'happy'
 
   useEffect(() => {
-    const celebrate = !summary.failed && (summary.stars >= 2 || reward.goalJustReached || leveledUp)
+    const celebrate =
+      newRecord || (!endless && !summary.failed && (summary.stars >= 2 || reward.goalJustReached || leveledUp))
     if (celebrate) {
       sfx.fanfare()
       burstConfetti()
-    } else if (summary.failed) {
+    } else if (summary.failed && !endless) {
       sfx.fail()
     }
-  }, [summary, reward, leveledUp])
+  }, [summary, reward, leveledUp, endless, newRecord])
 
   return (
     <div className="results">
@@ -577,24 +638,44 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
           </motion.div>
         )}
       </AnimatePresence>
-      <Mascot mood={mood} size={110} say={summary.message} className="results-mascot" />
-      <div className="stars" aria-label={`${summary.stars} yıldız`}>
-        {[1, 2, 3].map((i) => (
-          <span key={i} className={`star ${i <= summary.stars ? 'on' : ''}`} style={{ animationDelay: `${i * 0.15}s` }}>
-            ★
-          </span>
-        ))}
-      </div>
+      <Mascot
+        mood={mood}
+        size={110}
+        say={endless ? salonMessage(trial ? undefined : reward.record, summary) : summary.message}
+        className="results-mascot"
+      />
+      {!lesson.salon && (
+        <div className="stars" aria-label={`${summary.stars} yıldız`}>
+          {[1, 2, 3].map((i) => (
+            <span
+              key={i}
+              className={`star ${i <= summary.stars ? 'on' : ''}`}
+              style={{ animationDelay: `${i * 0.15}s` }}
+            >
+              ★
+            </span>
+          ))}
+        </div>
+      )}
       <h1>
-        {summary.boss
-          ? summary.boss.defeated
-            ? `${summary.boss.name} yenildi!`
-            : `${summary.boss.name} kazandı`
-          : summary.failed
-            ? 'Kalplerin bitti'
-            : `${lesson.title} tamamlandı!`}
+        {endless
+          ? `Oyun bitti: ${summary.arcade?.score ?? 0} puan`
+          : summary.boss
+            ? summary.boss.defeated
+              ? `${summary.boss.name} yenildi!`
+              : `${summary.boss.name} kazandı`
+            : summary.failed
+              ? 'Kalplerin bitti'
+              : `${lesson.title} tamamlandı!`}
       </h1>
-      {!summary.failed && <Comparison before={reward.previousBestAccuracy} now={summary.accuracy} />}
+      {!summary.failed && !lesson.salon && <Comparison before={reward.previousBestAccuracy} now={summary.accuracy} />}
+      {lesson.salon && <RecordCard record={trial ? undefined : reward.record} endless={endless} summary={summary} />}
+      {!lesson.salon && summary.arcade && summary.arcade.bestCombo >= 5 && (
+        <p className="compare up" data-combo={summary.arcade.bestCombo}>
+          🔥 En uzun serin {summary.arcade.bestCombo} doğru üst üste
+          {summary.arcade.surprises > 0 ? `, ${summary.arcade.surprises} sürpriz atlattın` : ''}.
+        </p>
+      )}
 
       {/* A test finish keeps nothing, so it shows no reward. */}
       {!trial && (
@@ -775,7 +856,7 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
 
       <div className="actions">
         <button className="btn btn-secondary" onClick={onHome}>
-          Derslere dön
+          {lesson.salon ? 'Salona dön' : 'Derslere dön'}
         </button>
         <button className="btn" onClick={onRetry}>
           Tekrar oyna

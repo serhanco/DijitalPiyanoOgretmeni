@@ -24,6 +24,8 @@ const KIND_NAME: Record<LessonKind, string> = {
   waterfall: 'Oyun: Nota Şelalesi',
   boss: 'Boss savaşı',
   mix: 'Günün tekrar karışımı',
+  train: 'Oyun: Nota Treni',
+  chirp: 'Oyun: Kayıp Kuş Sesi',
 }
 
 interface Props {
