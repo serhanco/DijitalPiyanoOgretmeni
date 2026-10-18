@@ -544,7 +544,7 @@ function DuetCard({ duet }: { duet: DuetSummary }) {
             <br />
           </>
         )}
-        {duet.meanOffsetMs !== null && <>Yankılarda notaların ortalama {describeOffset(duet.meanOffsetMs)}.</>}
+        {duet.meanOffsetMs !== null && <>Yankılarda ortalama zamanlaman: {describeOffset(duet.meanOffsetMs)}.</>}
       </p>
     </section>
   )
