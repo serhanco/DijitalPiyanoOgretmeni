@@ -40,7 +40,10 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
     return SALON_GAMES.find((g) => g.kind === kind) ?? null
   })
   const [skill, setSkill] = useState<string | null>(() => last?.replace(/^salon-[a-z]+-/, '') ?? null)
-  useEffect(() => window.scrollTo({ top: 0 }), [])
+  // Chrome's scrollTo returns a promise, which React would take for a cleanup.
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [])
   // On a phone the skills sit under the games: bring them into view when a game is picked.
   const pickRef = useRef<HTMLElement>(null)
   const [tapped, setTapped] = useState(0)
