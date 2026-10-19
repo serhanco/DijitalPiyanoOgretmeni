@@ -74,8 +74,13 @@ export function gameOpen(game: SalonGame, lessons: NoteLesson[], stars: Stars): 
   return lessons.some((l) => l.kind === game.kind && stars(l.id) >= 1)
 }
 
-/** A skill opens once its source lesson has a star. */
-export const skillOpen = (skill: SalonSkill, stars: Stars) => stars(skill.source) >= 1
+/**
+ * A skill opens once its source lesson has a star. The family's first (easiest)
+ * skill also opens with the game, so an open game always has something to play:
+ * Dino Koşusu comes before Ritim Davulcusu, the source of the first beat skill.
+ */
+export const skillOpen = (skill: SalonSkill, stars: Stars, gameIsOpen = false) =>
+  stars(skill.source) >= 1 || (gameIsOpen && SALON_SKILLS.find((s) => s.family === skill.family) === skill)
 
 /** The lesson that plays `game` with `skill`: the game's settings, the skill's content. */
 export function salonLesson(

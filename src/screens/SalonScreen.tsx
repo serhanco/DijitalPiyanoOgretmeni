@@ -13,6 +13,7 @@ import {
   salonId,
   salonLesson,
   type SalonGame,
+  type SalonSkill,
   skillOpen,
   skillsOf,
 } from '../games/salon/salon'
@@ -49,7 +50,9 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
 
   const open = SALON_GAMES.filter((g) => gameOpen(g, ALL_LESSONS, stars))
   const skills = picked ? skillsOf(picked) : []
-  const chosen = skills.find((s) => s.id === skill && skillOpen(s, stars)) ?? skills.find((s) => skillOpen(s, stars))
+  const pickedOpen = picked !== null && open.includes(picked)
+  const isSkillOpen = (s: SalonSkill) => skillOpen(s, stars, pickedOpen)
+  const chosen = skills.find((s) => s.id === skill && isSkillOpen(s)) ?? skills.find(isSkillOpen)
   const lesson = picked && chosen ? salonLesson(picked, chosen, findLesson) : null
 
   return (
@@ -112,7 +115,7 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
           <p className="small muted">Hangi beceriyle oynayalım?</p>
           <div className="salon-skills">
             {skills.map((s) => {
-              const ok = skillOpen(s, stars)
+              const ok = isSkillOpen(s)
               const rec = records[salonId(picked, s)]
               return (
                 <button
