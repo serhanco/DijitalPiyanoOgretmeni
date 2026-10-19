@@ -2,12 +2,18 @@ import { Component, type ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
-  /** Back to the map; the boundary resets when its `key` changes. */
+  /** Back to the map. */
   onHome: () => void
+  /**
+   * Clears the card when the screen changes. The boundary itself stays mounted (not a `key`),
+   * so an error thrown while the old screen unmounts still lands here instead of blanking the page.
+   */
+  resetKey: string
 }
 
 interface State {
   error: Error | null
+  resetKey: string
 }
 
 const RELOADED = 'dpo-chunk-reload'
@@ -25,10 +31,14 @@ function isChunkError(error: Error): boolean {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null }
+  state: State = { error: null, resetKey: this.props.resetKey }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error }
+  }
+
+  static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {
+    return props.resetKey === state.resetKey ? null : { error: null, resetKey: props.resetKey }
   }
 
   componentDidCatch(error: Error) {

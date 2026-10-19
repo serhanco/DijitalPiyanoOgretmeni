@@ -177,7 +177,7 @@ export default function App() {
 
   return (
     <main className="app">
-      <ErrorBoundary key={screen.name === 'play' ? `play-${screen.run}` : screen.name} onHome={home}>
+      <ErrorBoundary resetKey={screen.name === 'play' ? `play-${screen.run}` : screen.name} onHome={home}>
         {screen.name === 'home' && (
           <HomeScreen
             onStart={start}
