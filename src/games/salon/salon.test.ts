@@ -59,6 +59,21 @@ describe('Oyun Salonu', () => {
     expect(skillOpen(skill('fa'), starred(['basics-bird']))).toBe(false)
   })
 
+  it('has a skill to play for every game, whichever lesson of its kind opened it', () => {
+    for (const g of SALON_GAMES)
+      for (const l of ALL_LESSONS.filter((l) => l.kind === g.kind)) {
+        const stars = (id: string) => (id === l.id ? 1 : 0)
+        expect(gameOpen(g, ALL_LESSONS, stars)).toBe(true)
+        expect(
+          skillsOf(g).some((s) => skillOpen(s, stars, true)),
+          `${g.kind} via ${l.id}`,
+        ).toBe(true)
+      }
+    // Dino Koşusu comes before Ritim Davulcusu, whose rhythm is the first beat skill.
+    expect(skillOpen(skill('temel'), (id) => (id === 'rhythm-dino-1' ? 1 : 0), true)).toBe(true)
+    expect(skillOpen(skill('sekizlik'), (id) => (id === 'rhythm-dino-1' ? 1 : 0), true)).toBe(false)
+  })
+
   it('scores endless games by points and beat games by timing', () => {
     expect(salonResult(true, { accuracy: 0.5, arcade: { score: 22, bestCombo: 9 } })).toEqual({ score: 22, combo: 9 })
     expect(salonResult(false, { accuracy: 0.876 })).toEqual({ score: 88, combo: 0 })
