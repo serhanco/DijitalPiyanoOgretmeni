@@ -1,7 +1,9 @@
 // Plays one lesson on the screen of its kind. The screens are lazy: each
 // brings its own renderer (VexFlow, PixiJS, Tone.js) when it is first needed.
 
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
+import { GameIntro } from '../components/GameIntro'
+import { introFor, markIntroSeen } from '../games/intro'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import type { SessionSummary } from '../games/noteHunter/summary'
 
@@ -31,7 +33,26 @@ export interface LessonScreenProps {
   onExit: () => void
 }
 
-export function LessonPlayer({ lesson, onFinish, onExit }: LessonScreenProps) {
+export function LessonPlayer(props: LessonScreenProps) {
+  // Oyun arası Notiş: the first time a game opens, its rule comes first (the game waits behind it).
+  const [intro, setIntro] = useState(() => introFor(props.lesson.kind))
+  return (
+    <>
+      <LessonScreen {...props} />
+      {intro && (
+        <GameIntro
+          intro={intro}
+          onDone={() => {
+            markIntroSeen(props.lesson.kind!)
+            setIntro(null)
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+function LessonScreen({ lesson, onFinish, onExit }: LessonScreenProps) {
   return (
     <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
       {lesson.kind === 'boss' ? (

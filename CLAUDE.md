@@ -96,10 +96,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                                    |
-| ------ | -------------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live                        |
-| This   | Game round 2: golden targets, hint glow, wardrobe, Kurbağa, Davul Düeti (`claude/project-thread-q9rplm`) |
+| Branch | State                                                                                                |
+| ------ | ---------------------------------------------------------------------------------------------------- |
+| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live                    |
+| This   | Game round 3: Notiş intros, sound layers, ghost, songs in the Salon (`claude/project-thread-q9rplm`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -544,6 +544,28 @@ Game round 2 (`claude/project-thread-q9rplm`, the owner's "yap gitsin" on the fi
   `free` rounds need ≥ 3 on-grid notes (`own` when the rhythm differs). `duetReport` → results "Davul düeti" card.
   Rhythm units: `rhythm-duet-1`, `rhythm-duet-2`. `window.__dpoDuet`. Both new kinds are in `PATTERN_KINDS`.
 - Smoke: ear and rhythm runs play the new lessons; layout cases `frog`, `duet`.
+
+Game round 3 (`claude/project-thread-q9rplm`, the owner's "hepsini yapıver" on the last three ideas, plus songs in
+the Salon):
+
+- **Oyun arası Notiş** (`games/intro.ts`, `components/GameIntro.tsx`): `GAME_INTROS` gives every game kind a two-sentence
+  rule and a three-step move. `LessonPlayer` shows it the first time a kind opens (`introFor`, seen kinds in
+  localStorage `dpo-intros`, like the welcome); the card pauses the game clock (`pauseGame`) until "Hadi oynayalım!",
+  and narration reads the rule. Browser scripts set `dpo-intros` to `off` in their init script; the games smoke turns
+  it on for Nota Treni and checks the train waits behind the card.
+- **Ses katmanları** (`audio/layers.ts`, `settings.musicLayers`, "Oyun müziği" in Ses): `layerHit(midi, run)` adds a
+  synthesized bass from a run of 3 (`LAYER_AT`), its fifth from 5, a high shimmer from 10; `ArcadeScreen.react` keeps
+  the run. `ArcadeStats.melody` (`melodyOf`: notes answered right, up to `MELODY_MAX` 48, not Kayıp Kuş Sesi) →
+  results `MelodyCard` (`.melody-card`, "Melodini dinle" through `playParts`).
+- **Bilinen şarkılar**: Salon skill `sarki` (`SalonSkill.songs`, opened by `treble-train-1`) puts `SALON_SONGS` (the
+  rhythm units' and Nota Treni's 17 songs) on Nota Kuşu, Balon and Nota Treni. `ArcadeScreen.tuneSkill` (was
+  `trainSkill`) shuffles the songs in the Salon and repeats them up to the endless length; the HUD names each song as
+  its first note comes up, `ArcadeStats.songs` lists the songs reached.
+- **Hayalet** (`progress/ghost.ts`, pure): a `Ghost` is a run's score after each second (`by: 'second'`, endless
+  games, `useSecondTrace`) or each note (`by: 'note'`, `beatGhost`: the timing so far in percent of the round, tempo
+  ladder rounds joined). `profile.ghosts[lessonId]` keeps the best (`beatsGhost`; `LessonOutcome.ghost`,
+  `Reward.ghost`); every Salon game and the Dino / Davulcu lessons race it with `GhostChip` (`.ghost-chip[data-ghost]`,
+  `screens/arcade/Ghost.tsx`, hooks in `ghostHooks.ts`). Results `[data-ghost="new" | true | false]`.
 
 Next: **phase 13, platforms** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
 the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.

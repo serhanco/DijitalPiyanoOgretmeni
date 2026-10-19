@@ -64,6 +64,11 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
           onChange={(v) => settings.set({ soundEffects: v })}
         />
         <Toggle
+          label="Oyun müziği: doğru notalar seri uzadıkça katman katman eşlik kazansın"
+          checked={settings.musicLayers}
+          onChange={(v) => settings.set({ musicLayers: v })}
+        />
+        <Toggle
           label="Teori kartlarını ve soruları sesli oku"
           checked={settings.narration}
           onChange={(v) => settings.set({ narration: v })}

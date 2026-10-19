@@ -17,6 +17,8 @@ interface SettingsState {
   hintGlow: boolean
   /** Short synthesized sounds for right/wrong answers and celebrations. */
   soundEffects: boolean
+  /** Ses katmanları: in the note games a run of right notes gets a soft accompaniment, layer by layer. */
+  musicLayers: boolean
   /** Vibrate on mistakes (Android). */
   vibration: boolean
   /** Read theory cards and quiz questions aloud. */
@@ -44,6 +46,7 @@ export const useSettings = create<SettingsState>()(
       relaxedMode: false,
       hintGlow: true,
       soundEffects: true,
+      musicLayers: true,
       vibration: true,
       metronome: true,
       narration: true,

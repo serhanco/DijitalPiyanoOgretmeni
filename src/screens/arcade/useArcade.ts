@@ -82,3 +82,13 @@ export function arcadeStats(
   const golden = records ? goldenStats(records) : null
   return { score: game.score, bestCombo, surprises: game.surprise.count, ...(golden?.shown && { golden }) }
 }
+
+/** Longest melody "Melodini dinle" plays back. */
+export const MELODY_MAX = 48
+
+/** The notes played right, in the order they came (a song's notes come out as the song). */
+export const melodyOf = (records: PromptRecord[]): number[] =>
+  records
+    .filter((r) => r.answeredAt !== null)
+    .map((r) => r.target)
+    .slice(0, MELODY_MAX)

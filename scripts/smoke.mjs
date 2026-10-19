@@ -18,7 +18,11 @@ await page.addInitScript(() => {
   window.__fakeMidi = (bytes) => input.onmidimessage?.({ data: new Uint8Array(bytes), timeStamp: performance.now() })
 })
 // The welcome shows once per device; tests start on the map.
-await page.addInitScript(() => localStorage.setItem('dpo-welcomed', '1'))
+await page.addInitScript(() => {
+  localStorage.setItem('dpo-welcomed', '1')
+  // Oyun arası Notiş would cover every game the first time: the intro has its own check.
+  if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
+})
 page.setDefaultTimeout(10000)
 const errors = []
 page.on('pageerror', (e) => {
@@ -627,7 +631,11 @@ async function testModeFlow() {
   await page.getByLabel('Ayarları kapat').click()
 
   const other = await browser.newPage({ viewport: { width: 390, height: 844 } })
-  await other.addInitScript(() => localStorage.setItem('dpo-welcomed', '1'))
+  await other.addInitScript(() => {
+    localStorage.setItem('dpo-welcomed', '1')
+    // Oyun arası Notiş would cover every game the first time: the intro has its own check.
+    if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
+  })
   other.on('pageerror', (e) => errors.push(`Other device: ${e.message}`))
   other.on('dialog', (d) => d.accept())
   await other.goto(url)
@@ -1538,8 +1546,19 @@ async function gamesRound() {
     await dismissOverlay()
     await page.getByText('Derslere dön').click()
   }
+  // Oyun arası Notiş: the first Nota Treni starts with its rule, and the game waits behind it.
+  await page.evaluate(() => localStorage.setItem('dpo-intros', '[]'))
   await openLesson('Nota Treni')
+  await page.waitForSelector('.game-intro .game-intro-steps li.on')
   await page.waitForSelector('.pixi-stage canvas')
+  const frontAt = () => page.evaluate(() => window.__dpoArcade.front?.x ?? null)
+  const before = await frontAt()
+  await page.waitForTimeout(1500)
+  if ((await frontAt()) !== before) errors.push('Oyun arası Notiş: the train moved behind the intro')
+  await page.screenshot({ path: `${out}/game-intro.png` })
+  await page.getByText('Hadi oynayalım!').click()
+  if (await page.$('.game-intro')) errors.push('Oyun arası Notiş: the intro did not close')
+  await page.evaluate(() => localStorage.setItem('dpo-intros', 'off'))
   const titles = new Set()
   for (let i = 0; i < 3000 && !(await page.$('.results')); i++) {
     const target = await page.evaluate(() => {
@@ -1570,13 +1589,14 @@ async function gamesRound() {
   await page.screenshot({ path: `${out}/salon.png`, fullPage: true })
 
   /** An endless Nota Kuşu: `right` pipes played, then the hearts run out. Returns the record card text. */
-  const endless = async (right) => {
-    await page.click('.salon-skill[data-skill="oktav"]')
+  const endless = async (right, skill = 'oktav', during = async () => undefined) => {
+    await page.click(`.salon-skill[data-skill="${skill}"]`)
     await page.click('.salon-play')
     await page.waitForSelector('.pixi-stage canvas')
     if (!(await page.$('.endless-bar'))) errors.push('Salon: no endless bar')
     let played = 0
     for (let i = 0; i < 3000 && !(await page.$('.results')); i++) {
+      if (i === 25) await during()
       if (played < right) {
         const target = await page.evaluate(() => {
           const cur = window.__dpoArcade.current
@@ -1595,12 +1615,33 @@ async function gamesRound() {
   }
   const first = await endless(6)
   if (!/Yeni rekor/.test(first)) errors.push(`Salon: no new record: ${first}`)
+  // Hayalet: the first run becomes the ghost; Ses katmanları: the notes played come back as a melody.
+  if (!(await page.$('[data-ghost="new"]'))) errors.push('Hayalet: the first run did not become the ghost')
+  if (!(await page.$('.melody-card .melody-play'))) errors.push('Ses katmanları: no melody to listen to')
   await page.screenshot({ path: `${out}/results-salon.png`, fullPage: true })
   await dismissOverlay()
   await page.getByText('Salona dön').click()
   await page.waitForSelector('.salon-game[data-game="bird"].on')
-  const second = await endless(2)
+  let chip = null
+  const second = await endless(2, 'oktav', async () => {
+    chip = await page.textContent('.ghost-chip').catch(() => null)
+  })
   if (/Yeni rekor/.test(second) || !/önceki rekor/.test(second)) errors.push(`Salon: second game: ${second}`)
+  if (!chip || !/👻 \d+ · sen \d+/.test(chip)) errors.push(`Hayalet: no ghost chip in the second game: ${chip}`)
+  if (!(await page.$('[data-ghost="false"]'))) errors.push('Hayalet: the weaker run should not beat the ghost')
+  await page.getByText('Salona dön').click()
+
+  // Bilinen şarkılar (opened by Nota Treni): Nota Kuşu plays songs, named as they come.
+  await page.click('.salon-game[data-game="bird"]')
+  let song = null
+  await endless(8, 'sarki', async () => {
+    song = await page.textContent('.arcade-message')
+  })
+  if (!song?.startsWith('🎵')) errors.push(`Bilinen şarkılar: no song named: ${song}`)
+  const melody = await page.textContent('.melody-card').catch(() => '')
+  if (!/🎵 .+ · /.test(melody)) errors.push(`Bilinen şarkılar: the results name no song: ${melody}`)
+  await page.screenshot({ path: `${out}/results-salon-songs.png`, fullPage: true })
+  await dismissOverlay()
   await page.getByText('Salona dön').click()
   const card = await page.textContent('.salon-game[data-game="bird"]')
   if (!/🏆 [1-9]/.test(card)) errors.push(`Salon: the game card shows no record: ${card}`)

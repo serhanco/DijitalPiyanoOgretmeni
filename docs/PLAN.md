@@ -32,7 +32,8 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 11 Boss'lar, günlük görevler, haftalık        | Birleşti (PR #33) |
 | 12 Akıllı öğrenme                             | Birleşti (PR #34) |
 | Oyun turu (Salon, Nota Treni, Kuş Sesi)       | Birleşti (PR #38) |
-| Oyun turu 2 (altın hedef, ipucu, kostüm, …)   | Bu dal            |
+| Oyun turu 2 (altın hedef, ipucu, kostüm, …)   | Birleşti (PR #39) |
+| Oyun turu 3 (Notiş kuralı, ses, hayalet, …)   | Bu dal            |
 | 13                                            | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).

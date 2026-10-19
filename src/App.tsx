@@ -109,6 +109,7 @@ export default function App() {
       tempoRaised: !!summary.tempoLadder?.raisedTo,
       ...(lesson.salon && { salon: salonResult(lesson.salon.endless, summary) }),
       ...(summary.arcade?.golden?.caught && { golden: summary.arcade.golden.caught }),
+      ...(summary.ghost && { ghost: summary.ghost }),
     }
     // "Dersi bitir" in test mode shows the results but keeps them out of the progress.
     const trial = consumeFinishRequest()

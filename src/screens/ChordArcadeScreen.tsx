@@ -26,6 +26,8 @@ import { useSettings } from '../state/settings'
 import { useProfile } from '../state/profile'
 import { ENDLESS_RAMP } from '../games/arcade/ramp'
 import { ArcadeChips } from './arcade/ArcadeChips'
+import { GhostChip } from './arcade/Ghost'
+import { useSecondTrace, useStoredGhost } from './arcade/ghostHooks'
 import { arcadeStats, FEVER_AT, useCombo, useSurprise } from './arcade/useArcade'
 
 const ARCADE_HEARTS = 3
@@ -61,6 +63,10 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
     return g
   }, [spec, chef, bar, ignoreOctave, endless])
   const { combo, bestCombo, hit, miss } = useCombo()
+  // Hayalet: an endless game races the best run of the same game and skill.
+  const ghost = useStoredGhost(lesson.id, endless)
+  const trace = useSecondTrace(() => game.score, endless)
+  const traceRun = trace.run
 
   useEffect(() => {
     ;(window as unknown as { __dpoChordArcade?: Game }).__dpoChordArcade = game
@@ -89,8 +95,9 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
     (): SessionSummary => ({
       ...summarizeChords(game.attempted, game.failed),
       arcade: arcadeStats(game, bestCombo()),
+      ...(endless && { ghost: traceRun() }),
     }),
-    [game, bestCombo],
+    [game, bestCombo, endless, traceRun],
   )
   useFinishRequest(() => {
     finished.current = true
@@ -249,6 +256,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
       <div className="arcade-info">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={56} />
         <p className="arcade-message">{message}</p>
+        {ghost && <GhostChip ghost={ghost} at={trace.second} mine={hud.score} />}
         <ArcadeChips combo={combo} record={endless ? undefined : record} />
         <span className="arcade-score">⭐ {hud.score}</span>
       </div>

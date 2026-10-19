@@ -3,6 +3,10 @@
 // mascot and the report at the end. A tempo ladder plays the same plan in
 // rounds of rising tempo. Each activity only draws its playfield.
 
+import { beatGhost } from '../../progress/ghost'
+import { GhostChip } from '../arcade/Ghost'
+import { useStoredGhost } from '../arcade/ghostHooks'
+import type { Ghost } from '../../progress/ghost'
 import { useFinishRequest } from '../../testing/finishRequest'
 import { gameNow, gameTimeout } from '../../input/gameClock'
 import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -178,6 +182,11 @@ export function BeatFrame({
   const tempos = useMemo(() => (ladder ? ladderTempos(bpm, ladder) : [bpm]), [ladder, bpm])
   /** Finished rounds of a tempo ladder (just one otherwise). */
   const tracksRef = useRef<BeatTrack[]>([])
+  // Hayalet: Dino, Davulcu and every Salon beat game race their best run, note by note.
+  const ghostOn = !!lesson.salon || lesson.kind === 'dino' || lesson.kind === 'drum'
+  const ghost = useStoredGhost(lesson.id, ghostOn)
+  /** This run so far, for the ghost chip. */
+  const [live, setLive] = useState<Ghost | null>(null)
   const roundTimer = useRef<() => void>(() => undefined)
   const metronomeRef = useRef<Metronome | null>(null)
   const finished = useRef(false)
@@ -253,8 +262,9 @@ export function BeatFrame({
       if (tempoLadder.raisedTo !== null)
         set({ tempo: { ...useSettings.getState().tempo, [lesson.id]: tempoLadder.raisedTo } })
     }
+    if (ghostOn) out = { ...out, ghost: beatGhost(tracks.map((t) => t.records)) }
     onFinishRef.current(out)
-  }, [spec.anyKey, ladder, tempos, set, lesson.id, bpm])
+  }, [spec.anyKey, ladder, tempos, set, lesson.id, bpm, ghostOn])
 
   // Test mode: end now, with the round being played counted as it stands.
   useFinishRequest(() => {
@@ -343,6 +353,7 @@ export function BeatFrame({
       const t = gameNow()
       react(track.update(t))
       setNow(t)
+      if (ghost) setLive(beatGhost([...tracksRef.current.filter((r) => r !== track), track].map((r) => r.records)))
       if (track.done && !over) {
         over = true
         metronomeRef.current?.stop()
@@ -363,7 +374,7 @@ export function BeatFrame({
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [track, react, tempos, playRound, finish])
+  }, [track, react, tempos, playRound, finish, ghost])
 
   useEffect(() => {
     if (mood.mood === 'idle') return
@@ -410,6 +421,7 @@ export function BeatFrame({
       <div className="arcade-info">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={56} />
         <p className="arcade-message">{message}</p>
+        {ghost && live && <GhostChip ghost={ghost} at={live.points.length} mine={live.score} unit="%" />}
         {track && track.combo >= 3 && <span className="arcade-score">🔥 {track.combo}</span>}
       </div>
 
