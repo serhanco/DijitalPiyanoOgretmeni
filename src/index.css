@@ -3730,3 +3730,27 @@ button.chip:not(.streak):not(.xp) {
   justify-content: center;
   margin: 8px 0;
 }
+
+/* A screen that crashed or could not load */
+.crash-card {
+  margin: 24px auto;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.crash-detail {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--text);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.crash-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
