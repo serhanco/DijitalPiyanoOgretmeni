@@ -6,6 +6,7 @@ import {
   isSalonId,
   nextRecord,
   SALON_GAMES,
+  SALON_SONGS,
   SALON_SKILLS,
   salonLesson,
   salonResult,
@@ -80,7 +81,8 @@ describe('Oyun Salonu', () => {
     const train = game('train')
     for (const s of skillsOf(train)) {
       const lesson = salonLesson(train, s, findLesson)!
-      const notes = findLesson(s.source)!.notes
+      // The songs skill brings its own notes; the others play the source lesson's.
+      const notes = s.songs ? lesson.notes : findLesson(s.source)!.notes
       const pitches = (lesson.tunes ?? []).flatMap(tunePitches).map((p) => p + (lesson.tuneShift ?? 0))
       for (const p of pitches) {
         expect(p, s.id).toBeGreaterThanOrEqual(Math.min(...notes))
@@ -91,6 +93,23 @@ describe('Oyun Salonu', () => {
     expect(bass.tunes?.length).toBeGreaterThan(0)
     expect(bass.tuneShift).toBe(-12)
     expect(tuneShiftFor(findLesson('treble-train-1')!, [60, 62])).toBeNull()
+  })
+
+  it('plays well-known songs in Nota Kuşu, Balon and Nota Treni', () => {
+    const songs = skill('sarki')
+    expect(SALON_SONGS.length).toBeGreaterThanOrEqual(15)
+    for (const kind of ['bird', 'balloon', 'train'] as const) {
+      const lesson = salonLesson(game(kind), songs, findLesson)!
+      expect(lesson.tunes).toBe(SALON_SONGS)
+      expect(lesson.tuneShift).toBe(0)
+      const pitches = SALON_SONGS.flatMap(tunePitches)
+      expect(Math.min(...pitches)).toBeGreaterThanOrEqual(lesson.keyboard.low)
+      expect(Math.max(...pitches)).toBeLessThanOrEqual(lesson.keyboard.high)
+    }
+    // Every song shows where it comes from.
+    for (const t of SALON_SONGS) expect(t.original && t.origin, t.title).toBeTruthy()
+    // The skill opens with Nota Treni's first lesson.
+    expect(skillOpen(songs, (id) => (id === 'treble-train-1' ? 1 : 0))).toBe(true)
   })
 
   it('scores endless games by points and beat games by timing', () => {

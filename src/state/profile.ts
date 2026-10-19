@@ -23,6 +23,7 @@ import { nextPace, PACE_KINDS } from '../progress/adaptive'
 import { MIX_LESSON_ID, MIX_XP } from '../progress/mix'
 import { isSalonId, nextRecord, type SalonRecord } from '../games/salon/salon'
 import { type Costume, type CostumeId, newCostumes } from '../progress/wardrobe'
+import { beatsGhost, type Ghost } from '../progress/ghost'
 import {
   advanceQuests,
   dailyFor,
@@ -63,6 +64,8 @@ export interface Reward {
   record?: { score: number; combo: number; before: number; isNew: boolean }
   /** Kostüm dolabı: costumes this lesson opened (a level or a badge). */
   costumes?: Costume[]
+  /** Hayalet: the ghost's score this run raced, and whether the run beat it. */
+  ghost?: { before: number; beaten: boolean }
 }
 
 /** Lessons that change every time keep no stars. */
@@ -87,6 +90,8 @@ interface ProfileState {
   weekSeen: string | null
   /** Oyun Salonu: the record of each game with each skill, by its lesson id. */
   salon: Record<string, SalonRecord>
+  /** Hayalet: the best run of each Salon game and beat game, by lesson id. */
+  ghosts: Record<string, Ghost>
   /** Kostüm dolabı: the costume Notiş wears, or none. */
   costume: CostumeId | null
   setCostume: (id: CostumeId | null) => void
@@ -125,6 +130,7 @@ export const useProfile = create<ProfileState>()(
       mixDay: null,
       weekSeen: null,
       salon: {},
+      ghosts: {},
       costume: null,
 
       setCostume: (id) => set({ costume: id }),
@@ -216,9 +222,13 @@ export const useProfile = create<ProfileState>()(
         const salonBefore = s.salon[outcome.lessonId]
         const salonNext = salonGame && outcome.salon ? nextRecord(salonBefore, outcome.salon) : null
 
+        const ghostBefore = s.ghosts[outcome.lessonId]
+        const ghostKept = !!outcome.ghost && beatsGhost(ghostBefore, outcome.ghost)
+
         if (save)
           set({
             pace,
+            ...(ghostKept && { ghosts: { ...s.ghosts, [outcome.lessonId]: outcome.ghost! } }),
             ...(salonNext && { salon: { ...s.salon, [outcome.lessonId]: salonNext.record } }),
             ...(mixBonus && { mixDay: today }),
             totalXp,
@@ -247,6 +257,7 @@ export const useProfile = create<ProfileState>()(
           quests: { steps: q.steps, chestOpened: q.chestOpened, weeklyDone: q.weeklyDone },
           ...(paceAfter !== paceBefore && { pace: { from: paceBefore, to: paceAfter } }),
           ...(costumes.length && { costumes }),
+          ...(ghostBefore && outcome.ghost && { ghost: { before: ghostBefore.score, beaten: ghostKept } }),
           ...(salonNext &&
             outcome.salon && {
               record: {

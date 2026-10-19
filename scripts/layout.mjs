@@ -962,7 +962,11 @@ async function runViewport(vp) {
     deviceScaleFactor: 1,
     colorScheme: vp.dark ? 'dark' : 'light',
   })
-  await context.addInitScript(() => localStorage.setItem('dpo-welcomed', '1'))
+  await context.addInitScript(() => {
+    localStorage.setItem('dpo-welcomed', '1')
+    // Oyun arası Notiş would cover every game the first time: the intro has its own check.
+    if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
+  })
   const page = await context.newPage()
   page.setDefaultTimeout(10000)
   const pageErrors = []

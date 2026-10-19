@@ -4,7 +4,30 @@
 // hearts run out, and the score is the record to beat. Beat games play a
 // round of random bars and keep the best timing. Pure.
 
-import { tunePitches } from '../arcade/train/tunes'
+import {
+  ALOUETTE,
+  BRAHMS_LULLABY,
+  GOING_HOME,
+  MORNING_MOOD,
+  OLD_MACDONALD,
+  ROW_BOAT,
+  SUSANNA,
+  tunePitches,
+} from '../arcade/train/tunes'
+import { fitKeyboard } from '../../music/notes'
+import type { Tune } from '../../rhythm/plan'
+import {
+  AU_CLAIR,
+  BLUE_DANUBE,
+  FRERE_JACQUES,
+  HOT_CROSS_BUNS,
+  JINGLE_BELLS,
+  LONDON_BRIDGE,
+  MARY_LAMB,
+  MINUET,
+  ODE,
+  TWINKLE,
+} from '../../rhythm/tunes'
 import type { LessonKind, NoteLesson } from '../noteHunter/lessons'
 
 export const SALON_PREFIX = 'salon-'
@@ -31,7 +54,33 @@ export interface SalonSkill {
   family: SalonFamily
   /** The curriculum lesson whose notes, chords or rhythm the skill plays; it opens the skill. */
   source: string
+  /** Bilinen şarkılar: the targets are well-known songs, note by note, instead of the source's notes. */
+  songs?: boolean
 }
+
+/**
+ * Bilinen şarkılar: every copyright-free song of the app (folk songs, composers
+ * dead for more than seventy years), the rhythm units' and Nota Treni's.
+ */
+export const SALON_SONGS: Tune[] = [
+  TWINKLE,
+  ODE,
+  MARY_LAMB,
+  AU_CLAIR,
+  HOT_CROSS_BUNS,
+  FRERE_JACQUES,
+  LONDON_BRIDGE,
+  JINGLE_BELLS,
+  MINUET,
+  BLUE_DANUBE,
+  GOING_HOME,
+  ROW_BOAT,
+  OLD_MACDONALD,
+  MORNING_MOOD,
+  SUSANNA,
+  ALOUETTE,
+  BRAHMS_LULLABY,
+]
 
 export const SALON_GAMES: SalonGame[] = [
   { kind: 'bird', name: 'Nota Kuşu', icon: '🐦', family: 'notes', template: 'treble-bird-1' },
@@ -49,6 +98,7 @@ export const SALON_SKILLS: SalonSkill[] = [
   { id: 'oktav', title: 'Do’dan Do’ya', family: 'notes', source: 'basics-bird' },
   { id: 'sol', title: 'Sol anahtarı', family: 'notes', source: 'treble-bird-2' },
   { id: 'fa', title: 'Fa anahtarı', family: 'notes', source: 'bass-bird-2' },
+  { id: 'sarki', title: 'Bilinen şarkılar', family: 'notes', source: 'treble-train-1', songs: true },
   { id: 'buyuk', title: 'Büyük porte', family: 'grand', source: 'grand-bar-1' },
   { id: 'buyuk-usta', title: 'Büyük porte, geniş', family: 'grand', source: 'grand-bar-2' },
   { id: 'majör', title: 'Majör üçlüler', family: 'chords', source: 'chord-major' },
@@ -121,6 +171,20 @@ export function salonLesson(
     bothStaves: source.bothStaves,
     length: endless ? ENDLESS_LENGTH : template.length,
     salon: { game: game.kind, skill: skill.id, endless },
+  }
+  if (skill.songs) {
+    const notes = [...new Set(SALON_SONGS.flatMap(tunePitches))].sort((a, b) => a - b)
+    return {
+      ...base,
+      description: 'Oyun Salonu: bildiğin şarkıların notaları sırayla gelir; çaldıkça şarkı çıkar. Rekorunu geç!',
+      clef: 'treble',
+      notes,
+      keyboard: fitKeyboard(notes, { fromDo: true }),
+      grand: undefined,
+      bothStaves: undefined,
+      tunes: SALON_SONGS,
+      tuneShift: 0,
+    }
   }
   if (template.tunes) {
     // Songs only where they fit the skill's staff; otherwise the skill's notes come at random.

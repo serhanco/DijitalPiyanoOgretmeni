@@ -104,6 +104,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-16 | Faz 11: her ünitenin sonunda üç aşamalı boss (10 canavar, can çubuğu, Boss kartı), günlük görevler (3 görev ve sandık), haftalık meydan okuma, 3 rozet                                                                                                             | PR #33                                 |
 | 2026-10-17 | Faz 12: aralıklı tekrar (nota, akor, gam, arpej kartları, 5 kutu), Günün Karışımı dersi, uyarlanabilir hız ve tempo, okuma alanının genişlemesi, haftalık özet (profil ve harita)                                                                                  | dal `claude/project-thread-ytjjkw`     |
 | 2026-10-18 | Oyun turu: Oyun Salonu (9 oyun × açılmış beceriler, sonsuz mod, rekorlar), combo ateşi ve oyun içi sürprizler, yeni oyunlar Nota Treni (7 telifsiz yeni şarkıyla) ve Kayıp Kuş Sesi                                                                                | dal `claude/project-thread-q9rplm`     |
+| 2026-10-19 | Oyun turu 3: oyun arası Notiş (bir oyun ilk açılışta kuralını iki cümleyle anlatır, bir hamleyi gösterir), ses katmanları (seri uzadıkça eşlik, sonuçta "Melodini dinle"), hayalet (en iyi turunla yarış), Oyun Salonu'nda Bilinen şarkılar (17 telifsiz şarkı)    | dal `claude/project-thread-q9rplm`     |
 | 2026-10-18 | Oyun turu 2: altın balon ve altın müşteri (bonus XP), ipucu parıltısı (takılınca doğru tuş parlar, ilk deneme sayılmaz, raporda ayrı), kostüm dolabı (10 kostüm, seviye ve rozetle açılır), Kurbağa Atlayışı (aralık okuma), Çift Kişilik Davul (soru-cevap ritim) | dal `claude/project-thread-q9rplm`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                                      | `main`                                 |
 
@@ -235,6 +236,17 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   ve rozetle açılır, sadece görünüştür (XP vermez). Kurbağa Atlayışı yalnızca beyaz tuşlarda zıplar ve aynı aralığı
   üç kez üst üste sormaz; raporda konu aralık ve yönüdür. Çift Kişilik Davul'da ilk turlar yankıdır, sonra cevap
   serbesttir: vuruşta kalan en az üç nota yeter, Notiş'ten farklı ritim ayrıca sayılır.
+
+- **Oyun turu 3:** Serhan kalan üç fikir için "hepsini yapıver" dedi ve Oyun Salonu'nda bilindik melodileri çalmayı
+  önerdi. Oyun arası Notiş kuralı bir oyun türü ilk açılınca bir kez anlatır (cihazda hatırlanır, karşılama gibi);
+  kart açıkken oyun saati durur, basılan tuşlar sayılmaz. Ses katmanları nota oyunlarında doğru seriye yumuşak bir
+  eşlik ekler: 3'te bas, 5'te beşlisi, 10'da üstte parıltı; yanlışta seri ve eşlik sıfırlanır. Ayarlar'dan
+  kapanır ("Oyun müziği"). Sonuçta "Çaldığın melodi" kartı doğru çalınan notaları sırayla geri çalar (kulak oyunu
+  Kayıp Kuş Sesi hariç). Hayalet yalnızca kendi en iyi turundur: sonsuz oyunlarda saniye saniye puan, ritim
+  oyunlarında nota nota zamanlama yüzdesi; daha iyi bir tur gelince yerini alır, test bitişi hayalet bırakmaz.
+  Salon'un yeni "Bilinen şarkılar" becerisi Nota Kuşu, Balon ve Nota Treni'nde ritim ünitelerinin ve trenin 17
+  telifsiz şarkısını karışık sırayla çaldırır; her şarkının adı, aslı ve kökeni oyunda ve sonuçta yazar. Beceri
+  Nota Treni'nin ilk dersinden yıldız alınca açılır.
 
 ## Açık konular
 

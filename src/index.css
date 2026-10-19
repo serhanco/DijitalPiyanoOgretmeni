@@ -3754,3 +3754,127 @@ button.chip:not(.streak):not(.xp) {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* Oyun arası Notiş: a game's rule the first time it opens. */
+.game-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  background: rgb(15 23 42 / 0.55);
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.game-intro-card {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: auto;
+  text-align: center;
+  animation: pop-in 0.25s ease-out;
+}
+.game-intro-card h2 {
+  margin: 0;
+}
+.game-intro-rule {
+  margin: 0;
+  font-weight: 700;
+}
+.game-intro-steps {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.game-intro-steps li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  opacity: 0.45;
+  transition:
+    opacity 0.3s,
+    transform 0.3s,
+    border-color 0.3s;
+}
+.game-intro-steps li.on {
+  opacity: 1;
+  color: inherit;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+.game-intro-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.game-intro-go {
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-intro-steps li {
+    transition: none;
+  }
+  .game-intro-steps li.on {
+    transform: none;
+  }
+}
+
+/* Ses katmanları: the melody the learner played, played back. */
+.melody-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.melody-card h2 {
+  margin: 0;
+}
+.melody-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+.melody-notes span {
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--border);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+.melody-notes span.on {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* Hayalet: the best run's score at this moment, against the learner's. */
+.ghost-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 2px dashed var(--border);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.ghost-chip[data-ghost='ahead'] {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+.ghost-chip[data-ghost='behind'] {
+  border-color: #a78bfa;
+  color: #7c3aed;
+}

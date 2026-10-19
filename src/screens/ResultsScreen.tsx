@@ -11,7 +11,9 @@ import type { HandStat, SessionSummary, SyncSummary, TimingSummary } from '../ga
 import { describeOffset, JUDGEMENT_LABELS, JUDGEMENTS } from '../rhythm/timing'
 import { ROUND_PASS, type TempoLadderSummary } from '../rhythm/tempoLadder'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { playParts } from '../audio/earSound'
+import { initPiano } from '../audio/piano'
 import { sfx } from '../audio/sfx'
 import { BossMonster } from '../components/BossMonster'
 import { CountUp } from '../components/Celebration'
@@ -521,6 +523,42 @@ function RecordCard({
   )
 }
 
+/** Ses katmanları: the notes the learner played right, played back as a melody (a song's notes are the song). */
+function MelodyCard({ melody, songs }: { melody: number[]; songs?: string[] }) {
+  const [playing, setPlaying] = useState(-1)
+  const cancel = useRef<() => void>(() => undefined)
+  useEffect(() => () => cancel.current(), [])
+  const listen = async () => {
+    cancel.current()
+    // The piano when its samples load; a soft synthesized tone otherwise.
+    await initPiano().catch(() => undefined)
+    let note = -1
+    const { ms, cancel: stop } = playParts([{ notes: melody }], { noteMs: 380, onNote: () => setPlaying(++note) })
+    const done = window.setTimeout(() => setPlaying(-1), ms + 200)
+    cancel.current = () => {
+      stop()
+      clearTimeout(done)
+      setPlaying(-1)
+    }
+  }
+  return (
+    <section className="card melody-card" data-melody={melody.length}>
+      <h2>🎧 Çaldığın melodi</h2>
+      {songs && songs.length > 0 && <p className="small muted">🎵 {songs.join(' · ')}</p>}
+      <p className="melody-notes" aria-label="Çaldığın notalar">
+        {melody.map((m, i) => (
+          <span key={i} className={i === playing ? 'on' : ''}>
+            {solfegeName(m)}
+          </span>
+        ))}
+      </p>
+      <button className="btn btn-secondary melody-play" onClick={() => void listen()}>
+        {playing >= 0 ? '🔁 Baştan dinle' : '▶️ Melodini dinle'}
+      </button>
+    </section>
+  )
+}
+
 /** Çift Kişilik Davul: each round, and how many answers had a rhythm of their own. */
 function DuetCard({ duet }: { duet: DuetSummary }) {
   const free = duet.rounds.filter((r) => r.turn === 'free')
@@ -731,6 +769,21 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
           🌟 {summary.arcade.golden.shown} altın hedeften {summary.arcade.golden.caught} tanesini ilk denemede yakaladın
           {summary.arcade.golden.caught > 0 && !lesson.salon ? ', her biri bonus XP' : ''}.
         </p>
+      )}
+      {!trial && summary.ghost && (reward.ghost || summary.ghost.score > 0) && (
+        <p
+          className={`compare ${reward.ghost?.beaten === false ? '' : 'up'}`}
+          data-ghost={reward.ghost?.beaten ?? 'new'}
+        >
+          {!reward.ghost
+            ? '👻 Bu tur artık hayaletin: bir dahaki oyunda soluk bir kopyası seninle yarışacak.'
+            : reward.ghost.beaten
+              ? `👻 Hayaletini geçtin! Önceki en iyi turun ${reward.ghost.before}${summary.ghost.by === 'note' ? '%' : ' puan'}, yeni hayaletin bu tur.`
+              : `👻 Hayalet bu kez önde kaldı (${reward.ghost.before}${summary.ghost.by === 'note' ? '%' : ' puan'}). Bir dahakine!`}
+        </p>
+      )}
+      {summary.arcade?.melody && summary.arcade.melody.length >= 3 && (
+        <MelodyCard melody={summary.arcade.melody} songs={summary.arcade.songs} />
       )}
       {summary.hinted && (
         <p className="compare" data-hinted={summary.hinted.count}>

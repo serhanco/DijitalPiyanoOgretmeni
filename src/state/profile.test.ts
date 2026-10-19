@@ -28,6 +28,7 @@ beforeEach(async () => {
     mixDay: null,
     weekSeen: null,
     salon: {},
+    ghosts: {},
     costume: null,
   })
   await Promise.all([db.sessions.clear(), db.noteStats.clear(), db.review.clear()])
@@ -114,6 +115,29 @@ describe('Oyun Salonu', () => {
       .completeLesson({ ...game, salon: { score: 9, combo: 3 } }, new Date(2026, 9, 18))
     expect(second.record).toEqual({ score: 9, combo: 3, before: 14, isNew: false })
     expect(useProfile.getState().salon['salon-bird-sol']).toEqual({ best: 14, bestCombo: 6, plays: 2 })
+  })
+})
+
+describe('Hayalet', () => {
+  const run = (score: number) => ({ by: 'second' as const, points: [1, score], score })
+  const game = { ...outcome, lessonId: 'salon-bird-sol', kind: 'bird' as const, salon: { score: 5, combo: 2 } }
+
+  it('keeps the best run to race next time', () => {
+    const first = useProfile.getState().completeLesson({ ...game, ghost: run(5) }, new Date(2026, 9, 18))
+    // The first run has no ghost to race: it becomes the ghost.
+    expect(first.ghost).toBeUndefined()
+    expect(useProfile.getState().ghosts['salon-bird-sol'].score).toBe(5)
+    const worse = useProfile.getState().completeLesson({ ...game, ghost: run(3) }, new Date(2026, 9, 18))
+    expect(worse.ghost).toEqual({ before: 5, beaten: false })
+    expect(useProfile.getState().ghosts['salon-bird-sol'].score).toBe(5)
+    const better = useProfile.getState().completeLesson({ ...game, ghost: run(8) }, new Date(2026, 9, 18))
+    expect(better.ghost).toEqual({ before: 5, beaten: true })
+    expect(useProfile.getState().ghosts['salon-bird-sol'].score).toBe(8)
+  })
+
+  it('keeps nothing from a test finish', () => {
+    useProfile.getState().completeLesson({ ...game, ghost: run(5) }, new Date(2026, 9, 18), false)
+    expect(useProfile.getState().ghosts['salon-bird-sol']).toBeUndefined()
   })
 })
 

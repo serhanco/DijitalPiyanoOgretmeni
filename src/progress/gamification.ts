@@ -1,5 +1,6 @@
 // Pure rules for XP, levels, streaks and badges. No storage, no React.
 
+import type { Ghost } from './ghost'
 import type { LessonKind } from '../games/noteHunter/lessons'
 
 export const XP_PER_FIRST_TRY = 2
@@ -16,6 +17,8 @@ export const XP_GOLDEN = 5
 
 export interface LessonOutcome {
   lessonId: string
+  /** Hayalet: the run, kept to race next time when it beats the one kept. */
+  ghost?: Ghost
   /** The lesson's kind (quests count games, songs...). Defaults to 'drill'. */
   kind?: LessonKind
   total: number

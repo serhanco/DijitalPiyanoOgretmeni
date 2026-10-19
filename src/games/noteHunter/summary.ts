@@ -1,5 +1,6 @@
 // Turns a finished session into the report shown on the results screen.
 
+import type { Ghost } from '../../progress/ghost'
 import {
   type Clef,
   HAND_LABELS,
@@ -89,6 +90,8 @@ export interface SessionSummary {
   noteNames?: Record<number, string>
   /** Arcade games: the points (doubled during surprises), the longest run of right answers and the surprises met. */
   arcade?: ArcadeStats
+  /** Hayalet: this run, to race next time if it is the best. */
+  ghost?: Ghost
   /** Çift Kişilik Davul: each round's turn and score, and the free answers in the learner's own rhythm. */
   duet?: DuetSummary
   /** İpucu parıltısı: the notes found after their key glowed (not counted as first-try answers). */
@@ -101,6 +104,10 @@ export interface ArcadeStats {
   surprises: number
   /** Altın balonlar / müşteriler: shown, and played right on the first try. */
   golden?: { shown: number; caught: number }
+  /** Ses katmanları: the notes played right, in order, for "Melodini dinle" (note games). */
+  melody?: number[]
+  /** Bilinen şarkılar: the songs the game reached, as "title · original". */
+  songs?: string[]
 }
 
 export interface HandStat {

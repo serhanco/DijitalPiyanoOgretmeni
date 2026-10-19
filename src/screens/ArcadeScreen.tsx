@@ -1,6 +1,7 @@
 import { useFinishRequest } from '../testing/finishRequest'
 import type { Application } from 'pixi.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { layerHit } from '../audio/layers'
 import { sfx } from '../audio/sfx'
 import { Mascot, type MascotMood } from '../components/Mascot'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
@@ -21,9 +22,17 @@ import { tunePitches } from '../games/arcade/train/tunes'
 import { initPiano } from '../audio/piano'
 import { playParts } from '../audio/earSound'
 import { ArcadeChips } from './arcade/ArcadeChips'
-import { arcadeStats, FEVER_AT, useCombo, useHint, useSurprise } from './arcade/useArcade'
+import { GhostChip } from './arcade/Ghost'
+import { useSecondTrace, useStoredGhost } from './arcade/ghostHooks'
+import { arcadeStats, FEVER_AT, melodyOf, useCombo, useHint, useSurprise } from './arcade/useArcade'
 import { PixiStage } from '../games/arcade/PixiStage'
-import { noteSkill, type SkillProvider } from '../games/arcade/skill'
+import { noteSkill, type SkillProvider, type SkillTarget } from '../games/arcade/skill'
+import type { Tune } from '../rhythm/plan'
+
+interface TuneStart {
+  tune: Tune
+  start: number
+}
 import { type StaffLayout, stepY } from '../games/arcade/staffGeometry'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { grandClefPicker } from '../games/noteHunter/session'
@@ -58,17 +67,23 @@ const HOW_TO: Record<ArcadeKind, string> = {
 
 const KINDS: ArcadeKind[] = ['bird', 'balloon', 'bar', 'train', 'chirp', 'frog']
 
-/** Nota Treni with songs: the songs' notes in order, and the wagon each song starts at. */
-function trainSkill(lesson: NoteLesson, ignoreOctave: boolean): { skill: SkillProvider; starts: number[] } | null {
+/**
+ * Songs on the targets (Nota Treni, the Salon's Bilinen şarkılar): the songs' notes in
+ * order, and the target each song starts at. The Salon shuffles the songs and plays them
+ * again until the endless game's length is filled.
+ */
+function tuneSkill(lesson: NoteLesson, ignoreOctave: boolean): { skill: SkillProvider; songs: TuneStart[] } | null {
   if (!lesson.tunes?.length) return null
-  let at = 0
-  const starts = lesson.tunes.map((t) => {
-    const start = at
-    at += tunePitches(t).length
-    return start
-  })
+  const order = lesson.salon ? [...lesson.tunes].sort(() => Math.random() - 0.5) : lesson.tunes
   const shift = lesson.tuneShift ?? 0
-  const targets = lesson.tunes.flatMap((t) => tunePitches(t).map((midi) => ({ midi: midi + shift })))
+  const songs: TuneStart[] = []
+  const targets: SkillTarget[] = []
+  do {
+    for (const tune of order) {
+      songs.push({ tune, start: targets.length })
+      targets.push(...tunePitches(tune).map((midi) => ({ midi: midi + shift })))
+    }
+  } while (lesson.salon && targets.length < lesson.length)
   return {
     skill: {
       clef: lesson.clef,
@@ -76,8 +91,17 @@ function trainSkill(lesson: NoteLesson, ignoreOctave: boolean): { skill: SkillPr
       targets,
       matches: (t, pressed) => (ignoreOctave ? t.midi % 12 === pressed % 12 : t.midi === pressed),
     },
-    starts,
+    songs,
   }
+}
+
+const tuneLine = (t: Tune) => `🎵 ${t.title} · ${t.original} (${t.origin})`
+
+/** The songs whose first note came up, each once ("Neşeye Övgü · An die Freude"). */
+function songsReached(songs: TuneStart[], records: { shownAt: number | null }[]): string[] {
+  const shown = records.filter((r) => r.shownAt !== null).length
+  const names = songs.filter((s) => s.start < shown).map((s) => `${s.tune.title} · ${s.tune.original}`)
+  return [...new Set(names)]
 }
 
 /** Kurbağa Atlayışı: a path of jumps from the start note, inside the lesson's notes. */
@@ -109,7 +133,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   // Adaptive difficulty: the lesson's pace from the last games, read once when the game starts.
   const [pace] = useState(() => useProfile.getState().pace[lesson.id] ?? 1)
   const tunes = useMemo(
-    () => (kind === 'train' ? trainSkill(lesson, ignoreOctave) : null),
+    () => (kind === 'train' || kind === 'bird' || kind === 'balloon' ? tuneSkill(lesson, ignoreOctave) : null),
     [kind, lesson, ignoreOctave],
   )
   const game: Game = useMemo(() => {
@@ -141,6 +165,10 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
     return g
   }, [lesson, kind, ignoreOctave, pace, tunes, endless])
   const { combo, bestCombo, hit, miss } = useCombo()
+  // Hayalet: an endless game races the best run of the same game and skill.
+  const ghost = useStoredGhost(lesson.id, endless)
+  const trace = useSecondTrace(() => game.score, endless)
+  const traceRun = trace.run
 
   // Let the browser smoke test read the current target.
   useEffect(() => {
@@ -150,12 +178,8 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const [hud, setHud] = useState({ score: 0, hearts: ARCADE_HEARTS, progress: 0 })
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
   const [flash, setFlash] = useState<{ midi: number; mark: KeyMark } | null>(null)
-  // Nota Treni with songs opens with the first song's name (the lesson card already said how to play).
-  const [message, setMessage] = useState(() =>
-    kind === 'train' && lesson.tunes?.length
-      ? `🎵 ${lesson.tunes[0].title} · ${lesson.tunes[0].original} (${lesson.tunes[0].origin})`
-      : HOW_TO[kind],
-  )
+  // Songs open with the first song's name (the lesson card already said how to play).
+  const [message, setMessage] = useState(() => (tunes ? tuneLine(tunes.songs[0].tune) : HOW_TO[kind]))
   const [staff, setStaff] = useState<StaffLayout | null>(null)
   const finished = useRef(false)
   const onFinishRef = useRef(onFinish)
@@ -169,9 +193,15 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
       ...base,
       // Kurbağa Atlayışı is about the jumps: its topics are the jump sizes, not the lines and spaces.
       ...(game instanceof FrogGame && lesson.frog && { perCategory: jumpTopics(game.records, lesson.frog.start) }),
-      arcade: arcadeStats(game, bestCombo(), game.records),
+      arcade: {
+        ...arcadeStats(game, bestCombo(), game.records),
+        // Kayıp Kuş Sesi is played by ear: its notes make no melody worth hearing back.
+        ...(kind !== 'chirp' && { melody: melodyOf(game.records) }),
+        ...(tunes && { songs: songsReached(tunes.songs, game.records) }),
+      },
+      ...(endless && { ghost: traceRun() }),
     }
-  }, [game, lesson.clef, lesson.frog, bestCombo])
+  }, [game, kind, tunes, lesson.clef, lesson.frog, bestCombo, endless, traceRun])
 
   useFinishRequest(() => {
     finished.current = true
@@ -182,10 +212,14 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   // İpucu parıltısı: the urgent note's key glows; Kayıp Kuş Sesi is played by ear, so it never glows.
   const glow = useHint(game, hintGlow && kind !== 'chirp')
 
+  // Ses katmanları: the run of right notes the accompaniment follows.
+  const run = useRef(0)
   const react = useCallback(
-    (good: boolean, text?: string) => {
+    (good: boolean, text?: string, midi?: number) => {
       if (good) hit()
       else miss()
+      run.current = good ? run.current + 1 : 0
+      if (good && midi !== undefined) layerHit(midi, run.current)
       setMood((m) => ({ mood: good ? 'happy' : 'sad', pulse: m.pulse + 1 }))
       setHud({ score: game.score, hearts: game.hearts, progress: game.progress })
       if (text) setMessage(text)
@@ -205,17 +239,22 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
     window.setTimeout(() => playParts([{ notes: [midi] }], { noteMs: 900 }), delayMs)
   }, [])
 
-  // Nota Treni with songs: name each song as its first wagon comes to the front.
+  // Songs: name each song as its first note comes up (the front wagon, the newest pipe or balloon).
   const tuneShown = useRef(0)
   const announceTune = useCallback(() => {
-    if (!tunes || !(game instanceof TrainGame)) return
-    const front = game.front?.index ?? -1
-    const tune = tunes.starts.filter((s) => s <= front).length - 1
+    if (!tunes) return
+    const at =
+      game instanceof TrainGame ? (game.front?.index ?? -1) : game.records.filter((r) => r.shownAt !== null).length - 1
+    const tune = tunes.songs.filter((s) => s.start <= at).length - 1
     if (tune <= tuneShown.current) return
     tuneShown.current = tune
-    const t = lesson.tunes![tune]
-    setMessage(`🎵 ${t.title} · ${t.original} (${t.origin})`)
-  }, [game, tunes, lesson.tunes])
+    setMessage(tuneLine(tunes.songs[tune].tune))
+  }, [game, tunes])
+  useEffect(() => {
+    if (!tunes || game instanceof TrainGame) return
+    const t = window.setInterval(announceTune, 250)
+    return () => clearInterval(t)
+  }, [tunes, game, announceTune])
 
   // Settle the mascot back to idle.
   useEffect(() => {
@@ -238,7 +277,10 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
         if (game instanceof BirdGame) {
           const [ev] = game.press(e.midi, e.time)
           if (ev?.type === 'flap') setFlash({ midi: e.midi, mark: ev.correct ? 'correct' : 'wrong' })
-          if (ev?.type === 'flap' && !ev.correct) miss()
+          if (ev?.type === 'flap' && !ev.correct) {
+            miss()
+            run.current = 0
+          }
           return
         }
         if (game instanceof ChirpGame) {
@@ -247,7 +289,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
           if (ev.type === 'home') {
             sfx.correct()
             setFlash({ midi: e.midi, mark: 'correct' })
-            react(true, `Evet, ${solfegeName(e.midi)}! Kuş yuvasına uçtu.`)
+            react(true, `Evet, ${solfegeName(e.midi)}! Kuş yuvasına uçtu.`, e.midi)
           } else if (ev.type === 'wrong') {
             setFlash({ midi: e.midi, mark: 'wrong' })
             react(false, `${solfegeName(e.midi)} değil. Kuş bir daha ötüyor, iyi dinle.`)
@@ -261,7 +303,11 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
           if (ev.type === 'jump') {
             sfx.correct()
             setFlash({ midi: e.midi, mark: 'correct' })
-            react(true, `Hop! ${jumpLabel(ev.pad.from, ev.pad.record.target)}: ${solfegeName(ev.pad.record.target)}`)
+            react(
+              true,
+              `Hop! ${jumpLabel(ev.pad.from, ev.pad.record.target)}: ${solfegeName(ev.pad.record.target)}`,
+              e.midi,
+            )
           } else if (ev.type === 'wrong') {
             sfx.wrong()
             setFlash({ midi: e.midi, mark: 'wrong' })
@@ -275,7 +321,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
           if (ev.type === 'couple') {
             sfx.correct()
             setFlash({ midi: e.midi, mark: 'correct' })
-            react(true)
+            react(true, undefined, e.midi)
             announceTune()
           } else {
             sfx.wrong()
@@ -301,6 +347,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
               : ev.type === 'serve'
                 ? 'Afiyet olsun!'
                 : undefined,
+            record.target,
           )
         } else {
           sfx.wrong()
@@ -392,7 +439,8 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
                       for (const ev of events) {
                         if (ev.type === 'pass') {
                           sfx.correct()
-                          react(true, 'Harika geçiş!')
+                          // With songs the message keeps the song's name.
+                          react(true, tunes ? undefined : 'Harika geçiş!', ev.pipe.record.target)
                         } else if (ev.type === 'crash') {
                           sfx.wrong()
                           react(false, `Bu boşluk ${solfegeName(ev.pipe.record.target)} idi.`)
@@ -409,7 +457,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
                       }
                     }
                   }),
-    [game, lesson.clef, lesson.notes, lesson.bothStaves, react, sing, announceTune],
+    [game, lesson.clef, lesson.notes, lesson.bothStaves, react, sing, announceTune, tunes],
   )
 
   const marks: Partial<Record<number, KeyMark>> = {}
@@ -447,6 +495,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
             Hız {paceText(pace)}
           </span>
         )}
+        {ghost && <GhostChip ghost={ghost} at={trace.second} mine={hud.score} />}
         <ArcadeChips combo={combo} record={endless ? undefined : record} />
         <span className="arcade-score">⭐ {hud.score}</span>
       </div>
