@@ -4,6 +4,7 @@ import { type NoteLesson, PATTERN_KINDS } from './games/noteHunter/lessons'
 import type { SessionSummary } from './games/noteHunter/summary'
 import { attachComputerKeyboard, setComputerKeyboardBase } from './input/computerKeyboard'
 import { useMidi } from './midi/midiStore'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { buildReviewLesson, mapNodeOf } from './progress/curriculum'
 import { adaptsTempo, nextTempo } from './progress/adaptive'
 import { recordSession, reviewLesson } from './progress/history'
@@ -176,47 +177,49 @@ export default function App() {
 
   return (
     <main className="app">
-      {screen.name === 'home' && (
-        <HomeScreen
-          onStart={start}
-          onProfile={() => setScreen({ name: 'profile' })}
-          onCalibrate={() => setScreen({ name: 'calibrate' })}
-          onSalon={() => setScreen({ name: 'salon' })}
-          focus={screen.focus}
-        />
-      )}
-      {screen.name === 'profile' && <ProfileScreen onBack={home} />}
-      {screen.name === 'salon' && (
-        <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-          <SalonScreen onStart={start} onBack={home} last={screen.last} />
-        </Suspense>
-      )}
-      {screen.name === 'calibrate' && (
-        <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-          <CalibrationScreen onBack={home} />
-        </Suspense>
-      )}
-      {screen.name === 'play' && (
-        <LessonPlayer
-          key={screen.run}
-          lesson={screen.lesson}
-          onFinish={finish(screen.lesson)}
-          onExit={backFrom(screen.lesson)}
-        />
-      )}
-      {screen.name === 'results' && (
-        <ResultsScreen
-          lesson={screen.lesson}
-          summary={screen.summary}
-          reward={screen.reward}
-          trial={screen.trial}
-          moves={screen.moves}
-          tempo={screen.tempo}
-          onRetry={() => start(screen.lesson)}
-          onHome={backFrom(screen.lesson)}
-          onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
-        />
-      )}
+      <ErrorBoundary key={screen.name === 'play' ? `play-${screen.run}` : screen.name} onHome={home}>
+        {screen.name === 'home' && (
+          <HomeScreen
+            onStart={start}
+            onProfile={() => setScreen({ name: 'profile' })}
+            onCalibrate={() => setScreen({ name: 'calibrate' })}
+            onSalon={() => setScreen({ name: 'salon' })}
+            focus={screen.focus}
+          />
+        )}
+        {screen.name === 'profile' && <ProfileScreen onBack={home} />}
+        {screen.name === 'salon' && (
+          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+            <SalonScreen onStart={start} onBack={home} last={screen.last} />
+          </Suspense>
+        )}
+        {screen.name === 'calibrate' && (
+          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+            <CalibrationScreen onBack={home} />
+          </Suspense>
+        )}
+        {screen.name === 'play' && (
+          <LessonPlayer
+            key={screen.run}
+            lesson={screen.lesson}
+            onFinish={finish(screen.lesson)}
+            onExit={backFrom(screen.lesson)}
+          />
+        )}
+        {screen.name === 'results' && (
+          <ResultsScreen
+            lesson={screen.lesson}
+            summary={screen.summary}
+            reward={screen.reward}
+            trial={screen.trial}
+            moves={screen.moves}
+            tempo={screen.tempo}
+            onRetry={() => start(screen.lesson)}
+            onHome={backFrom(screen.lesson)}
+            onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
+          />
+        )}
+      </ErrorBoundary>
       {showWelcome && <Welcome onDone={() => setWelcomed(true)} />}
       {testMode && <TestTools place={place} />}
     </main>
