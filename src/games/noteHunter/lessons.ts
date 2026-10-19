@@ -153,6 +153,8 @@ export interface NoteLesson {
   frog?: { start: number; sizes: number[] }
   /** Nota Treni: songs whose notes ride the wagons, in order (otherwise `notes` are drawn at random). */
   tunes?: Tune[]
+  /** Semitones the songs are moved by (Oyun Salonu plays them an octave down on the bass staff). */
+  tuneShift?: number
   /** Oyun Salonu: the game and skill picked; endless games run until the hearts are gone. */
   salon?: { game: LessonKind; skill: string; endless: boolean }
 }

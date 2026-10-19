@@ -67,7 +67,8 @@ function trainSkill(lesson: NoteLesson, ignoreOctave: boolean): { skill: SkillPr
     at += tunePitches(t).length
     return start
   })
-  const targets = lesson.tunes.flatMap((t) => tunePitches(t).map((midi) => ({ midi })))
+  const shift = lesson.tuneShift ?? 0
+  const targets = lesson.tunes.flatMap((t) => tunePitches(t).map((midi) => ({ midi: midi + shift })))
   return {
     skill: {
       clef: lesson.clef,

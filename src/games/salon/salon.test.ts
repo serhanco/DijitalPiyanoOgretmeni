@@ -11,7 +11,9 @@ import {
   salonResult,
   skillOpen,
   skillsOf,
+  tuneShiftFor,
 } from './salon'
+import { tunePitches } from '../arcade/train/tunes'
 
 const game = (kind: string) => SALON_GAMES.find((g) => g.kind === kind)!
 const skill = (id: string) => SALON_SKILLS.find((s) => s.id === id)!
@@ -72,6 +74,23 @@ describe('Oyun Salonu', () => {
     // Dino Koşusu comes before Ritim Davulcusu, whose rhythm is the first beat skill.
     expect(skillOpen(skill('temel'), (id) => (id === 'rhythm-dino-1' ? 1 : 0), true)).toBe(true)
     expect(skillOpen(skill('sekizlik'), (id) => (id === 'rhythm-dino-1' ? 1 : 0), true)).toBe(false)
+  })
+
+  it('moves Nota Treni songs onto the staff of the skill', () => {
+    const train = game('train')
+    for (const s of skillsOf(train)) {
+      const lesson = salonLesson(train, s, findLesson)!
+      const notes = findLesson(s.source)!.notes
+      const pitches = (lesson.tunes ?? []).flatMap(tunePitches).map((p) => p + (lesson.tuneShift ?? 0))
+      for (const p of pitches) {
+        expect(p, s.id).toBeGreaterThanOrEqual(Math.min(...notes))
+        expect(p, s.id).toBeLessThanOrEqual(Math.max(...notes))
+      }
+    }
+    const bass = salonLesson(train, skill('fa'), findLesson)!
+    expect(bass.tunes?.length).toBeGreaterThan(0)
+    expect(bass.tuneShift).toBe(-12)
+    expect(tuneShiftFor(findLesson('treble-train-1')!, [60, 62])).toBeNull()
   })
 
   it('scores endless games by points and beat games by timing', () => {

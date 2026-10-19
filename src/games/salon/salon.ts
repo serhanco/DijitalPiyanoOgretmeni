@@ -4,6 +4,7 @@
 // hearts run out, and the score is the record to beat. Beat games play a
 // round of random bars and keep the best timing. Pure.
 
+import { tunePitches } from '../arcade/train/tunes'
 import type { LessonKind, NoteLesson } from '../noteHunter/lessons'
 
 export const SALON_PREFIX = 'salon-'
@@ -82,6 +83,19 @@ export function gameOpen(game: SalonGame, lessons: NoteLesson[], stars: Stars): 
 export const skillOpen = (skill: SalonSkill, stars: Stars, gameIsOpen = false) =>
   stars(skill.source) >= 1 || (gameIsOpen && SALON_SKILLS.find((s) => s.family === skill.family) === skill)
 
+/**
+ * The octave shift that puts every song inside the skill's notes (Nota Treni's
+ * treble songs go an octave down for the bass staff), or null when none fits.
+ */
+export function tuneShiftFor(lesson: NoteLesson, notes: number[]): number | null {
+  const pitches = (lesson.tunes ?? []).flatMap(tunePitches)
+  if (!pitches.length || !notes.length) return null
+  const low = Math.min(...notes)
+  const high = Math.max(...notes)
+  const fits = (k: number) => pitches.every((p) => p + k >= low && p + k <= high)
+  return [0, -12, 12, -24, 24].find(fits) ?? null
+}
+
 /** The lesson that plays `game` with `skill`: the game's settings, the skill's content. */
 export function salonLesson(
   game: SalonGame,
@@ -107,6 +121,12 @@ export function salonLesson(
     bothStaves: source.bothStaves,
     length: endless ? ENDLESS_LENGTH : template.length,
     salon: { game: game.kind, skill: skill.id, endless },
+  }
+  if (template.tunes) {
+    // Songs only where they fit the skill's staff; otherwise the skill's notes come at random.
+    const shift = tuneShiftFor(template, source.notes)
+    if (shift === null) delete base.tunes
+    else base.tuneShift = shift
   }
   if (game.family === 'chords') {
     const spec = template.chords!
