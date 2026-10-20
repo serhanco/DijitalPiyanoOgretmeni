@@ -98,10 +98,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                                |
-| ------ | ---------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live   |
-| This   | Phase 13: real piano and the Android app (`claude/project-thread-9i936j`, PR #45)                    |
+| Branch | State                                                                                              |
+| ------ | -------------------------------------------------------------------------------------------------- |
+| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
+| This   | Phase 13: real piano and the Android app (`claude/project-thread-9i936j`, PR #45)                  |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
