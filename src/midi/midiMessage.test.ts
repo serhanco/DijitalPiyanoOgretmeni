@@ -13,7 +13,15 @@ describe('parseMidiMessage', () => {
   })
 
   it('ignores other messages', () => {
-    expect(parseMidiMessage([0xb0, 64, 127])).toBeNull() // sustain pedal
+    expect(parseMidiMessage([0xb0, 7, 100])).toBeNull() // volume
     expect(parseMidiMessage([0xfe])).toBeNull() // active sensing
+  })
+
+  it('reads the sustain pedal', () => {
+    expect(parseMidiMessage([0xb0, 64, 127])).toEqual({ type: 'pedal', channel: 0, down: true })
+    expect(parseMidiMessage([0xb1, 64, 0])).toEqual({ type: 'pedal', channel: 1, down: false })
+    // Half pedal: down from the middle.
+    expect(parseMidiMessage([0xb0, 64, 63])).toMatchObject({ down: false })
+    expect(parseMidiMessage([0xb0, 64, 64])).toMatchObject({ down: true })
   })
 })

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { subscribe } from '../input/inputBus'
 import { keyboardOf } from '../midi/midiStore'
 import { useSettings } from '../state/settings'
-import { initPiano, pianoAttack, pianoRelease } from './piano'
+import { initPiano, samplerAttack, samplerRelease } from './piano'
 
 /** Plays the piano sound for incoming notes, according to the sound settings. */
 export function useSoundRouting() {
@@ -21,9 +21,9 @@ export function useSoundRouting() {
       // A controller without its own sound (the Akai) always gets the app's piano.
       const silent = keyboardOf(e.device)?.makesSound === false
       const enabled = e.source === 'midi' ? soundForMidi || silent : soundForScreen
-      if (e.type === 'on' && enabled) pianoAttack(e.midi, e.velocity)
+      if (e.type === 'on' && enabled) samplerAttack(e.midi, e.velocity)
       // Always release, so a setting changed mid-note never leaves it ringing.
-      if (e.type === 'off') pianoRelease(e.midi)
+      if (e.type === 'off') samplerRelease(e.midi)
     })
 
     return () => {

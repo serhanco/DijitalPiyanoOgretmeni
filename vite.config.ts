@@ -25,8 +25,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      // A new version waits for "Yenile" (UpdateToast), so a lesson is never reloaded halfway.
+      registerType: 'prompt',
+      injectRegister: false,
+      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'Dijital Piyano Öğretmeni',
         short_name: 'Piyano',
@@ -37,10 +39,17 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'any',
         start_url: '.',
-        icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+        icons: [
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/notis.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,woff2,png}'],
+        // The Android app file is downloaded, never cached.
+        globIgnores: ['**/*.apk'],
         runtimeCaching: [
           {
             // Piano samples: download once, then play offline.

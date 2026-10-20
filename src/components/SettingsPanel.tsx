@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
 import { BackupPanel } from '../testing/BackupPanel'
+import { InstallPanel } from './InstallPanel'
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -15,11 +16,12 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 
 interface Props {
   onCalibrate: () => void
+  onSetup: () => void
   onClose: () => void
 }
 
 /** The settings sheet, opened from the ⚙️ button in the top bar; closes on ✕, Escape or a tap outside. */
-export function SettingsPanel({ onCalibrate, onClose }: Props) {
+export function SettingsPanel({ onCalibrate, onSetup, onClose }: Props) {
   const settings = useSettings()
   const { dailyGoal, setDailyGoal } = useProfile()
 
@@ -85,6 +87,12 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
         />
         <h3 className="settings-group">Klavye ve MIDI</h3>
         <div className="goal-picker">
+          <span>Piyanonu bağla</span>
+          <button className="pill" onClick={onSetup} data-open-setup>
+            🎹 Adım adım kontrol
+          </button>
+        </div>
+        <div className="goal-picker">
           <span>Ritim gecikmesi</span>
           <button className="pill" onClick={onCalibrate}>
             ⏱ Ölç ve ayarla
@@ -101,10 +109,17 @@ export function SettingsPanel({ onCalibrate, onClose }: Props) {
           onChange={(v) => settings.set({ soundForMidi: v })}
         />
         <Toggle
+          label="Örnek notaları piyanodan çal (Yankı, hafıza ve kulak derslerinde; piyanonun MIDI çıkışı varsa)"
+          checked={settings.demoOnPiano}
+          onChange={(v) => settings.set({ demoOnPiano: v })}
+        />
+        <Toggle
           label="Oktav fark etmesin (küçük klavyeler için)"
           checked={settings.ignoreOctave}
           onChange={(v) => settings.set({ ignoreOctave: v })}
         />
+        <h3 className="settings-group">Uygulama</h3>
+        <InstallPanel />
         <h3 className="settings-group">Gelişmiş</h3>
         <Toggle
           label="Test modu: bütün dersler açık, her ekranda 📝 not düğmesi"

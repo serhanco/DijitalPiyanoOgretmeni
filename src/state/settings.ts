@@ -5,6 +5,8 @@ import { type Latency, NO_LATENCY } from '../rhythm/calibration'
 interface SettingsState {
   /** Play sound for notes coming from a MIDI keyboard. Digital pianos usually make their own sound. */
   soundForMidi: boolean
+  /** The app's example notes (Yankı, memory and ear games, theory cards) sound from a connected digital piano. */
+  demoOnPiano: boolean
   /** Play sound for the on-screen and computer keyboards. */
   soundForScreen: boolean
   /** Write the note name on the on-screen keys. */
@@ -41,6 +43,7 @@ export const useSettings = create<SettingsState>()(
     (set) => ({
       soundForMidi: false,
       soundForScreen: true,
+      demoOnPiano: true,
       showKeyLabels: true,
       ignoreOctave: false,
       relaxedMode: false,

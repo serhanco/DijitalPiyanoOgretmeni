@@ -22,6 +22,7 @@ interface Props {
   onStart: (lesson: NoteLesson) => void
   onProfile: () => void
   onCalibrate: () => void
+  onSetup: () => void
   onSalon: () => void
   /** The node of the lesson the learner comes back from (`mapNodeOf` in curriculum): the map scrolls to it. */
   focus?: string
@@ -78,7 +79,7 @@ const openedUnits = new Set<string>()
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
 
-export function HomeScreen({ onStart, onProfile, onCalibrate, onSalon, focus }: Props) {
+export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, focus }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const testMode = useSettings((s) => s.testMode)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
@@ -152,11 +153,17 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSalon, focus }: 
 
   return (
     <div className={`home ${wide ? 'wide' : ''}`}>
-      <TopBar onProfile={onProfile} onCalibrate={onCalibrate} onUnits={() => setNavOpen(true)} onHint={setToast} />
+      <TopBar
+        onProfile={onProfile}
+        onCalibrate={onCalibrate}
+        onSetup={onSetup}
+        onUnits={() => setNavOpen(true)}
+        onHint={setToast}
+      />
       {wide && (
         <aside className="home-side" aria-label="Günlük özet">
           <QuestBoard />
-          <MidiPanel />
+          <MidiPanel onSetup={onSetup} />
         </aside>
       )}
       {testMode && (
@@ -168,7 +175,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSalon, focus }: 
       <LastWeekCard />
       <DailyMixCard onStart={onStart} back={focus === MIX_LESSON_ID} />
       <SalonCard onOpen={onSalon} />
-      {!wide && <HomeShortcuts />}
+      {!wide && <HomeShortcuts onSetup={onSetup} />}
 
       {UNITS.map((unit) => {
         // A unit waiting for another one (Başlangıç) says so on its banner.

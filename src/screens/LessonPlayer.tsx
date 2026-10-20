@@ -6,6 +6,7 @@ import { GameIntro } from '../components/GameIntro'
 import { introFor, markIntroSeen } from '../games/intro'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import type { SessionSummary } from '../games/noteHunter/summary'
+import { useWakeLock } from './useWakeLock'
 
 // The staff renderer (VexFlow + music font) is large: App loads it after the home screen.
 const loadGame = () => import('./NoteHunterScreen')
@@ -36,6 +37,7 @@ export interface LessonScreenProps {
 export function LessonPlayer(props: LessonScreenProps) {
   // Oyun arası Notiş: the first time a game opens, its rule comes first (the game waits behind it).
   const [intro, setIntro] = useState(() => introFor(props.lesson.kind))
+  useWakeLock()
   return (
     <>
       <LessonScreen {...props} />

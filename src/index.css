@@ -3878,3 +3878,125 @@ button.chip:not(.streak):not(.xp) {
   border-color: #a78bfa;
   color: #7c3aed;
 }
+
+/* Klavye bağlantı sihirbazı (KeyboardSetupScreen) */
+.game.setup {
+  gap: 12px;
+}
+.setup-dots {
+  justify-content: center;
+}
+.setup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.setup-devices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.setup-result {
+  font-weight: 800;
+}
+.setup-result.good {
+  color: var(--primary-dark);
+}
+.setup-result.bad {
+  color: var(--danger);
+}
+.setup-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.setup-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.setup-report {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 0;
+  max-height: 40vh;
+  overflow: auto;
+}
+.velocity-meter {
+  height: 14px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.velocity-meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--primary), var(--warn), var(--danger));
+  transition: width 0.12s ease-out;
+}
+.center {
+  text-align: center;
+}
+.midi-setup {
+  margin-top: 8px;
+}
+.midi-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px !important;
+}
+.bt-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.bt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.small.bad {
+  color: var(--danger);
+}
+
+/* Settings → Uygulama, and the "Yeni sürüm hazır" toast */
+.install-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.update-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  max-width: calc(100vw - 32px);
+  z-index: 20;
+}
+.update-toast .link {
+  color: var(--bg);
+}

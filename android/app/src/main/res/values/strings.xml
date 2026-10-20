@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Piyano Öğretmeni</string>
+    <string name="title_activity_main">Piyano Öğretmeni</string>
+    <string name="package_name">io.github.serhanco.piyano</string>
+    <string name="custom_url_scheme">io.github.serhanco.piyano</string>
+</resources>

@@ -38,6 +38,9 @@ jobs:
           for i in $(seq 30); do curl -sf http://localhost:4173/ > /dev/null && exit 0; sleep 1; done
           exit 1
       - run: npm run layout -- layout-screens
+      # Faz 13: a fake Clavinova, the setup wizard, the pedal, the piano output, offline start.
+      - run: npm run piano -- layout-screens/piyano
+        if: always()
       - name: Report
         if: always()
         run: cat layout-screens/rapor.md >> "$GITHUB_STEP_SUMMARY" || true
