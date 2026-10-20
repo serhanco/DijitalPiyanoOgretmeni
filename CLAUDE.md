@@ -39,6 +39,8 @@ npm run typecheck     # tsc -b
 npm run build         # tsc -b && vite build → dist/
 npm run smoke         # Playwright smoke test against a running preview (see below)
 npm run layout        # Layout suite: every game type on desktop, phone upright and sideways (see below)
+npm run piano         # Phase 13 checks with a fake Clavinova: setup wizard, pedal, piano output, offline start
+npx cap sync android  # After npm run build: copy dist/ into the Android app (built by CI, android.yml)
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR, and the layout suite in a second
@@ -98,8 +100,8 @@ Principles:
 
 | Branch | State                                                                                                |
 | ------ | ---------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum and the polish PRs, live                    |
-| This   | Game round 3: Notiş intros, sound layers, ghost, songs in the Salon (`claude/project-thread-q9rplm`) |
+| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live   |
+| This   | Phase 13: real piano and the Android app (`claude/project-thread-9i936j`, PR #45)                    |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -567,8 +569,41 @@ the Salon):
   `Reward.ghost`); every Salon game and the Dino / Davulcu lessons race it with `GhostChip` (`.ghost-chip[data-ghost]`,
   `screens/arcade/Ghost.tsx`, hooks in `ghostHooks.ts`). Results `[data-ghost="new" | true | false]`.
 
-Next: **phase 13, platforms** (see `docs/PLAN.md`). The owner asked to **pause after each phase**: check
-the plan against the code, test, report with suggestions, and wait for the go before starting the next phase.
+Phase 13 (real piano and every device, `claude/project-thread-9i936j`; plan reviewed with the owner first in
+`/mnt/project-files/faz-13/plan.md`):
+
+- **Klavye bağlantı sihirbazı** (`screens/KeyboardSetupScreen.tsx`, screen `setup`, from Settings and the MIDI panel
+  `[data-open-setup]`): connect, key range, Do-Mi-Sol together, touch (velocity), pedal, piano sound, latency (opens
+  `CalibrationScreen`, which comes back with `from: 'setup'`), report. Pure checks in `midi/setupCheck.ts`
+  (`rangeText`, `chordCheck`, `touchCheck`, `reportMarkdown`); the report is kept in localStorage `dpo-keyboard-report`.
+- **Sustain pedal:** `parseMidiMessage` returns `{ type: 'pedal', down }` for CC 64; `input/pedal.ts` publishes it
+  (not through `inputBus`). `input/sustain.ts` (`Sustain`) defers a key's release while the pedal is down, until the
+  pedal lifts or the key is struck again. Only `BeatFrame` uses it (holds); chord listeners keep real key-ups.
+- **Piano output** (`midi/midiOut.ts`): `pickOutput` takes only an output whose `portKey` matches a connected input
+  that makes sound (never the Akai or virtual ports). `audio/piano.ts`: `pianoAttack`/`pianoRelease`/`pianoNoteAt` are
+  the app's example notes and go to the piano when `pianoOutput()` (setting `demoOnPiano`, default on);
+  `samplerAttack`/`samplerRelease` are the learner's own key sound (`useSoundRouting`). `isPianoReady()` is true with
+  an output. `isEcho` drops a note-on the piano sends back within `ECHO_MS`. `useMidi().output` names the port.
+- `screens/useWakeLock.ts` (in `LessonPlayer`, nested screens counted): Screen Wake Lock, the native flag in the app.
+- **PWA:** `scripts/icons.mjs` draws the icons (Notiş on a piano) into `public/icons/`, `favicon.svg` and the Android
+  launcher icons and splash screens. `registerType: 'prompt'`; `state/appUpdate.ts` (`setupAppUpdates` in `main.tsx`)
+  keeps the install prompt and the waiting version; `components/UpdateToast.tsx` on the map, `InstallPanel.tsx` in
+  Settings → Uygulama (install, update check, build stamp, the APK link on Android browsers).
+- **Android app** (Capacitor 8, `capacitor.config.ts`, `android/`, app id `io.github.serhanco.piyano`): the WebView has
+  no Web MIDI, so `NativeMidiPlugin.java` (MidiManager devices, BLE MIDI scan/connect, send, keepAwake) and
+  `midi/nativeMidi.ts` (a MIDIAccess-like shim: `midiStore` is unchanged; `isNativeApp()` reads `window.Capacitor`, the
+  plugin is imported lazily) with `splitMidi.ts` (multi-message buffers, running status). `midi/BluetoothScan.tsx` in
+  the MIDI panel and wizard. `.github/workflows/android.yml` builds the APK (artifact `android-app`); `deploy.yml`
+  builds it first and publishes it as `dist/piyano-ogretmeni.apk`. Signed when the `ANDROID_KEYSTORE_BASE64`,
+  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` secrets exist, otherwise a debug build. The
+  Android SDK is not reachable from the cloud sessions: only CI compiles the Java.
+- `npm run piano` (`scripts/piano.mjs`, in the CI layout job): a fake Clavinova (input + recording output) runs the
+  wizard, checks the notes sent to the piano, plays Yankı: Dörtlükler with short taps without and with the pedal,
+  checks the wake lock and the manifest icons, and opens a lesson offline.
+
+Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 14 visual world, 15
+accounts and social, 16 placement test and new skills, 17 store release and iOS. The owner asked to **pause after each
+phase**: check the plan against the code, test, report with suggestions, and wait for the go.
 
 ## Testing in a real browser
 
@@ -608,9 +643,11 @@ that error.
 ## Known gaps
 
 - Rhythm timing is only tested with simulated presses; real MIDI and touch latency still need the owner's calibration.
-- Not yet tested with a real MIDI keyboard. Bluetooth MIDI on Android needs pairing through a helper app (pairing in the
-  OS Bluetooth settings only connects audio); on macOS via Audio MIDI Setup; on Windows USB is most reliable. iOS has
-  no Web MIDI.
+- Not yet tested with a real MIDI keyboard (the setup wizard's report is meant for that). The Android app has only been
+  compiled by CI, not run on a device.
+- In the browser, Bluetooth MIDI on Android needs pairing through a helper app (pairing in the OS Bluetooth settings
+  only connects audio; the Android app finds the piano itself); on macOS via Audio MIDI Setup; on Windows USB is most
+  reliable. iOS has no Web MIDI.
 - The owner's keyboards (verified from spec sheets on 2026-10-07): at home a **Yamaha Clavinova CLP-845** (88 keys, USB
   TO HOST and Bluetooth audio + MIDI; Yamaha notes some regions ship without Bluetooth); at the office an **Akai MPK Mini
   MK3** (25 keys, USB only, class compliant, no sound of its own). Port names in `keyboards.ts` are educated guesses

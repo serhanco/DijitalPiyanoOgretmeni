@@ -106,6 +106,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-18 | Oyun turu: Oyun Salonu (9 oyun × açılmış beceriler, sonsuz mod, rekorlar), combo ateşi ve oyun içi sürprizler, yeni oyunlar Nota Treni (7 telifsiz yeni şarkıyla) ve Kayıp Kuş Sesi                                                                                | dal `claude/project-thread-q9rplm`     |
 | 2026-10-19 | Oyun turu 3: oyun arası Notiş (bir oyun ilk açılışta kuralını iki cümleyle anlatır, bir hamleyi gösterir), ses katmanları (seri uzadıkça eşlik, sonuçta "Melodini dinle"), hayalet (en iyi turunla yarış), Oyun Salonu'nda Bilinen şarkılar (17 telifsiz şarkı)    | dal `claude/project-thread-q9rplm`     |
 | 2026-10-18 | Oyun turu 2: altın balon ve altın müşteri (bonus XP), ipucu parıltısı (takılınca doğru tuş parlar, ilk deneme sayılmaz, raporda ayrı), kostüm dolabı (10 kostüm, seviye ve rozetle açılır), Kurbağa Atlayışı (aralık okuma), Çift Kişilik Davul (soru-cevap ritim) | dal `claude/project-thread-q9rplm`     |
+| 2026-10-20 | Faz 13: Piyanonu bağla sihirbazı ve raporu, sustain pedalı, örnek notalar piyanodan (MIDI çıkışı), ders sırasında ekran açık, Notiş simgeleri, yükleme ve güncelleme bildirimi, Android uygulaması (yerel USB ve Bluetooth MIDI)                                   | PR #45                                 |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -248,8 +249,22 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   telifsiz şarkısını karışık sırayla çaldırır; her şarkının adı, aslı ve kökeni oyunda ve sonuçta yazar. Beceri
   Nota Treni'nin ilk dersinden yıldız alınca açılır.
 
+- **Faz 13 (gerçek piyano ve her cihaz):** Serhan her yeni fazdan önce içeriğin yeniden ele alınmasını önerdi ve bu
+  kural oldu. Faz 13'ün yeni içeriğini onayladı: önce gerçek piyano hazırlığı, kurulabilir uygulama cilası ve yalnızca
+  Android ("evet", "önerilerinle devam"). Üyelik ve Duolingo gibi sosyal özellikler kesin olarak gelecek (Faz 15), bu
+  yüzden Google Drive yedeği yapılmadı. Pedal yalnızca tutma süresini değiştirir (pedal basılıyken bırakılan tuş, pedal
+  kalkana ya da tuşa yeniden basılana kadar tutulmuş sayılır); akor algılama gerçek tuş bırakışlarını görmeye devam
+  eder. Örnek notalar yalnızca bağlı ve kendi sesi olan bir klavyenin aynı adlı çıkışına gider; öğrencinin kendi
+  bastığı tuşların uygulama sesi değişmez. Android'de WebView MIDI desteklemediği için yerel bir eklenti yazıldı ve
+  web kodu onu tarayıcının MIDI arayüzü gibi kullanır. İmzalama anahtarı depoya konmadı: CI gizli değerleri
+  (`ANDROID_KEYSTORE_BASE64` vb.) eklenene kadar Android uygulaması hata ayıklama imzasıyla derlenir.
+
 ## Açık konular
 
 - **Gerçek MIDI testi yapılmadı.** Uygulama tarayıcıda ekran klavyesiyle uçtan uca denendi; gerçek bir Bluetooth/USB
   klavyeyle ilk deneme sahibinde.
 - **Klavye port adları** (`src/midi/keyboards.ts`) tahmin; sahip klavyeleri bağlayınca görünen adlarla doğrulanmalı.
+  "Piyanonu bağla" sihirbazının raporu bunun için yazıldı.
+- **Android uygulaması imzası:** CI gizli değerlerine kalıcı bir anahtar eklenmeden her derleme farklı hata ayıklama
+  imzası taşır; yeni sürüm eskisinin üzerine kurulamazsa eskisini kaldırmak gerekir (ilerlemeyi önce "İlerlemeyi taşı"
+  ile al). Android uygulaması gerçek cihazda henüz denenmedi.

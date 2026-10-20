@@ -33,30 +33,35 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 12 Akıllı öğrenme                             | Birleşti (PR #34) |
 | Oyun turu (Salon, Nota Treni, Kuş Sesi)       | Birleşti (PR #38) |
 | Oyun turu 2 (altın hedef, ipucu, kostüm, …)   | Birleşti (PR #39) |
-| Oyun turu 3 (Notiş kuralı, ses, hayalet, …)   | Bu dal            |
-| 13                                            | Başlanmadı        |
+| Oyun turu 3 (Notiş kuralı, ses, hayalet, …)   | Birleşti (PR #44) |
+| 13 Gerçek piyano ve her cihaz (Android)       | Bu dal (PR #45)   |
+| 14 Görsel dünya                               | Başlanmadı        |
+| 15 Hesap ve sosyal                            | Başlanmadı        |
+| 16 Yerleştirme ve yeni beceriler              | Başlanmadı        |
+| 17 Yayın (mağazalar, iOS)                     | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
 ## Teknoloji kararları
 
-| Konu         | Seçim                                                  | Neden                                                   |
-| ------------ | ------------------------------------------------------ | ------------------------------------------------------- |
-| Uygulama     | React 19 + TypeScript + Vite                           | Hızlı, tek kod tabanı, geniş ekosistem                  |
-| Dağıtım      | PWA (kurulabilir web uygulaması), sonra Capacitor      | Telefon, tablet, bilgisayar; sonra mağazalar            |
-| MIDI         | Web MIDI API (USB + Bluetooth MIDI)                    | Chrome/Edge/Android'de yerleşik, kurulum yok            |
-| iOS MIDI     | Capacitor + yerel CoreMIDI eklentisi (Faz 13)          | Safari Web MIDI desteklemiyor                           |
-| Nota çizimi  | VexFlow 5 (`vexflow/bravura`)                          | Standart, SVG çıktısı, hızlı                            |
-| Ses          | Tone.js + Salamander piyano örnekleri                  | Gerçekçi ses, hassas zamanlama (metronom)               |
-| Durum        | Zustand                                                | Küçük, hızlı, basit                                     |
-| Kalıcı veri  | IndexedDB (Dexie)                                      | Çevrimdışı ilerleme, istatistikler                      |
-| Animasyon    | Motion (Framer Motion) + SVG karakterler, ileride Rive | Akıcı, hafif                                            |
-| Mini oyunlar | PixiJS 8 (WebGL / Canvas sprite motoru)                | 60 fps, mobilde hızlı, React'ten bağımsız oyun döngüsü  |
-| Test         | Vitest + Testing Library, Playwright ile uçtan uca     | Hızlı birim testleri, gerçek tarayıcıda deneme          |
-| CI / yayın   | GitHub Actions + GitHub Pages                          | Her değişiklik HTTPS adresinde denenebilir (MIDI ister) |
+| Konu         | Seçim                                                  | Neden                                                    |
+| ------------ | ------------------------------------------------------ | -------------------------------------------------------- |
+| Uygulama     | React 19 + TypeScript + Vite                           | Hızlı, tek kod tabanı, geniş ekosistem                   |
+| Dağıtım      | PWA (kurulabilir web uygulaması), sonra Capacitor      | Telefon, tablet, bilgisayar; sonra mağazalar             |
+| MIDI         | Web MIDI API (USB + Bluetooth MIDI)                    | Chrome/Edge/Android'de yerleşik, kurulum yok             |
+| Android      | Capacitor 8 + yerel MIDI eklentisi (Faz 13)            | WebView'da Web MIDI yok; Bluetooth MIDI uygulama içinde  |
+| iOS MIDI     | Capacitor + yerel CoreMIDI eklentisi (Faz 17)          | Safari Web MIDI desteklemiyor; Mac ve Apple hesabı ister |
+| Nota çizimi  | VexFlow 5 (`vexflow/bravura`)                          | Standart, SVG çıktısı, hızlı                             |
+| Ses          | Tone.js + Salamander piyano örnekleri                  | Gerçekçi ses, hassas zamanlama (metronom)                |
+| Durum        | Zustand                                                | Küçük, hızlı, basit                                      |
+| Kalıcı veri  | IndexedDB (Dexie)                                      | Çevrimdışı ilerleme, istatistikler                       |
+| Animasyon    | Motion (Framer Motion) + SVG karakterler, ileride Rive | Akıcı, hafif                                             |
+| Mini oyunlar | PixiJS 8 (WebGL / Canvas sprite motoru)                | 60 fps, mobilde hızlı, React'ten bağımsız oyun döngüsü   |
+| Test         | Vitest + Testing Library, Playwright ile uçtan uca     | Hızlı birim testleri, gerçek tarayıcıda deneme           |
+| CI / yayın   | GitHub Actions + GitHub Pages                          | Her değişiklik HTTPS adresinde denenebilir (MIDI ister)  |
 
 **Cihaz notu:** Prototip Android tablet/telefonda Chrome ile ve bilgisayarda Chrome/Edge ile MIDI'ye bağlanır.
-iPhone/iPad'de MIDI, Faz 13'teki yerel sarmalayıcıyla gelir; o zamana kadar orada ekran klavyesi çalışır.
+iPhone/iPad'de MIDI, Faz 17'deki yerel sarmalayıcıyla gelir; o zamana kadar orada ekran klavyesi çalışır.
 
 ## Oyun ve beceri matrisi
 
@@ -266,11 +271,39 @@ ilk açılışında "Geçen haftan" (kapatılabilir).
 - Uyarlanabilir zorluk (başarıya göre hız ve nota aralığı)
 - Günlük "alıştırma karışımı" dersi, haftalık ilerleme özeti
 
-### Faz 13 — Platformlar ve yayın
+### Faz 13 — Gerçek piyano ve her cihaz
 
-- Capacitor ile iOS ve Android uygulaması, iOS için yerel CoreMIDI/Bluetooth MIDI eklentisi
-- İsteğe bağlı bulut yedekleme ve cihazlar arası senkron
-- Mağaza hazırlıkları (simgeler, ekran görüntüleri)
+Her fazdan önce içerik yeniden ele alınır (Serhan, 2026-10-20); bu fazın gözden geçirilmiş planı:
+`/mnt/project-files/faz-13/plan.md`. Eski "platformlar" içeriğinden mağaza hazırlığı ve iOS Faz 17'ye, bulut
+eşitleme hesap sistemiyle Faz 15'e taşındı; önce uygulamanın gerçek piyanoya hazır olması seçildi.
+
+Yapıldı: **Piyanonu bağla** sihirbazı (bağlantı, tuş aralığı, Do-Mi-Sol birlikte, dokunuş hassasiyeti, pedal, piyanodan
+ses, gecikme, kopyalanabilir rapor). **Sustain pedalı**: ritim derslerinde pedal basılıyken bırakılan tuş tutulmuş
+sayılır. **Örnek notalar piyanodan**: Yankı, hafıza, kulak dersleri ve teori kartlarının notaları bağlı dijital piyanonun
+hoparlöründen çalar (Ayarlar'dan kapanır). Ders sırasında **ekran kararmaz**. Notiş'li **uygulama simgeleri**,
+"Uygulamayı yükle" ve "Yeni sürüm hazır" bildirimi. **Android uygulaması** (Capacitor): yerel USB ve Bluetooth MIDI,
+Bluetooth piyanoyu uygulamanın içinden bulma; her `main` yayınında sitede `piyano-ogretmeni.apk`.
+
+### Faz 14 — Görsel dünya
+
+- Ünite manzaraları, Notiş çizgisinde kendi simge setimiz, ekran geçişleri ve açılış animasyonu
+- Elle karanlık mod (Sistem / Açık / Koyu), art arda bitmiş dersleri haritada katlama
+
+### Faz 15 — Hesap ve sosyal (Duolingo gibi)
+
+- Google ya da e-postayla giriş, ilerleme bulutta ve her cihazda aynı
+- Arkadaşlar, haftalık lig, seri hatırlatmaları, Salon oyunlarında arkadaşın hayaletiyle düello, ortak görevler
+- Sonra öğretmen/veli ekranı; hazır bir sunucu servisi (Supabase ya da Firebase)
+
+### Faz 16 — Yerleştirme ve yeni beceriler
+
+- "Biraz biliyorum" diyene yerleştirme sınavı
+- Dinamikler (piyano/forte, tuşa basma gücü), pedal dersleri, legato/staccato, deşifre
+
+### Faz 17 — Yayın
+
+- Mağaza sayfaları ve gizlilik metni, uygulama imza anahtarı CI gizlerinde
+- iPhone/iPad uygulaması (CoreMIDI eklentisi; Mac ve Apple geliştirici hesabı gerekir)
 
 ## Çalışma şekli
 
