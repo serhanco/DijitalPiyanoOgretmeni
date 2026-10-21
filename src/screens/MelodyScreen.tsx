@@ -1,3 +1,4 @@
+import { pieceSteps, pieceTitle } from '../games/keys/piece'
 import { onFinishRequest } from '../testing/finishRequest'
 import { gameNow, gameTimeout } from '../input/gameClock'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -51,7 +52,9 @@ export function MelodyScreen({ lesson, onFinish, onExit }: Props) {
         ? { steps: scaleSteps(lesson.scales), titles: lesson.scales.map(partTitle) }
         : lesson.arpeggios
           ? { steps: arpeggioSteps(lesson.arpeggios), titles: lesson.arpeggios.map(arpeggioTitle) }
-          : null,
+          : lesson.piece
+            ? { steps: pieceSteps(lesson.piece), titles: [pieceTitle(lesson.piece)] }
+            : null,
     [lesson],
   )
   const session = useMemo(

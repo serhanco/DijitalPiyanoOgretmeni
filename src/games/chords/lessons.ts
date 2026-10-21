@@ -26,6 +26,8 @@ export interface ChordSpec {
   progression?: string[]
   /** Heard, not read: the chord is played, its root lit; the player finds its kind. */
   byEar?: boolean
+  /** The key the chords belong to: the staff shows its key signature ("G", minor for "E" minor). */
+  key?: { tonic: string; minor?: boolean }
 }
 
 const same = (a: ChordTarget, b: ChordTarget) =>

@@ -43,7 +43,7 @@ const COLORS = { done: '#22a559', current: '#1cb0f6', wrong: '#ff4b4b', todo: '#
 const FINGER_COLOR = '#6b7280'
 /** Finger numbers that need a thumb crossing stand out. */
 const CROSS_COLOR = '#ff9600'
-const accidentalSign = (acc: number) => (acc < 0 ? 'b' : acc > 0 ? '#' : 'n')
+const accidentalSign = (acc: number) => (acc < 0 ? 'b'.repeat(-acc) : acc > 0 ? '#'.repeat(acc) : 'n')
 
 const spelling = (n: StepNote) =>
   n.spelled

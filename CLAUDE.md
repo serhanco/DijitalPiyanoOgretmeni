@@ -100,8 +100,8 @@ Principles:
 
 | Branch | State                                                                                              |
 | ------ | -------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–12, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
-| This   | Phase 13: real piano and the Android app (`claude/project-thread-9i936j`, PR #45)                  |
+| `main` | Phases 0–13, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
+| This   | Phase 14: the key units (`claude/project-thread-9i936j`)                                           |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -601,8 +601,38 @@ Phase 13 (real piano and every device, `claude/project-thread-9i936j`; plan revi
   wizard, checks the notes sent to the piano, plays Yankı: Dörtlükler with short taps without and with the pedal,
   checks the wake lock and the manifest icons, and opens a lesson offline.
 
-Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 14 visual world, 15
-accounts and social, 16 placement test and new skills, 17 store release and iOS. The owner asked to **pause after each
+Phase 14 (Tonlar yolculuğu, `claude/project-thread-9i936j`; plan reviewed with the owner in
+`/mnt/project-files/faz-14/plan.md`):
+
+- **Twelve key units** (`games/keys/units.ts`, `KEYS` in circle order C G F D B♭ A E♭ E A♭ B D♭ F#, each with its
+  relative minor, a piece and a boss). `curriculum.ts` builds `KEY_UNITS` after the chords unit (`KEYS_AFTER`), each
+  `requires` the one before ("Ünite 10: Do Majör ve La Minör" … "Ünite 21: Fa# Majör ve Re# Minör"). `levelOf(i)` =
+  `floor(i / 3)` raises the difficulty every three keys (tempo ladder from level 1, contrary motion, two octaves from
+  level 2, hidden chord names and notes, Kulaktan Hafıza). Lesson ids `key-<id>-<slug>`; fifteen lessons: intro
+  (theory: key signature with Bravura glyphs, the key's chords, relative minor; 6 questions), scale, Gam Merdiveni,
+  hands, the seven chords (`scaleChords`: I ii iii IV V vi vii° up and back, octave chosen by `trebleOctave`), Aşçı
+  (`keyTriads`), inversions, Çevrim Merdiveni (`inversionLadder`), cadence I–IV–V7–I–ii–V7–I with both hands,
+  arpeggios (white-root triads only), the minor scale (natural + harmonic), minor chords and cadence
+  (`MINOR_CADENCE`), memory, the piece, the boss (`buildBoss` from `games/boss/bosses.ts`).
+- `music/scales.ts`: accidentals up to ±2 (F𝄪 in G♯ minor, C𝄪 in D♯ minor), fingerings for every major and minor key
+  (`SPECIAL`, minor keys looked up first via `scaleFingering(…, type)`); a test checks no thumb lands on a black key.
+- `music/chords.ts`: `degreeChord(key, numeral, minor)` (minor V, V7 and vii° from the harmonic minor,
+  `MAJOR_DEGREES` / `MINOR_DEGREES`), `progression(…, { minor })`, `scaleChords`, `inversionLadder`, `keyTriads`.
+  `ChordSpec.key` makes `ChordScreen` draw the key signature; a progression longer than a page shows the numerals of
+  the page only.
+- `games/keys/piece.ts`: `transposeTune` carries a C-major tune degree by degree into a key (octave 3 or 4, whichever
+  sits best on the treble staff); `NoteLesson.piece` plays it in `MelodyScreen` with the key signature.
+  `MelodyStaff` writes double sharps and flats.
+- Profile **Ton çemberi** (`progress/keyCircle.ts`, `components/KeyCircle.tsx`: C at the top, sharps right, each key
+  filled by its share of stars, `[data-key][data-share]`). Badges Diyez Kâşifi, Bemol Ustası, Çemberi Tamamladın
+  (`BadgeContext.keyUnitsDone`). Salon skills `ton-<id>` ("X Majör akorları") play only in Akor Aşçısı
+  (`SalonSkill.games`): the Space and Bar card staffs draw no accidentals yet.
+- `SMOKE_ONLY=keys` turns test mode on (every unit open), plays the G unit with its boss and checks the
+  circle. Layout cases `key-intro`, `key-chords`, `key-cadence`, `key-minor`, `key-piece`.
+
+Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 15 classical
+études (score mode; Beyer, Czerny, Hanon, Burgmüller by key and level), 16 visual world, 17 accounts and social, 18
+placement test and new skills, 19 store release and iOS. The owner asked to **pause after each
 phase**: check the plan against the code, test, report with suggestions, and wait for the go.
 
 ## Testing in a real browser
@@ -636,7 +666,7 @@ It writes `rapor.md` / `rapor.json` and screenshots. Warnings (⚠️) and
 `KNOWN` problems (🟠, already reported) do not fail the run; remove a `KNOWN` entry when its fix lands. `LAYOUT_ONLY=space,bird`
 and `LAYOUT_VIEWPORTS=yatay` narrow a run.
 
-`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=songs` plays Başlangıç and unit 9 (a section repeat, both hands, the Kanon tempo ladder, Konser); `SMOKE_ONLY=games` plays Nota Treni and the Oyun Salonu; `SMOKE_ONLY=test` checks test mode and the progress code. Look at the screenshots after UI
+`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=songs` plays Başlangıç and unit 9 (a section repeat, both hands, the Kanon tempo ladder, Konser); `SMOKE_ONLY=games` plays Nota Treni and the Oyun Salonu; `SMOKE_ONLY=test` checks test mode and the progress code; `SMOKE_ONLY=keys` plays the G major unit and the key circle. Look at the screenshots after UI
 changes. Piano samples fail to load in a sandbox without network; the script ignores
 that error.
 

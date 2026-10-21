@@ -18,7 +18,7 @@ import {
   xpFor,
   type XpLine,
 } from '../progress/gamification'
-import { BOSS_LESSON_IDS, questEligible, REVIEW_LESSON_ID } from '../progress/curriculum'
+import { BOSS_LESSON_IDS, KEY_UNITS, questEligible, REVIEW_LESSON_ID, unitDone } from '../progress/curriculum'
 import { nextPace, PACE_KINDS } from '../progress/adaptive'
 import { MIX_LESSON_ID, MIX_XP } from '../progress/mix'
 import { isSalonId, nextRecord, type SalonRecord } from '../games/salon/salon'
@@ -202,6 +202,7 @@ export const useProfile = create<ProfileState>()(
             bossesDefeated: BOSS_LESSON_IDS.filter((id) => (lessons[id]?.bestStars ?? 0) >= 1).length,
             bossCount: BOSS_LESSON_IDS.length,
             weeklyDone: q.weeklyDone,
+            keyUnitsDone: KEY_UNITS.filter((u) => unitDone(u.id, (id) => lessons[id]?.bestStars ?? 0)).map((u) => u.id),
           },
           Object.keys(s.badges),
         )

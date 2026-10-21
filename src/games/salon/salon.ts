@@ -15,6 +15,8 @@ import {
   tunePitches,
 } from '../arcade/train/tunes'
 import { fitKeyboard } from '../../music/notes'
+import { parseTonic, tonicName } from '../../music/scales'
+import { KEYS } from '../keys/units'
 import type { Tune } from '../../rhythm/plan'
 import {
   AU_CLAIR,
@@ -29,6 +31,8 @@ import {
   TWINKLE,
 } from '../../rhythm/tunes'
 import type { LessonKind, NoteLesson } from '../noteHunter/lessons'
+
+const keyName = (key: string) => tonicName(parseTonic(key))
 
 export const SALON_PREFIX = 'salon-'
 export const isSalonId = (id: string) => id.startsWith(SALON_PREFIX)
@@ -56,6 +60,8 @@ export interface SalonSkill {
   source: string
   /** Bilinen şarkılar: the targets are well-known songs, note by note, instead of the source's notes. */
   songs?: boolean
+  /** Only these games: chords with sharps and flats need a game that names them (Akor Aşçısı). */
+  games?: LessonKind[]
 }
 
 /**
@@ -109,11 +115,20 @@ export const SALON_SKILLS: SalonSkill[] = [
   { id: 'sekizlik', title: 'Sekizlikler', family: 'beat', source: 'rhythm-drum-2' },
   { id: 'vals', title: 'Üç dörtlük', family: 'beat', source: 'rhythm-dino-waltz' },
   { id: 'noktali', title: 'Noktalılar', family: 'beat', source: 'rhythm-drum-dotted' },
+  // Tonlar yolculuğu: the triads of each key, opened by the unit's Akor Aşçısı.
+  ...KEYS.map((k): SalonSkill => ({
+    id: `ton-${k.id}`,
+    title: `${keyName(k.major)} Majör akorları`,
+    family: 'chords',
+    source: `key-${k.id}-chef`,
+    games: ['chef'],
+  })),
 ]
 
 export const salonId = (game: SalonGame, skill: SalonSkill) => `${SALON_PREFIX}${game.kind}-${skill.id}`
 
-export const skillsOf = (game: SalonGame) => SALON_SKILLS.filter((s) => s.family === game.family)
+export const skillsOf = (game: SalonGame) =>
+  SALON_SKILLS.filter((s) => s.family === game.family && (!s.games || s.games.includes(game.kind)))
 
 /** Endless games end when the hearts run out; beat games play one round. */
 export const isEndless = (game: SalonGame) => game.family !== 'beat'
@@ -155,6 +170,7 @@ export function salonLesson(
   const template = find(game.template)
   const source = find(skill.source)
   if (!template || !source || skill.family !== game.family) return null
+  if (skill.games && !skill.games.includes(game.kind)) return null
   const endless = isEndless(game)
   const base: NoteLesson = {
     ...template,

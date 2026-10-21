@@ -30,7 +30,7 @@ page.on('pageerror', (e) => {
   errors.push(e.message)
 })
 // Piano samples cannot load without network; ignore those.
-page.on('console', (m) => m.type() === 'error' && !m.text().includes('ERR_FAILED') && errors.push(m.text()))
+page.on('console', (m) => m.type() === 'error' && !/ERR_FAILED|ERR_TUNNEL/.test(m.text()) && errors.push(m.text()))
 
 /** Open a lesson from the map: tap its node, then Başla / Tekrar çal on the card that opens. */
 async function openLesson(title, force = false) {
@@ -1232,6 +1232,21 @@ async function bossFight(title, shotName, { lose = false } = {}) {
       await page.waitForTimeout(lose ? 150 : 520)
       continue
     }
+    // Scale and chord phases: the keys still to press are on the board.
+    const pending = await page
+      .getAttribute('.melody-wrap, .chord-wrap', 'data-pending', { timeout: 100 })
+      .catch(() => null)
+    if (pending) {
+      await pressTogether(pending.split(' ').map(Number), 20)
+      await page.waitForTimeout(150)
+      continue
+    }
+    const cooking = await page.evaluate(() => window.__dpoChordArcade?.cooking?.record.chord.notes.map((n) => n.midi))
+    if (cooking) {
+      await pressTogether(cooking, 20)
+      await page.waitForTimeout(150)
+      continue
+    }
     const arcade = await page.evaluate(() => {
       const g = window.__dpoArcade
       if (!g) return null
@@ -1250,6 +1265,90 @@ async function bossFight(title, shotName, { lose = false } = {}) {
   await dismissOverlay()
   await page.screenshot({ path: `${out}/${shotName}-results.png`, fullPage: true })
   return between
+}
+
+/**
+ * Tonlar yolculuğu: with test mode on (the key units open after the chords
+ * unit), every lesson of Sol Majör ve Mi Minör in order, its boss, the key
+ * circle on the profile, and the double sharps of Sol# minör on the staff.
+ */
+async function keysUnit() {
+  await page.evaluate(() =>
+    localStorage.setItem('dpo-settings', JSON.stringify({ state: { testMode: true }, version: 0 })),
+  )
+  await page.reload()
+  await page.waitForSelector('.home')
+  await page.locator('[data-unit="key-g"]').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: `${out}/keys-map.png` })
+  const back = async () => {
+    await dismissOverlay()
+    await page.getByText('Derslere dön').click()
+    await page.waitForSelector('.home')
+    await page.waitForTimeout(500)
+  }
+  await playTheory('Sol Majör ve Mi Minör', 'keys-intro', { shots: [0, 2, 3], wrongAt: 3, quizShot: 0 })
+  await back()
+  await playMelody('Sol Majör Gamı', 'keys-scale')
+  await back()
+  await playBeat('Merdiven: Sol Majör', 'keys-ladder', { shotAt: 0.3 })
+  await back()
+  await playMelody('Sol Majör: Sol El ve İki El', 'keys-hands', { gapMs: 25, shotAfter: 20 })
+  await back()
+  await playChords('Sol Majör Akorları', 'keys-chords', { shotAfter: 6 })
+  const numerals = await page.textContent('.results')
+  if (!numerals.includes('vii°')) throw new Error('Scale chords report lacks the vii° degree')
+  await back()
+  await playChordArcade('Aşçı: Sol Majör', 'keys-chef')
+  await back()
+  await playChords('Sol Majör: Çevrimler', 'keys-inversions')
+  await back()
+  await playChords('Çevrim Merdiveni: Sol', 'keys-inv-ladder', { shotAfter: 2 })
+  await back()
+  await playChords('Sol Majör: Kadanslar', 'keys-cadence', { shotAfter: 4 })
+  await back()
+  await playMelody('Sol Majör: Arpejler', 'keys-arpeggio')
+  await back()
+  await playMelody('Mi Minör Gamı', 'keys-minor', { shotAfter: 22 })
+  await back()
+  await playChords('Mi Minör: Akorlar', 'keys-minor-chords', { shotAfter: 2 })
+  await back()
+  await playMemory('Hafıza: Sol Majör', 'keys-memory')
+  await back()
+  await playMelody('Ufak Kuzu (Sol Majör)', 'keys-piece', { shotAfter: 3 })
+  await back()
+  const hits = await bossFight('Boss: Fa Diyez Faresi', 'keys-boss')
+  if (hits !== 3) throw new Error(`Key boss: expected 3 phase breaks, saw ${hits}`)
+  if (!(await page.textContent('h1')).includes('Fa Diyez Faresi yenildi')) throw new Error('Key boss should be beaten')
+  await back()
+
+  // The key circle fills Sol and mi.
+  await page.getByLabel('Profil').click()
+  await page.waitForSelector('.key-circle')
+  const share = (key) => page.getAttribute(`[data-key="${key}"]`, 'data-share')
+  if (Number(await share('key-g-major')) < 90 || Number(await share('key-g-minor')) < 90)
+    throw new Error(`Key circle: Sol ${await share('key-g-major')}%, mi ${await share('key-g-minor')}%`)
+  if (Number(await share('key-d-major')) !== 0) throw new Error('Key circle: Re should be empty')
+  await page.locator('.key-circle-card').screenshot({ path: `${out}/keys-circle.png` })
+  await page.getByLabel('Geri').click()
+  await page.waitForSelector('.home')
+
+  // Double sharps: Sol# minör's harmonic seventh is Fa𝄪, drawn with its sign.
+  await openLesson('Sol# Minör Gamı')
+  await page.waitForSelector('.melody-wrap .staff svg')
+  // The natural minor up and down (15 notes), then the harmonic one up to its seventh.
+  for (let i = 0; i < 21; i++) {
+    const pending = await page.getAttribute('.melody-wrap', 'data-pending')
+    await pressTogether(pending.split(' ').map(Number), 20)
+    await page.waitForTimeout(200)
+  }
+  await page.screenshot({ path: `${out}/keys-double-sharp.png` })
+  await page.getByLabel('Dersten çık').click()
+  await page.waitForSelector('.home')
+  await openLesson('Fa# Majör Akorları')
+  await page.waitForSelector('.chord-wrap .staff svg')
+  await page.screenshot({ path: `${out}/keys-fsharp-chords.png` })
+  await page.getByLabel('Dersten çık').click()
+  await page.waitForSelector('.home')
 }
 
 /** Başlangıç's boss beaten, then lost to; the day's quests moved on by the unit's lessons. */
@@ -1656,6 +1755,13 @@ if (process.env.SMOKE_ONLY === 'games') {
   await gamesRound()
   await finish()
   console.log(`Smoke test (games) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
+// SMOKE_ONLY=keys plays the second key unit (Sol Majör ve Mi Minör) in test mode.
+if (process.env.SMOKE_ONLY === 'keys') {
+  await keysUnit()
+  await finish()
+  console.log(`Smoke test (keys) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
 // SMOKE_ONLY=basics plays only the Başlangıç unit.

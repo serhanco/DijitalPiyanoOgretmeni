@@ -12,15 +12,16 @@ import { Mascot, type MascotMood } from '../components/Mascot'
 import { MelodyStaff, type StepState } from '../components/MelodyStaff'
 import { type KeyMark, PianoKeyboard } from '../components/PianoKeyboard'
 import { chordFeedback, chordNoteNames } from '../games/chords/feedback'
-import { chordSequence } from '../games/chords/lessons'
+import { type ChordSpec, chordSequence } from '../games/chords/lessons'
 import { summarizeChords } from '../games/chords/report'
 import { type ChordEvent, ChordSession } from '../games/chords/session'
-import { paginate, type Step } from '../games/melody/session'
+import { MELODY_PAGE, paginate, type Step } from '../games/melody/session'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import type { SessionSummary } from '../games/noteHunter/summary'
 import { subscribe } from '../input/inputBus'
 import { type ChordTarget, chordTitle, fingerText } from '../music/chords'
 import { solfegeName } from '../music/notes'
+import { keyAccidentals, keySignature, parseTonic } from '../music/scales'
 import { HEARTS_PER_LESSON } from '../progress/gamification'
 import { useSettings } from '../state/settings'
 
@@ -37,8 +38,16 @@ interface Props {
   onExit: () => void
 }
 
-const chordSteps = (chords: ChordTarget[]): Step[] =>
-  chords.map((c) => ({ melody: 0, notes: c.notes.map((n) => ({ midi: n.midi, clef: n.clef, spelled: n })) }))
+function chordSteps(chords: ChordTarget[], key?: ChordSpec['key']): Step[] {
+  const tonic = key && parseTonic(key.tonic)
+  const type = key?.minor ? 'natural' : 'major'
+  const sig = tonic ? { keySig: keySignature(tonic, type), keyAcc: keyAccidentals(tonic, type) } : {}
+  return chords.map((c) => ({
+    melody: 0,
+    ...sig,
+    notes: c.notes.map((n) => ({ midi: n.midi, clef: n.clef, spelled: n })),
+  }))
+}
 
 export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   const { ignoreOctave, showKeyLabels, relaxedMode } = useSettings()
@@ -54,7 +63,7 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
       }),
     [chords, spec.mode, relaxedMode, ignoreOctave],
   )
-  const steps = useMemo(() => chordSteps(chords), [chords])
+  const steps = useMemo(() => chordSteps(chords, spec.key), [chords, spec.key])
   const pages = useMemo(() => paginate(steps), [steps])
   const names = useMemo(() => chordNoteNames(chords), [chords])
   const nameOf = (midi: number) => names.get(midi) ?? solfegeName(midi)
@@ -216,8 +225,12 @@ export function ChordScreen({ lesson, onFinish, onExit }: Props) {
   if (wrongKey !== null) marks[wrongKey] = 'wrong'
 
   const progress = position / chords.length
-  const numerals = spec.progression
-  const inProgression = numerals && current ? position % numerals.length : -1
+  // A long row (Gamın akorları: 15 chords) shows only the numerals of the page on the staff.
+  const long = !!spec.progression && spec.progression.length > MELODY_PAGE
+  const numerals = long
+    ? page.steps.map((_, i) => spec.progression![(page.start + i) % spec.progression!.length])
+    : spec.progression
+  const inProgression = numerals && current ? (long ? position - page.start : position % numerals.length) : -1
 
   return (
     <div className="game">

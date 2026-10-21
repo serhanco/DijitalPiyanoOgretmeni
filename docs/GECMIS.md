@@ -39,6 +39,12 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 
 14. (2026-10-08) İlk dersten önce **teorik temel bilgiler ve basit testler**; ardından sol anahtarında **tek oktavda
     notalar kademeli**: önce yalnızca Do ve Sol, sonra iki nota daha, sonra iki daha.
+15. (2026-10-21, Faz 13 sonrası) "Do majör gamlar, bunların içerdiği akorlar ve bu akorların çevrimleri olmazsa olmaz
+    bir konu bence. Belki de her birini farklı ünitelere bile yayabiliriz; farklı gam ve akorlar ile bu akor
+    çevrimlerini öğrenmek kullanıcıyı kesinlikle üst seviyeye taşıyacak. Bunun için çokça pratik yapmasını sağlayalım.
+    Eserler tarafında herhangi bir telif / lisans / patent sorunu yaşamayacaksak basit Beyer, Czerny egzersizleri
+    veya bunların belli bölümleri içeriği çok kuvvetlendirecektir." Bestecilerde: "sen karar ver ama her gam ve
+    seviyeye uygun progresif şekilde ilerleyen bir yapı."
 
 ## Verilen kararlar
 
@@ -107,6 +113,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-19 | Oyun turu 3: oyun arası Notiş (bir oyun ilk açılışta kuralını iki cümleyle anlatır, bir hamleyi gösterir), ses katmanları (seri uzadıkça eşlik, sonuçta "Melodini dinle"), hayalet (en iyi turunla yarış), Oyun Salonu'nda Bilinen şarkılar (17 telifsiz şarkı)    | dal `claude/project-thread-q9rplm`     |
 | 2026-10-18 | Oyun turu 2: altın balon ve altın müşteri (bonus XP), ipucu parıltısı (takılınca doğru tuş parlar, ilk deneme sayılmaz, raporda ayrı), kostüm dolabı (10 kostüm, seviye ve rozetle açılır), Kurbağa Atlayışı (aralık okuma), Çift Kişilik Davul (soru-cevap ritim) | dal `claude/project-thread-q9rplm`     |
 | 2026-10-20 | Faz 13: Piyanonu bağla sihirbazı ve raporu, sustain pedalı, örnek notalar piyanodan (MIDI çıkışı), ders sırasında ekran açık, Notiş simgeleri, yükleme ve güncelleme bildirimi, Android uygulaması (yerel USB ve Bluetooth MIDI)                                   | PR #45                                 |
+| 2026-10-21 | Faz 14: Tonlar yolculuğu. 12 ton ünitesi (beşliler çemberi sırasıyla, her biri 15 ders): her tonda gam, iki el, tonun yedi akoru, çevrimler, kadanslar, arpejler, göreceli minör, hafıza, o tona taşınmış şarkı ve boss; Ton çemberi, 3 rozet                      | dal `claude/project-thread-9i936j`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -251,13 +258,25 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 
 - **Faz 13 (gerçek piyano ve her cihaz):** Serhan her yeni fazdan önce içeriğin yeniden ele alınmasını önerdi ve bu
   kural oldu. Faz 13'ün yeni içeriğini onayladı: önce gerçek piyano hazırlığı, kurulabilir uygulama cilası ve yalnızca
-  Android ("evet", "önerilerinle devam"). Üyelik ve Duolingo gibi sosyal özellikler kesin olarak gelecek (Faz 15), bu
+  Android ("evet", "önerilerinle devam"). Üyelik ve Duolingo gibi sosyal özellikler kesin olarak gelecek (hesap fazı), bu
   yüzden Google Drive yedeği yapılmadı. Pedal yalnızca tutma süresini değiştirir (pedal basılıyken bırakılan tuş, pedal
   kalkana ya da tuşa yeniden basılana kadar tutulmuş sayılır); akor algılama gerçek tuş bırakışlarını görmeye devam
   eder. Örnek notalar yalnızca bağlı ve kendi sesi olan bir klavyenin aynı adlı çıkışına gider; öğrencinin kendi
   bastığı tuşların uygulama sesi değişmez. Android'de WebView MIDI desteklemediği için yerel bir eklenti yazıldı ve
   web kodu onu tarayıcının MIDI arayüzü gibi kullanır. İmzalama anahtarı depoya konmadı: CI gizli değerleri
   (`ANDROID_KEYSTORE_BASE64` vb.) eklenene kadar Android uygulaması hata ayıklama imzasıyla derlenir.
+
+- **Faz 14 (Tonlar yolculuğu):** Plan önce gözden geçirildi (`/mnt/project-files/faz-14/plan.md`). Serhan'ın
+  cevapları: önce içerik, görsel dünya sonra ("evet"); 12 ton ("12"); ton üniteleri beşliler çemberi sırasıyla
+  birbirini açar ("evet"); etütlerde dört besteci (Beyer, Czerny, Hanon, Burgmüller), her tona ve seviyeye göre
+  kolaydan zora. Yeni faz sırası: 14 Tonlar, 15 Klasik etütler, 16 Görsel dünya, 17 Hesap ve sosyal, 18 Yerleştirme,
+  19 Yayın. Ton üniteleri Akorlar ünitesinden sonra gelir; ilki Akorlar bitince açılır. Dörder tonluk dört seviye
+  (Do Sol Fa, Re Si♭ La, Mi♭ Mi La♭, Si Re♭ Fa#) zorluğu artırır. Minörde doğal ve armonik gam çalışılır; melodik
+  minör parmakları farklı olduğu için ton ünitelerinde yok. Minör akorlarda V, V7 ve vii° armonik minörden (yeden ses
+  yükselir). Arpejler yalnızca kökü beyaz tuş olan akorlarda (1-2-3-5 parmağı orada standart). Ton ünitelerinin akor
+  oyunu Akor Aşçısı: Uzay Savunması ve Akor Barmeni'nin küçük kartları değiştirme işareti çizmiyor. Şarkılar Do
+  majörden derece derece tona taşınır (aynı melodi, tonun harfleriyle). Melodik minör ve diğer akor oyunları
+  sonraya bırakıldı.
 
 ## Açık konular
 

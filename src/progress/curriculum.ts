@@ -9,6 +9,7 @@ import { SONG_LESSONS } from '../games/songs/lessons'
 import { RHYTHM2_LESSONS, RHYTHM_LESSONS } from '../rhythm/lessons'
 import { BASICS_LESSONS } from '../games/theory/lessons'
 import { BOSS_LESSONS } from '../games/boss/bosses'
+import { KEYS, keyColor, keyLessons, keyUnitId, keyUnitSubtitle, keyUnitTitle } from '../games/keys/units'
 import type { QuestDef } from './quests'
 
 export interface Unit {
@@ -115,9 +116,26 @@ export const UNITS: Unit[] = [
 // Every unit ends with its boss.
 for (const unit of UNITS) if (BOSS_LESSONS[unit.id]) unit.lessons = [...unit.lessons, BOSS_LESSONS[unit.id]]
 
-export const BOSS_LESSON_IDS: string[] = Object.values(BOSS_LESSONS).map((l) => l.id)
+/** The unit whose completion opens the first key unit. */
+export const KEYS_AFTER = 'chords'
+
+/**
+ * Tonlar yolculuğu: a unit per key around the circle of fifths, each opened
+ * by the one before (the first by the chords unit). Their bosses are built in.
+ */
+export const KEY_UNITS: Unit[] = KEYS.map((k, i) => ({
+  id: keyUnitId(k),
+  requires: i === 0 ? KEYS_AFTER : keyUnitId(KEYS[i - 1]),
+  title: `Ünite ${UNITS.length + i}: ${keyUnitTitle(k)}`,
+  subtitle: keyUnitSubtitle(k),
+  color: keyColor(i),
+  lessons: keyLessons(k, i),
+}))
+UNITS.push(...KEY_UNITS)
 
 export const ALL_LESSONS: NoteLesson[] = UNITS.flatMap((u) => u.lessons)
+
+export const BOSS_LESSON_IDS: string[] = ALL_LESSONS.filter((l) => l.kind === 'boss').map((l) => l.id)
 
 export function findLesson(id: string): NoteLesson | undefined {
   return ALL_LESSONS.find((l) => l.id === id)

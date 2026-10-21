@@ -1,3 +1,4 @@
+import type { PiecePart } from '../keys/piece'
 import { type Clef, parseNote, whiteKeysBetween } from '../../music/notes'
 import type { RhythmValue } from '../../rhythm/rhythm'
 import type { Tune } from '../../rhythm/plan'
@@ -133,6 +134,8 @@ export interface NoteLesson {
   chords?: ChordSpec
   /** Arpeggio and Arpej Sörfü lessons: the arpeggios, played in order. */
   arpeggios?: ArpeggioPart[]
+  /** Ton parçası: a song carried into a key, read from the staff with the key signature. */
+  piece?: PiecePart
   /** Kulak Dedektifi: the cases to solve by ear. */
   ear?: EarSpec
   /** Nota Şelalesi: the song, the hands and the mode. Rhythm mode also has `rhythm` (tempo, metronome). */

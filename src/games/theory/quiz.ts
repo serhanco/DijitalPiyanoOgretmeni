@@ -3,7 +3,7 @@
 // answer counts, a wrong one shows the explanation and the player tries again.
 
 import type { SoundPart } from '../../audio/earSound'
-import { pitchClass } from '../../music/notes'
+import { type Letter, pitchClass } from '../../music/notes'
 import { type CategoryStat, type SessionSummary, starsFor } from '../noteHunter/summary'
 
 /** Pictures drawn next to a card or a question. */
@@ -37,6 +37,10 @@ export type Illustration =
       bass?: boolean
       /** Highlight this line (1–5). */
       highlight?: number
+      /** Key signature after the clef: sharps above 0, flats below. */
+      keySig?: number
+      /** Notes by their written name instead of `notes` (B♭ is not A♯ on the staff); an accidental the key signature does not give is drawn. */
+      spelled?: { letter: Letter; octave: number; acc: number }[]
     }
   | { kind: 'hand'; hand: 'right' | 'left'; highlight?: number; hideNumbers?: boolean }
   /** Whole, half and quarter notes, optionally with their beats. */

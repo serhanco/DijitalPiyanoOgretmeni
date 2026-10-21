@@ -3,7 +3,7 @@
 
 import type { Illustration } from '../games/theory/quiz'
 import { isRest, layoutRhythm, parseRhythm, VALUE_BEATS } from '../rhythm/rhythm'
-import { diatonicIndex, isBlackKey, MIDDLE_C, parseNote, solfegeName } from '../music/notes'
+import { diatonicIndex, isBlackKey, type Letter, LETTERS, MIDDLE_C, parseNote, solfegeName } from '../music/notes'
 
 const ACCENT = '#ffc800'
 const ACCENT_DARK = '#e0a000'
@@ -147,6 +147,20 @@ const CLEFS = {
   bass: { bottom: diatonicIndex(parseNote('G2')), glyph: '\uE062', step: 6 },
 }
 
+/** Where the sharps and flats of a key signature sit, in order (treble; the bass staff is two octaves lower). */
+const SHARP_ORDER = ['F5', 'C5', 'G5', 'D5', 'A4', 'E5', 'B4']
+const FLAT_ORDER = ['B4', 'E5', 'A4', 'D5', 'G4', 'C5', 'F4']
+/** SMuFL accidentals: double flat, flat, natural, sharp, double sharp. */
+const ACC_GLYPHS: Record<number, string> = { [-2]: '\uE264', [-1]: '\uE260', 0: '\uE261', 1: '\uE262', 2: '\uE263' }
+
+/** The accidental a key signature of `count` sharps (or flats, below 0) gives each letter. */
+function signatureAcc(count: number): Record<Letter, number> {
+  const out = Object.fromEntries(LETTERS.map((l) => [l, 0])) as Record<Letter, number>
+  const order = count > 0 ? SHARP_ORDER : FLAT_ORDER
+  for (const name of order.slice(0, Math.abs(count))) out[name[0].toLowerCase() as Letter] = Math.sign(count)
+  return out
+}
+
 function StaffArt({
   notes = [],
   names,
@@ -155,15 +169,25 @@ function StaffArt({
   clef = true,
   bass = false,
   highlight,
+  keySig = 0,
+  spelled,
 }: Extract<Illustration, { kind: 'staff' }>) {
   const gap = 10
   const kind = CLEFS[bass ? 'bass' : 'treble']
   const base = 84 // y of the bottom line
-  const left = clef ? 58 : 34
-  const spacing = notes.length > 4 ? 30 : 46
-  const width = Math.max(220, left + notes.length * spacing + 20)
+  const sigW = Math.abs(keySig) * 9
+  const left = (clef ? 58 : 34) + sigW
+  const heads = spelled
+    ? spelled.map((n) => ({ index: (n.octave + 1) * 7 + LETTERS.indexOf(n.letter), acc: n.acc, midi: null }))
+    : notes.map((m) => ({ index: diatonicIndex(m), acc: null, midi: m }))
+  const keyAcc = signatureAcc(keySig)
+  const spacing = heads.length > 4 ? 30 : 46
+  const width = Math.max(220, left + heads.length * spacing + 20)
   const y = (step: number) => base - (step * gap) / 2
   const below = names || captions ? (names && captions ? 140 : 124) : 104
+  const sigSteps = (keySig > 0 ? SHARP_ORDER : FLAT_ORDER)
+    .slice(0, Math.abs(keySig))
+    .map((name) => diatonicIndex(parseNote(name)) - (bass ? 14 : 0) - kind.bottom)
   return (
     <svg
       viewBox={`0 0 ${width} ${below}`}
@@ -193,21 +217,41 @@ function StaffArt({
           {kind.glyph}
         </text>
       )}
-      {notes.map((m, i) => {
-        const step = diatonicIndex(m) - kind.bottom
+      {sigSteps.map((step, i) => (
+        <text
+          key={`sig${i}`}
+          className="key-sig"
+          x={(clef ? 50 : 26) + i * 9}
+          y={y(step)}
+          fontSize={gap * 4}
+          fontFamily="Bravura"
+          fill={INK}
+        >
+          {ACC_GLYPHS[Math.sign(keySig)]}
+        </text>
+      ))}
+      {heads.map((h, i) => {
+        const step = h.index - kind.bottom
         const x = left + i * spacing + spacing / 2
         const ledgers: number[] = []
         for (let s = -2; s >= step; s -= 2) ledgers.push(s)
         for (let s = 10; s <= step; s += 2) ledgers.push(s)
+        const letter = LETTERS[h.index % 7]
+        const accidental = h.acc !== null && h.acc !== keyAcc[letter] ? ACC_GLYPHS[h.acc] : null
         return (
-          <g key={`${m}-${i}`}>
+          <g key={`${h.index}-${i}`}>
             {ledgers.map((s) => (
               <line key={s} x1={x - 12} x2={x + 12} y1={y(s)} y2={y(s)} stroke={INK} strokeWidth={1.3} />
             ))}
+            {accidental && (
+              <text x={x - 22} y={y(step)} fontSize={gap * 4} fontFamily="Bravura" fill={INK}>
+                {accidental}
+              </text>
+            )}
             <NoteHead x={x} y={y(step)} />
-            {names && (
+            {names && h.midi !== null && (
               <text x={x} y={110} textAnchor="middle" fontSize={11} fontWeight={800} fill={INK}>
-                {solfegeName(m, false)}
+                {solfegeName(h.midi, false)}
               </text>
             )}
             {captions?.[i] && (
