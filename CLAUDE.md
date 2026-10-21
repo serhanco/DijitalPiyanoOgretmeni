@@ -41,6 +41,7 @@ npm run smoke         # Playwright smoke test against a running preview (see bel
 npm run layout        # Layout suite: every game type on desktop, phone upright and sideways (see below)
 npm run piano         # Phase 13 checks with a fake Clavinova: setup wizard, pedal, piano output, offline start
 npx cap sync android  # After npm run build: copy dist/ into the Android app (built by CI, android.yml)
+LILYPOND=/path/to/lilypond node scripts/etudes/import.mjs <id> <mutopia dir>   # Import an étude (see phase 15a)
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR, and the layout suite in a second
@@ -66,6 +67,7 @@ src/
   games/scales/           (phase 7) scale steps, Gam Merdiveni plan, scale reports, unit 5 lessons
   games/memory/           (phase 7) Melodi Hafızası engine (Simon with scale fragments)
   music/chords.ts         (phase 8) chord spelling, inversions, fingers, identifyChord, progressions, arpeggio runs
+  games/etudes/           (phase 15a) scores imported from Mutopia (data/), score reader, catalog, Etüt Kitaplığı levels
   games/theory/           Başlangıç unit: QuizSession (cards + quiz), theory content, gradual note lessons
   games/chords/           (phase 8) ChordListener + ChordSession, chord report, arpeggio steps / Arpej Sörfü plan, unit 6
   screens/                Home, NoteHunter, Results (simple state machine in App.tsx, no router)
@@ -100,8 +102,8 @@ Principles:
 
 | Branch | State                                                                                              |
 | ------ | -------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–13, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
-| This   | Phase 14: the key units (`claude/project-thread-9i936j`)                                           |
+| `main` | Phases 0–14, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
+| This   | Phase 15a: the Etüt Kitaplığı and the score view (`claude/project-thread-vn0hlf`)                  |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -625,13 +627,46 @@ Phase 14 (Tonlar yolculuğu, `claude/project-thread-9i936j`; plan reviewed with 
   `MelodyStaff` writes double sharps and flats.
 - Profile **Ton çemberi** (`progress/keyCircle.ts`, `components/KeyCircle.tsx`: C at the top, sharps right, each key
   filled by its share of stars, `[data-key][data-share]`). Badges Diyez Kâşifi, Bemol Ustası, Çemberi Tamamladın
-  (`BadgeContext.keyUnitsDone`). Salon skills `ton-<id>` ("X Majör akorları") play only in Akor Aşçısı
-  (`SalonSkill.games`): the Space and Bar card staffs draw no accidentals yet.
+  (`BadgeContext.keyUnitsDone`). Salon skills `ton-<id>` ("X Majör akorları") play in every chord game.
 - `SMOKE_ONLY=keys` turns test mode on (every unit open), plays the G unit with its boss and checks the
   circle. Layout cases `key-intro`, `key-chords`, `key-cadence`, `key-minor`, `key-piece`.
 
-Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 15 classical
-études (score mode; Beyer, Czerny, Hanon, Burgmüller by key and level), 16 visual world, 17 accounts and social, 18
+Phase 15a (Klasik etütler, first part, `claude/project-thread-vn0hlf`; plan in `/mnt/project-files/faz-15/plan.md`):
+
+- **Import tool** (`scripts/etudes/import.mjs` + `listener.ly`): downloads a Mutopia folder into a temporary directory
+  (removed afterwards), refuses anything whose LilyPond header (`license`/`copyright`) or `.rdf` entry is not "Public
+  Domain", runs LilyPond 2.24 (outside the repo, `LILYPOND=`) with a Scheme engraver that dumps every event (staff,
+  voice, moment, bar position, clef, key, spelling, finger, slur, tie, staccato), once as written and once with
+  `\unfoldRepeats` inserted after `\score {`, and checks one reading against the notes of Mutopia's own MIDI file.
+  It rejects tuplets, time or key changes and bar lines that move (an upbeat inside the piece); ornaments and grace
+  notes are left out. Output: `src/games/etudes/data/<id>.ts` (`export const score: ScoreSource`, Prettier-formatted,
+  never edited by hand). Token format per bar and voice: `E5:3~/8.(*)` = note, finger, tie, length (`w h q 8 16 32`),
+  dots, slur start/end, staccato; chords `C4+E4/q`; `r/q` rest, `s/q` spacer, `R` bar rest, `@bass` clef change.
+- `games/etudes/score.ts` (pure): `parseScore` (bars checked full, a clef timeline from the upper lane, ties resolved
+  across lanes, `head` = the note a tied note continues), `scoreNotes` (tied notes joined, staff 1 = right hand,
+  `SongNote.ref` = the written note's id). `Song.score` makes `parseSong` use it, so `WaitSession`, `tempoPlan` and the
+  reports are Nota Şelalesi's. Rhythm values gained `s` (sixteenth, topic "On altılıklar") and `ed`; 2/4 bars.
+- `components/ScoreView.tsx`: VexFlow, one line of up to four bars packed by density (`barWeight`), the line moves on
+  when the current bar is its last; clef, key, time, brace, accidentals per bar, two voices with stems up/down,
+  beams, dots, fingers, staccato, mid-bar clef changes, ties and slurs (partial at line edges); notes coloured by
+  `stateOf(head)` (`todo | current | done | off | wrong`); scaled to the box (`MIN_WIDTH` 360, never narrower than the
+  bars need). `screens/song/ScoreFields.tsx` (`WaitScore`, `TempoScore` polled per frame, `ViewToggle` =
+  `settings.etudeView` `score | waterfall`), `song/etudeScore.ts` (`useEtudeScore`). Theory art `{ kind: 'score' }`
+  (`components/ScoreArt.tsx`, lazy).
+- `games/etudes/catalog.ts` (nine pieces, Turkish title, original, origin, fact, sections of 8 bars) and `lessons.ts`
+  (`ETUDE_LEVELS`: 1 Tek elle ilk cümleler, 2 İki elle menüetler, 3 On altılıklar ve 2/4; `kind: 'etude'`, ids
+  `etude-<slug>`, bars given as printed; tempo lessons suggest 70% of the piece's tempo). `etudeOpen`: a level opens
+  with a star in the level before, lessons in order. `findLesson` also finds études.
+- `components/EtudeCard.tsx` (`[data-node="etudes"]`, open once Başlangıç is done) and `screens/EtudeScreen.tsx`
+  (screen `etudes`, rows `[data-etude]`, the lesson just played marked `.back`; lessons go back there).
+- Arcade cards: `CardPitch` (a key or a `SpelledNote`), `pitchStep` puts B♭ on B, `drawCardNotes` draws heads and
+  ♯/♭/𝄪/𝄫 (`drawAccidental`, plain lines) staggered and kept inside the card. Space and Akor Barmeni pass the spelled
+  chord tones; every key unit has `key-<id>-space` and `key-<id>-bar` (17 lessons).
+- `SMOKE_ONLY=etudes`; layout cases `etude-theory`, `etude-wait`, `etude-czerny`, `etude-tempo` (opened from the
+  library, `etudePlace` checks the way back), `key-space`, `key-chordbar`.
+
+Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 15b (Hanon by rule
+in every key, Burgmüller Op. 100 from Mutopia, levels 4–6), 16 visual world, 17 accounts and social, 18
 placement test and new skills, 19 store release and iOS. The owner asked to **pause after each
 phase**: check the plan against the code, test, report with suggestions, and wait for the go.
 
@@ -666,7 +701,7 @@ It writes `rapor.md` / `rapor.json` and screenshots. Warnings (⚠️) and
 `KNOWN` problems (🟠, already reported) do not fail the run; remove a `KNOWN` entry when its fix lands. `LAYOUT_ONLY=space,bird`
 and `LAYOUT_VIEWPORTS=yatay` narrow a run.
 
-`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=songs` plays Başlangıç and unit 9 (a section repeat, both hands, the Kanon tempo ladder, Konser); `SMOKE_ONLY=games` plays Nota Treni and the Oyun Salonu; `SMOKE_ONLY=test` checks test mode and the progress code; `SMOKE_ONLY=keys` plays the G major unit and the key circle. Look at the screenshots after UI
+`SMOKE_ONLY=chords` plays Başlangıç (it unlocks the others) and then unit 6 (a few minutes instead of the whole curriculum); `SMOKE_ONLY=songs` plays Başlangıç and unit 9 (a section repeat, both hands, the Kanon tempo ladder, Konser); `SMOKE_ONLY=games` plays Nota Treni and the Oyun Salonu; `SMOKE_ONLY=test` checks test mode and the progress code; `SMOKE_ONLY=keys` plays the G major unit and the key circle; `SMOKE_ONLY=etudes` plays the Etüt Kitaplığı. Look at the screenshots after UI
 changes. Piano samples fail to load in a sandbox without network; the script ignores
 that error.
 

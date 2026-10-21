@@ -6,6 +6,7 @@ import { KIND_ICON } from './kindIcons'
 import { HomeShortcuts } from '../components/HomeShortcuts'
 import { MidiPanel } from '../components/MidiPanel'
 import { QuestBoard } from '../components/QuestBoard'
+import { EtudeCard } from '../components/EtudeCard'
 import { LessonPeek } from '../components/LessonPeek'
 import { LastWeekCard } from '../components/WeekSummary'
 import { MIX_LESSON_ID } from '../progress/mix'
@@ -24,6 +25,7 @@ interface Props {
   onCalibrate: () => void
   onSetup: () => void
   onSalon: () => void
+  onEtudes: () => void
   /** The node of the lesson the learner comes back from (`mapNodeOf` in curriculum): the map scrolls to it. */
   focus?: string
 }
@@ -79,7 +81,7 @@ const openedUnits = new Set<string>()
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
 
-export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, focus }: Props) {
+export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, onEtudes, focus }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const testMode = useSettings((s) => s.testMode)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
@@ -175,6 +177,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
       <LastWeekCard />
       <DailyMixCard onStart={onStart} back={focus === MIX_LESSON_ID} />
       <SalonCard onOpen={onSalon} />
+      <EtudeCard onOpen={onEtudes} />
       {!wide && <HomeShortcuts onSetup={onSetup} />}
 
       {UNITS.map((unit) => {

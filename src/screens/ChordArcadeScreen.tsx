@@ -205,12 +205,10 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
             app,
             game,
             {
-              spans: chordSpans(
-                game.records.map((r) => ({ clef: chordClef(r.chord), notes: r.chord.notes.map((n) => n.midi) })),
-              ),
+              spans: chordSpans(game.records.map((r) => ({ clef: chordClef(r.chord), notes: r.chord.notes }))),
               order: (c) => ({
                 clef: chordClef(c.record.chord),
-                notes: c.record.chord.notes.map((n) => n.midi),
+                notes: c.record.chord.notes,
                 name: spec.showName ? chordSymbol(c.record.chord.root, c.record.chord.quality) : undefined,
               }),
             },

@@ -13,7 +13,7 @@ import { lessonPart, partKeys, type Song, type SongSpec } from './song'
 
 const n = parseNote
 
-interface Extra {
+export interface Extra {
   /** Rhythm mode: a slower or faster suggested tempo than the song's. */
   bpm?: number
   tempoLadder?: TempoLadderSpec
@@ -33,7 +33,13 @@ function infoTune(songs: Song[]): Tune {
   }
 }
 
-function waterfall(id: string, title: string, description: string, spec: SongSpec, extra: Extra = {}): NoteLesson {
+export function waterfall(
+  id: string,
+  title: string,
+  description: string,
+  spec: SongSpec,
+  extra: Extra = {},
+): NoteLesson {
   const part = lessonPart(spec)
   const notes = partKeys(part)
   const song = spec.songs[0]

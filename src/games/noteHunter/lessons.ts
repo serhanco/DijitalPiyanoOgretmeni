@@ -50,6 +50,7 @@ export type LessonKind =
   | 'surf'
   | 'ear'
   | 'waterfall'
+  | 'etude'
   | 'boss'
   | 'mix'
   | 'train'
@@ -68,6 +69,7 @@ export const PATTERN_KINDS: LessonKind[] = [
   'boss',
   'mix',
   'waterfall',
+  'etude',
   'theory',
   'scale',
   'ladder',

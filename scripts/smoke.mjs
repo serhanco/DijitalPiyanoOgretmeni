@@ -175,7 +175,7 @@ async function playBeat(
     const lengthMs = await page.evaluate(
       ([offset, tap]) => {
         const t = window.__dpoBeat
-        const beats = { w: 4, h: 2, q: 1, e: 0.5, qd: 1.5, hd: 3 }
+        const beats = { w: 4, h: 2, q: 1, e: 0.5, s: 0.25, qd: 1.5, ed: 0.75, hd: 3 }
         window.__dpoPrevBeat = t
         for (const r of t.records) {
           // Yankı: the app plays its own bars.
@@ -1302,6 +1302,8 @@ async function keysUnit() {
   await back()
   await playChords('Sol Majör: Çevrimler', 'keys-inversions')
   await back()
+  await playChordArcade('Uzay: Sol Majör', 'keys-space')
+  await back()
   await playChords('Çevrim Merdiveni: Sol', 'keys-inv-ladder', { shotAfter: 2 })
   await back()
   await playChords('Sol Majör: Kadanslar', 'keys-cadence', { shotAfter: 4 })
@@ -1311,6 +1313,8 @@ async function keysUnit() {
   await playMelody('Mi Minör Gamı', 'keys-minor', { shotAfter: 22 })
   await back()
   await playChords('Mi Minör: Akorlar', 'keys-minor-chords', { shotAfter: 2 })
+  await back()
+  await playChordArcade('Barmen: Sol Majör ve Mi Minör', 'keys-bar')
   await back()
   await playMemory('Hafıza: Sol Majör', 'keys-memory')
   await back()
@@ -1348,6 +1352,68 @@ async function keysUnit() {
   await page.waitForSelector('.chord-wrap .staff svg')
   await page.screenshot({ path: `${out}/keys-fsharp-chords.png` })
   await page.getByLabel('Dersten çık').click()
+  await page.waitForSelector('.home')
+}
+
+/**
+ * Etüt Kitaplığı (after Başlangıç): the theory card, a first étude read from the score with a
+ * mistake, the next lessons and level opening, the switch to the falling notes, an étude in
+ * two hands, and one on the metronome (test mode opens it).
+ */
+async function etudesUnit() {
+  const back = async () => {
+    await dismissOverlay()
+    await page.getByText('Derslere dön').click()
+    await page.waitForSelector('.etudes')
+    await page.waitForTimeout(300)
+  }
+  const isOpen = (id) => page.locator(`[data-etude="${id}"]`).isEnabled()
+  await page.locator('[data-node="etudes"] button').click()
+  await page.waitForSelector('.etudes')
+  await page.screenshot({ path: `${out}/etudes-library.png`, fullPage: true })
+  if (await isOpen('etude-menuet-g-right')) throw new Error('Études: the second lesson should wait for the first')
+  if (await isOpen('etude-menuet-g-both')) throw new Error('Études: level 2 should be locked')
+
+  await playTheory('Partisyonu Okumak', 'etude-theory', { shots: [0, 2] })
+  await back()
+  if (!(await page.$('[data-etude="etude-intro"].back')))
+    throw new Error('Études: the library should mark the lesson played')
+  if (!(await isOpen('etude-menuet-g-right'))) throw new Error('Études: a star should open the next lesson')
+  if (!(await isOpen('etude-menuet-g-both'))) throw new Error('Études: a star in level 1 should open level 2')
+
+  await playWaterfall('Sol Majör Menüet: Sağ El', 'etude-wait', { wrongAt: 3, shotAt: 8 })
+  const results = await page.textContent('.results')
+  if (!/Sol Majör Menüet/.test(results)) throw new Error(`Étude results: ${results.slice(0, 200)}`)
+  await back()
+
+  // The score is the default view; the chip switches to the falling notes and back.
+  await openLesson('Sol Majör Menüet: Sol El')
+  await page.waitForSelector('.score-view svg')
+  const bass = await page.$$eval('.score-view svg', (svgs) => svgs.length)
+  if (bass !== 1) throw new Error(`Études: expected one score, saw ${bass}`)
+  await page.click('.view-toggle')
+  await page.waitForSelector('.waterfall canvas')
+  await page.screenshot({ path: `${out}/etude-waterfall.png` })
+  await page.click('.view-toggle')
+  await page.waitForSelector('.score-view svg')
+  await page.getByLabel('Dersten çık').click()
+  await page.waitForSelector('.etudes')
+
+  await playWaterfall('Sol Majör Menüet: İki El', 'etude-both', { shotAt: 10 })
+  if (!/İki el birlikte/.test(await page.textContent('.results'))) throw new Error('Two-hand étude lacks its topic')
+  await back()
+
+  // On the metronome: sixteenths in 2/4 (Musette's right hand), opened by test mode.
+  await page.getByLabel('Haritaya dön').click()
+  await page.waitForSelector('.home')
+  await page.evaluate(() =>
+    localStorage.setItem('dpo-settings', JSON.stringify({ state: { testMode: true }, version: 0 })),
+  )
+  await page.reload()
+  await page.locator('[data-node="etudes"] button').click()
+  await playBeat('Musette: Metronomla', 'etude-tempo', { slower: 4 })
+  await back()
+  await page.getByLabel('Haritaya dön').click()
   await page.waitForSelector('.home')
 }
 
@@ -1755,6 +1821,15 @@ if (process.env.SMOKE_ONLY === 'games') {
   await gamesRound()
   await finish()
   console.log(`Smoke test (games) passed. Screenshots in ${out}/`)
+  process.exit(0)
+}
+// SMOKE_ONLY=etudes plays Başlangıç (it opens the Etüt Kitaplığı), then études.
+if (process.env.SMOKE_ONLY === 'etudes') {
+  await page.waitForTimeout(800)
+  await basicsUnit()
+  await etudesUnit()
+  await finish()
+  console.log(`Smoke test (etudes) passed. Screenshots in ${out}/`)
   process.exit(0)
 }
 // SMOKE_ONLY=keys plays the second key unit (Sol Majör ve Mi Minör) in test mode.

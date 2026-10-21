@@ -7,7 +7,7 @@ import type { SkillProvider } from '../arcade/skill'
 import { type ParsedSong, partKeys } from './song'
 
 /** A whole bar as one value: BeatFrame only counts the bars and their beats. */
-const BAR_VALUE: Record<number, RhythmValue> = { 3: 'hd', 4: 'w' }
+const BAR_VALUE: Record<number, RhythmValue> = { 2: 'h', 3: 'hd', 4: 'w' }
 
 export function tempoPlan(song: ParsedSong, ignoreOctave = false): { bars: RhythmValue[][]; skill: SkillProvider } {
   const value = BAR_VALUE[song.beatsPerBar]

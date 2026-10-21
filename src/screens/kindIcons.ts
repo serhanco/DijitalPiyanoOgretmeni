@@ -22,6 +22,7 @@ export const KIND_ICON: Record<LessonKind, string> = {
   surf: '🏄',
   ear: '🔍',
   waterfall: '🌊',
+  etude: '📜',
   boss: '👾',
   mix: '🔀',
   train: '🚂',

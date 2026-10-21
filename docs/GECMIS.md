@@ -114,6 +114,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-18 | Oyun turu 2: altın balon ve altın müşteri (bonus XP), ipucu parıltısı (takılınca doğru tuş parlar, ilk deneme sayılmaz, raporda ayrı), kostüm dolabı (10 kostüm, seviye ve rozetle açılır), Kurbağa Atlayışı (aralık okuma), Çift Kişilik Davul (soru-cevap ritim) | dal `claude/project-thread-q9rplm`     |
 | 2026-10-20 | Faz 13: Piyanonu bağla sihirbazı ve raporu, sustain pedalı, örnek notalar piyanodan (MIDI çıkışı), ders sırasında ekran açık, Notiş simgeleri, yükleme ve güncelleme bildirimi, Android uygulaması (yerel USB ve Bluetooth MIDI)                                   | PR #45                                 |
 | 2026-10-21 | Faz 14: Tonlar yolculuğu. 12 ton ünitesi (beşliler çemberi sırasıyla, her biri 15 ders): her tonda gam, iki el, tonun yedi akoru, çevrimler, kadanslar, arpejler, göreceli minör, hafıza, o tona taşınmış şarkı ve boss; Ton çemberi, 3 rozet                      | dal `claude/project-thread-9i936j`     |
+| 2026-10-21 | Faz 15a: Etüt Kitaplığı (3 seviye, 38 ders), partisyon görünümü (iki porte, bağ, parmak, 16'lık, 2/4), Mutopia içe aktarma aracı, 9 kamu malı eser (Bach defteri, Pleyel, Czerny Op. 821); Uzay ve Akor Barmeni kartlarında ♯/♭, ton ünitelerinde bu iki oyun      | dal `claude/project-thread-vn0hlf`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -277,6 +278,15 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   oyunu Akor Aşçısı: Uzay Savunması ve Akor Barmeni'nin küçük kartları değiştirme işareti çizmiyor. Şarkılar Do
   majörden derece derece tona taşınır (aynı melodi, tonun harfleriyle). Melodik minör ve diğer akor oyunları
   sonraya bırakıldı.
+
+- **Faz 15a (Klasik etütler, ilk bölüm):** Plan gözden geçirildi (`/mnt/project-files/faz-15/plan.md`). Serhan'ın
+  cevapları: Mutopia ve IMSLP'ye ağ izni (yeni bulut ortamı), "tamam başla, arkada çöp de bırakmayalım". Kurallar:
+  nota ezberden yazılmaz, yalnızca "Public Domain" işaretli Mutopia eserleri alınır (başlık ve katalog kaydı ikisi de),
+  her eser özgün adı ve kökeniyle görünür. Mutopia'da Beyer ve Czerny Op. 599 bulunmadı; seviye 1–3 Anna Magdalena
+  Bach defteri, Pleyel ve Czerny Op. 821 ile kuruldu (Serhan'a karar kartıyla soruldu). Üçleme, ölçü değiştiren ve
+  ortasında eksik ölçü olan parçalar içe aktarma aracınca reddedilir; süslemeler (mordan, tril) çalınmaz, yalnızca ana
+  nota. Tekrarlar açılmış yazılır (ölçü numaraları çalındığı gibi). LilyPond deponun dışında kalır (araç
+  `LILYPOND` ile yolunu alır); indirilenler geçici klasörde, iş bitince silinir.
 
 ## Açık konular
 

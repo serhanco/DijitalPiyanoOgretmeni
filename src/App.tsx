@@ -14,6 +14,7 @@ import { HomeScreen } from './screens/HomeScreen'
 import { LessonPlayer } from './screens/LessonPlayer'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { isSalonId, salonResult } from './games/salon/salon'
+import { isEtudeId } from './games/etudes/lessons'
 import { ResultsScreen } from './screens/ResultsScreen'
 import { type Reward, useProfile } from './state/profile'
 import { useSettings } from './state/settings'
@@ -25,6 +26,7 @@ import { type Place, TestTools } from './testing/TestTools'
 
 // The note-reading drill is the most played screen: load it right after the map.
 const loadGame = () => import('./screens/NoteHunterScreen')
+const EtudeScreen = lazy(() => import('./screens/EtudeScreen').then((m) => ({ default: m.EtudeScreen })))
 const SalonScreen = lazy(() => import('./screens/SalonScreen').then((m) => ({ default: m.SalonScreen })))
 const KeyboardSetupScreen = lazy(() =>
   import('./screens/KeyboardSetupScreen').then((m) => ({ default: m.KeyboardSetupScreen })),
@@ -39,6 +41,7 @@ type Screen =
   | { name: 'calibrate'; from?: 'setup' }
   | { name: 'setup' }
   | { name: 'salon'; last?: string }
+  | { name: 'etudes'; last?: string }
   | { name: 'play'; lesson: NoteLesson; run: number }
   | {
       name: 'results'
@@ -163,9 +166,15 @@ export default function App() {
 
   const home = () => setScreen({ name: 'home' })
   // Finished, failed or left halfway: the map comes back at the lesson's node.
-  // Salon games go back to the salon, with the game just played still picked.
+  // Salon games go back to the salon, with the game just played still picked, études to the Etüt Kitaplığı.
   const backFrom = (lesson: NoteLesson) => () =>
-    setScreen(isSalonId(lesson.id) ? { name: 'salon', last: lesson.id } : { name: 'home', focus: mapNodeOf(lesson) })
+    setScreen(
+      isSalonId(lesson.id)
+        ? { name: 'salon', last: lesson.id }
+        : isEtudeId(lesson.id)
+          ? { name: 'etudes', last: lesson.id }
+          : { name: 'home', focus: mapNodeOf(lesson) },
+    )
 
   const place: Place =
     screen.name === 'play'
@@ -186,7 +195,9 @@ export default function App() {
                     ? 'Piyanonu bağla'
                     : screen.name === 'salon'
                       ? 'Oyun Salonu'
-                      : 'Harita',
+                      : screen.name === 'etudes'
+                        ? 'Etüt Kitaplığı'
+                        : 'Harita',
           }
 
   return (
@@ -199,6 +210,7 @@ export default function App() {
             onCalibrate={() => setScreen({ name: 'calibrate' })}
             onSetup={() => setScreen({ name: 'setup' })}
             onSalon={() => setScreen({ name: 'salon' })}
+            onEtudes={() => setScreen({ name: 'etudes' })}
             focus={screen.focus}
           />
         )}
@@ -206,6 +218,11 @@ export default function App() {
         {screen.name === 'salon' && (
           <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
             <SalonScreen onStart={start} onBack={home} last={screen.last} />
+          </Suspense>
+        )}
+        {screen.name === 'etudes' && (
+          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+            <EtudeScreen onStart={start} onBack={home} last={screen.last} />
           </Suspense>
         )}
         {screen.name === 'calibrate' && (

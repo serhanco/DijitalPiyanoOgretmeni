@@ -55,7 +55,17 @@ const JUDGEMENT_COLORS: Record<Judgement, string> = {
   miss: '#ff4b4b',
 }
 
-const DURATION: Record<RhythmValue, string> = { w: 'w', h: 'h', q: 'q', e: '8', qr: 'qr', qd: 'qd', hd: 'hd' }
+const DURATION: Record<RhythmValue, string> = {
+  w: 'w',
+  h: 'h',
+  q: 'q',
+  e: '8',
+  s: '16',
+  qr: 'qr',
+  qd: 'qd',
+  hd: 'hd',
+  ed: '8d',
+}
 
 /** The notation sets its own paper and ink for the colour scheme instead of leaning on a CSS filter, so it reads in any browser. */
 const THEMES = {

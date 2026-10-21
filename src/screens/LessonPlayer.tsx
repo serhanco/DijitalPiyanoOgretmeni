@@ -80,7 +80,7 @@ function LessonScreen({ lesson, onFinish, onExit }: LessonScreenProps) {
         <RhythmScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'ear' ? (
         <EarScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
-      ) : lesson.kind === 'waterfall' ? (
+      ) : lesson.kind === 'waterfall' || lesson.kind === 'etude' ? (
         <SongScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />
       ) : lesson.kind === 'duet' ? (
         <DuetScreen lesson={lesson} onFinish={onFinish} onExit={onExit} />

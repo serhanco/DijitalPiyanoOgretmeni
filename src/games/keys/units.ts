@@ -471,6 +471,12 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
         : 'I, IV ve V çevrimleri: adları yazmıyor, porteden oku',
       { chords: primaryInversions(k), draw: 12, mode: 'exact', showName: level < 2, key: majorKey },
     ),
+    chordLesson('space', id('space'), `Uzay: ${M}`, 'İstilacılar I, IV ve V’yi çevrimleriyle getiriyor', {
+      chords: primaryInversions(k),
+      draw: 12 + 2 * level,
+      mode: 'voicing',
+      showName: level < 2,
+    }),
     chordLesson(
       'chord',
       id('inv-ladder'),
@@ -519,6 +525,12 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
       showName: true,
       progression: MINOR_CADENCE,
       key: minorKey,
+    }),
+    chordLesson('chordbar', id('bar'), `Barmen: ${M} ve ${m}`, 'Müşteriler iki tonun akorlarını karışık ister', {
+      chords: [...keyTriads(k.major), ...keyTriads(k.minor, true)],
+      draw: 12 + 2 * level,
+      mode: 'voicing',
+      showName: level < 3,
     }),
     memoryLesson(
       id('memory'),

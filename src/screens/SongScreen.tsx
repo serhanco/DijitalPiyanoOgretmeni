@@ -21,6 +21,8 @@ import type { BeatTrack } from '../rhythm/track'
 import { useSettings } from '../state/settings'
 import { useFinishRequest } from '../testing/finishRequest'
 import { BeatFrame, type FieldProps } from './beat/BeatFrame'
+import { type EtudeScore, useEtudeScore } from './song/etudeScore'
+import { TempoScore, ViewToggle, WaitScore } from './song/ScoreFields'
 
 /** A song in rhythm mode is long: a few more hearts than a drill. */
 const SONG_HEARTS = 5
@@ -50,6 +52,12 @@ const HANDS_TEXT: Record<SongSpec['hands'], string> = {
   both: 'İki elle çal: mavi notalar sağ el, pembe notalar sol el.',
 }
 
+const ETUDE_HANDS: Record<SongSpec['hands'], string> = {
+  right: 'Sağ elle çal: üst porte.',
+  left: 'Sol elle çal: alt porte.',
+  both: 'İki elle çal: üst porte sağ el, alt porte sol el.',
+}
+
 function SongInfo({ spec }: { spec: SongSpec }) {
   return (
     <div className="tune-info song-tunes" data-tune={spec.songs.map((s) => s.original).join(' · ')}>
@@ -67,8 +75,14 @@ function SongInfo({ spec }: { spec: SongSpec }) {
   )
 }
 
-/** Ritimli mod: the waterfall drawn from the running track. */
-function TempoField({ trackRef, song, lesson }: FieldProps & { song: ParsedSong; lesson: NoteLesson }) {
+/** Ritimli mod: the waterfall drawn from the running track, or an étude's score. */
+function TempoField({
+  trackRef,
+  song,
+  lesson,
+  etude,
+}: FieldProps & { song: ParsedSong; lesson: NoteLesson; etude: EtudeScore | null }) {
+  const view = useSettings((s) => s.etudeView)
   const position = useCallback(() => {
     const t = trackRef.current
     // Before the start the first notes wait just above the line.
@@ -84,6 +98,7 @@ function TempoField({ trackRef, song, lesson }: FieldProps & { song: ParsedSong;
     },
     [trackRef],
   )
+  if (etude && view === 'score') return <TempoScore etude={etude} song={song} trackRef={trackRef} />
   return (
     <Waterfall
       notes={song.notes}
@@ -101,6 +116,7 @@ function TempoSong({ lesson, onFinish, onExit }: Props) {
   const { ignoreOctave, relaxedMode } = useSettings()
   const song = useMemo(() => lessonPart(spec), [spec])
   const plan = useMemo(() => tempoPlan(song, ignoreOctave), [song, ignoreOctave])
+  const etude = useEtudeScore(spec)
   useEffect(() => void expose({ mode: 'tempo', song, session: null }), [song])
   const report = useCallback(
     (tracks: BeatTrack[], summary: SessionSummary): SessionSummary => {
@@ -118,14 +134,23 @@ function TempoSong({ lesson, onFinish, onExit }: Props) {
     <BeatFrame
       lesson={lesson}
       hearts={relaxedMode ? null : SONG_HEARTS}
-      howTo={`Nota çizgiye değdiği an çal ve boyu kadar basılı tut. ${HANDS_TEXT[spec.hands]}`}
+      howTo={
+        etude
+          ? `Notayı oku, metronomla çal ve her notayı süresi kadar basılı tut. ${ETUDE_HANDS[spec.hands]}`
+          : `Nota çizgiye değdiği an çal ve boyu kadar basılı tut. ${HANDS_TEXT[spec.hands]}`
+      }
       className="arcade song"
       onFinish={onFinish}
       onExit={onExit}
       plan={plan}
       report={report}
       holds
-      renderField={(p) => <TempoField {...p} song={song} lesson={lesson} />}
+      renderField={(p) => (
+        <>
+          <TempoField {...p} song={song} lesson={lesson} etude={etude} />
+          {etude && <ViewToggle />}
+        </>
+      )}
     />
   )
 }
@@ -133,15 +158,21 @@ function TempoSong({ lesson, onFinish, onExit }: Props) {
 /** Bekleyen mod: the notes stop at the line until the right keys are down. */
 function WaitSong({ lesson, onFinish, onExit }: Props) {
   const spec = lesson.song!
-  const { ignoreOctave, showKeyLabels } = useSettings()
+  const { ignoreOctave, showKeyLabels, etudeView } = useSettings()
   const song = useMemo(() => lessonPart(spec), [spec])
+  const etude = useEtudeScore(spec)
+  const onScore = etude !== null && etudeView === 'score'
   const suggested = Math.min(WAIT_BPM.max, Math.max(WAIT_BPM.min, Math.round((lesson.rhythm?.bpm ?? 70) / 10) * 10))
   const [bpm, setBpm] = useState(suggested)
   const [session, setSession] = useState<WaitSession | null>(null)
   const sessionRef = useRef<WaitSession | null>(null)
   const [, setTick] = useState(0)
   const [mood, setMood] = useState<{ mood: MascotMood; pulse: number }>({ mood: 'idle', pulse: 0 })
-  const [message, setMessage] = useState(`Notalar klavyeye iner ve sen basana kadar bekler. ${HANDS_TEXT[spec.hands]}`)
+  const [message, setMessage] = useState(
+    etude
+      ? `Mavi notaları çal: nota sen doğru tuşlara basana kadar bekler. ${ETUDE_HANDS[spec.hands]}`
+      : `Notalar klavyeye iner ve sen basana kadar bekler. ${HANDS_TEXT[spec.hands]}`,
+  )
   const [flash, setFlash] = useState<{ midi: number; mark: KeyMark } | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
   const finished = useRef(false)
@@ -326,14 +357,19 @@ function WaitSong({ lesson, onFinish, onExit }: Props) {
       )}
 
       <div className="beat-field">
-        <Waterfall
-          notes={song.notes}
-          low={lesson.keyboard.low}
-          high={lesson.keyboard.high}
-          beatsPerBar={song.beatsPerBar}
-          position={position}
-          stateOf={stateOf}
-        />
+        {onScore ? (
+          <WaitScore etude={etude} song={song} session={session} wrong={flash?.mark === 'wrong'} />
+        ) : (
+          <Waterfall
+            notes={song.notes}
+            low={lesson.keyboard.low}
+            high={lesson.keyboard.high}
+            beatsPerBar={song.beatsPerBar}
+            position={position}
+            stateOf={stateOf}
+          />
+        )}
+        {etude && <ViewToggle />}
         {banner && <span className="song-banner">{banner}</span>}
       </div>
 
