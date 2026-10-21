@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { subscribe } from '../input/inputBus'
 import { octaveAdvice } from '../midi/keyboards'
 import { useMidi } from '../midi/midiStore'
+import { BluetoothScan } from '../midi/BluetoothScan'
+import { isNativeApp } from '../midi/nativeMidi'
+import { pedalDown, subscribePedal } from '../input/pedal'
+
+function usePedal(): boolean {
+  const [down, setDown] = useState(pedalDown)
+  useEffect(() => subscribePedal((e) => setDown(e.down)), [])
+  return down
+}
 
 /** For a 25-key controller: the next key pressed is taken as its leftmost key. */
 function OctaveCheck({ device }: { device: string }) {
@@ -48,8 +57,9 @@ function OwnKeyboardsHelp() {
   )
 }
 
-export function MidiPanel() {
-  const { status, devices, error, connect } = useMidi()
+export function MidiPanel({ onSetup }: { onSetup?: () => void }) {
+  const { status, devices, output, error, connect } = useMidi()
+  const pedal = usePedal()
   const [showHelp, setShowHelp] = useState(false)
 
   let text: string
@@ -84,6 +94,18 @@ export function MidiPanel() {
         {status === 'requesting' && <span className="muted">Bağlanıyor…</span>}
       </div>
       {error && <p className="muted small">{error}</p>}
+      {isNativeApp() && status === 'ready' && devices.length === 0 && <BluetoothScan />}
+      {(output || pedal) && (
+        <p className="small muted midi-extras">
+          {output && <span data-midi-output>🔊 Örnek notalar piyanodan çalar</span>}
+          {pedal && <span data-pedal>🦶 Pedal basılı</span>}
+        </p>
+      )}
+      {onSetup && status !== 'unsupported' && (
+        <button className="btn btn-small midi-setup" onClick={onSetup} data-open-setup>
+          🎹 Piyanonu bağla: adım adım kontrol
+        </button>
+      )}
       {devices
         .filter((d) => d.keyboard)
         .map((d) => (
@@ -100,7 +122,8 @@ export function MidiPanel() {
           <OwnKeyboardsHelp />
           <li>
             <b>Android:</b> Chrome kullan. USB kablo takınca Bağlan’a dokun. Bluetooth MIDI klavyeyi önce "MIDI BLE
-            Connect" gibi bir uygulamayla eşleştir, sonra buraya dönüp Bağlan’a dokun.
+            Connect" gibi bir uygulamayla eşleştir, sonra buraya dönüp Bağlan’a dokun. Uygulamanın Android sürümünde
+            Bluetooth piyanoyu doğrudan buradan bulursun (Ayarlar → Uygulama).
           </li>
           <li>
             <b>Mac:</b> Chrome ya da Edge kullan. Bluetooth için Audio MIDI Setup → Pencere → MIDI Stüdyosu → Bluetooth

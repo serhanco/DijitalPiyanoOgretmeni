@@ -4,6 +4,7 @@ import { type NoteLesson, PATTERN_KINDS } from './games/noteHunter/lessons'
 import type { SessionSummary } from './games/noteHunter/summary'
 import { attachComputerKeyboard, setComputerKeyboardBase } from './input/computerKeyboard'
 import { useMidi } from './midi/midiStore'
+import { isNativeApp } from './midi/nativeMidi'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { buildReviewLesson, mapNodeOf } from './progress/curriculum'
 import { adaptsTempo, nextTempo } from './progress/adaptive'
@@ -16,6 +17,7 @@ import { isSalonId, salonResult } from './games/salon/salon'
 import { ResultsScreen } from './screens/ResultsScreen'
 import { type Reward, useProfile } from './state/profile'
 import { useSettings } from './state/settings'
+import { UpdateToast } from './components/UpdateToast'
 import { Welcome } from './components/Welcome'
 import { welcomeDone } from './components/welcomeState'
 import { consumeFinishRequest } from './testing/finishRequest'
@@ -24,6 +26,9 @@ import { type Place, TestTools } from './testing/TestTools'
 // The note-reading drill is the most played screen: load it right after the map.
 const loadGame = () => import('./screens/NoteHunterScreen')
 const SalonScreen = lazy(() => import('./screens/SalonScreen').then((m) => ({ default: m.SalonScreen })))
+const KeyboardSetupScreen = lazy(() =>
+  import('./screens/KeyboardSetupScreen').then((m) => ({ default: m.KeyboardSetupScreen })),
+)
 const CalibrationScreen = lazy(() =>
   import('./screens/CalibrationScreen').then((m) => ({ default: m.CalibrationScreen })),
 )
@@ -31,7 +36,8 @@ const CalibrationScreen = lazy(() =>
 type Screen =
   | { name: 'home'; focus?: string }
   | { name: 'profile' }
-  | { name: 'calibrate' }
+  | { name: 'calibrate'; from?: 'setup' }
+  | { name: 'setup' }
   | { name: 'salon'; last?: string }
   | { name: 'play'; lesson: NoteLesson; run: number }
   | {
@@ -70,8 +76,13 @@ export default function App() {
   useEffect(() => void loadGame(), [])
 
   // Chrome remembers a granted MIDI permission, so try quietly on load.
+  // The Android app needs no permission for USB keyboards: connect at once.
   useEffect(() => {
-    if (midiStatus !== 'idle' || !navigator.permissions) return
+    if (midiStatus === 'idle' && isNativeApp()) void connectMidi()
+  }, [midiStatus, connectMidi])
+
+  useEffect(() => {
+    if (midiStatus !== 'idle' || !navigator.permissions || isNativeApp()) return
     navigator.permissions
       .query({ name: 'midi' as PermissionName })
       .then((p) => {
@@ -171,9 +182,11 @@ export default function App() {
                 ? 'Profil'
                 : screen.name === 'calibrate'
                   ? 'Gecikme ayarı'
-                  : screen.name === 'salon'
-                    ? 'Oyun Salonu'
-                    : 'Harita',
+                  : screen.name === 'setup'
+                    ? 'Piyanonu bağla'
+                    : screen.name === 'salon'
+                      ? 'Oyun Salonu'
+                      : 'Harita',
           }
 
   return (
@@ -184,6 +197,7 @@ export default function App() {
             onStart={start}
             onProfile={() => setScreen({ name: 'profile' })}
             onCalibrate={() => setScreen({ name: 'calibrate' })}
+            onSetup={() => setScreen({ name: 'setup' })}
             onSalon={() => setScreen({ name: 'salon' })}
             focus={screen.focus}
           />
@@ -196,7 +210,12 @@ export default function App() {
         )}
         {screen.name === 'calibrate' && (
           <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-            <CalibrationScreen onBack={home} />
+            <CalibrationScreen onBack={screen.from === 'setup' ? () => setScreen({ name: 'setup' }) : home} />
+          </Suspense>
+        )}
+        {screen.name === 'setup' && (
+          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+            <KeyboardSetupScreen onBack={home} onCalibrate={() => setScreen({ name: 'calibrate', from: 'setup' })} />
           </Suspense>
         )}
         {screen.name === 'play' && (
@@ -221,6 +240,7 @@ export default function App() {
           />
         )}
       </ErrorBoundary>
+      {screen.name === 'home' && <UpdateToast />}
       {showWelcome && <Welcome onDone={() => setWelcomed(true)} />}
       {testMode && <TestTools place={place} />}
     </main>

@@ -7,7 +7,7 @@ import { QuestBoard } from './QuestBoard'
 import { Sheet } from './Sheet'
 
 /** Two short cards under the greeting; the quest board and the MIDI panel open from them as sheets. */
-export function HomeShortcuts() {
+export function HomeShortcuts({ onSetup }: { onSetup?: () => void }) {
   const quests = useProfile((s) => s.quests)
   const weekly = useProfile((s) => s.weekly)
   const ensure = useProfile((s) => s.ensureQuests)
@@ -59,7 +59,7 @@ export function HomeShortcuts() {
       )}
       {open === 'midi' && (
         <Sheet title="Klavye bağlantısı" onClose={() => setOpen(null)}>
-          <MidiPanel />
+          <MidiPanel onSetup={onSetup} />
         </Sheet>
       )}
     </>

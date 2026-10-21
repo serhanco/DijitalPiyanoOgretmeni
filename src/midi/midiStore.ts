@@ -1,7 +1,10 @@
 import { create } from 'zustand'
 import { noteOff, noteOn } from '../input/inputBus'
+import { emitPedal } from '../input/pedal'
 import { keyboardFor, type KeyboardProfile } from './keyboards'
 import { parseMidiMessage } from './midiMessage'
+import { isEcho, pickOutput, setPianoOutput } from './midiOut'
+import { isNativeApp, requestNativeMidiAccess } from './nativeMidi'
 
 export type MidiStatus = 'unsupported' | 'idle' | 'requesting' | 'ready' | 'denied'
 
@@ -16,6 +19,8 @@ export interface MidiDevice {
 interface MidiState {
   status: MidiStatus
   devices: MidiDevice[]
+  /** The output port example notes are played on (a connected piano with its own sound), if any. */
+  output: string | null
   error?: string
   connect: () => Promise<void>
 }
@@ -28,7 +33,9 @@ function handleMessage(e: MIDIMessageEvent, device: string) {
   if (!msg) return
   // Event timestamps share performance.now()'s clock.
   const time = e.timeStamp || performance.now()
-  if (msg.type === 'on') noteOn(msg.midi, 'midi', msg.velocity, time, device)
+  if (msg.type === 'pedal') emitPedal(msg.down, time, device)
+  else if (isEcho(msg.midi, time)) return
+  else if (msg.type === 'on') noteOn(msg.midi, 'midi', msg.velocity, time, device)
   else noteOff(msg.midi, 'midi', time, device)
 }
 
@@ -49,18 +56,29 @@ function attachInputs(set: (s: Partial<MidiState>) => void) {
       devices.push({ id: input.id, name, manufacturer: input.manufacturer || '', keyboard })
     }
   })
-  set({ devices })
+  const outputs: MIDIOutput[] = []
+  access.outputs.forEach((o) => {
+    if (o.state === 'connected') outputs.push(o)
+  })
+  const info = (p: MIDIPort) => ({ id: p.id, name: p.name || '', manufacturer: p.manufacturer || '' })
+  const picked = pickOutput(devices, outputs.map(info))
+  const port = picked ? (outputs.find((o) => o.id === picked.id) ?? null) : null
+  setPianoOutput(port)
+  set({ devices, output: port?.name ?? null })
 }
 
 export const useMidi = create<MidiState>((set, get) => ({
-  status: typeof navigator !== 'undefined' && 'requestMIDIAccess' in navigator ? 'idle' : 'unsupported',
+  status:
+    isNativeApp() || (typeof navigator !== 'undefined' && 'requestMIDIAccess' in navigator) ? 'idle' : 'unsupported',
   devices: [],
+  output: null,
   async connect() {
     const { status } = get()
     if (status === 'unsupported' || status === 'requesting' || status === 'ready') return
     set({ status: 'requesting', error: undefined })
     try {
-      access = await navigator.requestMIDIAccess({ sysex: false })
+      // The Android app has no Web MIDI: its native plugin stands in for it.
+      access = isNativeApp() ? await requestNativeMidiAccess() : await navigator.requestMIDIAccess({ sysex: false })
       // Hot-plugged or Bluetooth devices that (re)connect show up here.
       access.onstatechange = () => attachInputs(set)
       attachInputs(set)

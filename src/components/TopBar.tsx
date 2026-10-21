@@ -6,6 +6,7 @@ import { SettingsPanel } from './SettingsPanel'
 interface Props {
   onProfile: () => void
   onCalibrate: () => void
+  onSetup: () => void
   onUnits: () => void
   /** Tapping a stat chip explains it (the map shows the text in its toast). */
   onHint?: (text: string) => void
@@ -32,7 +33,7 @@ export function GoalRing({ value, goal, size = 40 }: { value: number; goal: numb
 }
 
 /** The map's top bar: sticks to the top of the screen while the map scrolls. */
-export function TopBar({ onProfile, onCalibrate, onUnits, onHint }: Props) {
+export function TopBar({ onProfile, onCalibrate, onSetup, onUnits, onHint }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { totalXp, streak, daily, dailyGoal } = useProfile()
   const [today] = useState(() => dayKey(new Date()))
@@ -85,6 +86,10 @@ export function TopBar({ onProfile, onCalibrate, onUnits, onHint }: Props) {
           onCalibrate={() => {
             setSettingsOpen(false)
             onCalibrate()
+          }}
+          onSetup={() => {
+            setSettingsOpen(false)
+            onSetup()
           }}
           onClose={() => setSettingsOpen(false)}
         />

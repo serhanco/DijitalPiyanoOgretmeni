@@ -18,6 +18,8 @@ import { rhythmSkill, type SkillProvider } from '../../games/arcade/skill'
 import type { NoteLesson, RhythmSpec } from '../../games/noteHunter/lessons'
 import type { SessionSummary } from '../../games/noteHunter/summary'
 import { subscribe } from '../../input/inputBus'
+import { subscribePedal } from '../../input/pedal'
+import { Sustain } from '../../input/sustain'
 import { solfegeName } from '../../music/notes'
 import { correctedTime } from '../../rhythm/calibration'
 import { rhythmPlan } from '../../rhythm/plan'
@@ -322,26 +324,39 @@ export function BeatFrame({
     [nameOf],
   )
 
-  // Key presses, corrected by the measured delay of their device.
-  useEffect(
-    () =>
-      subscribe((e) => {
-        const t = trackRef.current
-        if (!t) return
-        const { latency, deviceLatency } = useSettings.getState()
-        const time = correctedTime(e.time, e.source, latency, e.device, deviceLatency)
-        if (e.type === 'off') {
-          react(t.release(e.midi, time))
-          return
-        }
-        const events = t.press(e.midi, time)
-        const ev = events[0]
-        if (ev?.type === 'hit') setFlash({ midi: e.midi, mark: onTime(ev.judgement) ? 'correct' : 'hint' })
-        else if (ev?.type === 'wrong' || ev?.type === 'miss') setFlash({ midi: e.midi, mark: 'wrong' })
-        react(events)
-      }),
-    [react],
-  )
+  // Key presses, corrected by the measured delay of their device. A key let go
+  // while the sustain pedal is down still counts as held until the pedal lifts.
+  const sustain = useRef(new Sustain())
+  useEffect(() => {
+    const offPedal = subscribePedal((e) => {
+      const t = trackRef.current
+      const { latency, deviceLatency } = useSettings.getState()
+      const time = correctedTime(e.time, 'midi', latency, e.device, deviceLatency)
+      for (const r of sustain.current.pedal(e.down, time)) if (t) react(t.release(r.midi, r.time))
+    })
+    const offKeys = subscribe((e) => {
+      const t = trackRef.current
+      if (!t) return
+      const { latency, deviceLatency } = useSettings.getState()
+      const time = correctedTime(e.time, e.source, latency, e.device, deviceLatency)
+      if (e.type === 'off') {
+        const r = sustain.current.off(e.midi, time)
+        if (r) react(t.release(r.midi, r.time))
+        return
+      }
+      const restruck = sustain.current.on(e.midi, time)
+      if (restruck) react(t.release(restruck.midi, restruck.time))
+      const events = t.press(e.midi, time)
+      const ev = events[0]
+      if (ev?.type === 'hit') setFlash({ midi: e.midi, mark: onTime(ev.judgement) ? 'correct' : 'hint' })
+      else if (ev?.type === 'wrong' || ev?.type === 'miss') setFlash({ midi: e.midi, mark: 'wrong' })
+      react(events)
+    })
+    return () => {
+      offPedal()
+      offKeys()
+    }
+  }, [react])
 
   // The clock: settle passed notes and redraw every frame. A finished round
   // either leads to the next, faster one or ends the lesson.
