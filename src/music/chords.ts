@@ -79,7 +79,7 @@ export function chordTones(root: Tonic, quality: ChordQuality, octave: number): 
     const oct = octave + Math.floor(index / 7)
     const midi = rootMidi + semis
     const acc = midi - ((oct + 1) * 12 + LETTER_SEMITONES[letter])
-    if (acc < -1 || acc > 1) throw new Error(`Chord needs a double accidental: ${root.letter} ${quality}`)
+    if (acc < -2 || acc > 2) throw new Error(`Chord needs a triple accidental: ${root.letter} ${quality}`)
     return { midi, letter, acc: acc as Accidental, octave: oct }
   })
 }
@@ -239,6 +239,35 @@ const NUMERALS: Record<string, { degree: number; quality: ChordQuality }> = {
   'vii°': { degree: 6, quality: 'dim' },
 }
 
+/**
+ * The same in a minor key, on the natural minor's degrees; V, V7 and vii°
+ * come from the harmonic minor (the raised seventh degree, `raise`).
+ */
+const MINOR_NUMERALS: Record<string, { degree: number; quality: ChordQuality; raise?: boolean }> = {
+  i: { degree: 0, quality: 'minor' },
+  'ii°': { degree: 1, quality: 'dim' },
+  III: { degree: 2, quality: 'major' },
+  iv: { degree: 3, quality: 'minor' },
+  V: { degree: 4, quality: 'major' },
+  V7: { degree: 4, quality: 'dom7' },
+  VI: { degree: 5, quality: 'major' },
+  VII: { degree: 6, quality: 'major' },
+  'vii°': { degree: 6, quality: 'dim', raise: true },
+}
+
+/** The triads on the seven degrees of a key, I to vii° (major) or i to vii° (minor, with the harmonic V). */
+export const MAJOR_DEGREES = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'] as const
+export const MINOR_DEGREES = ['i', 'ii°', 'III', 'iv', 'V', 'VI', 'vii°'] as const
+
+/** The root and quality of a numeral in a key ("G", "V7"); `minor` reads it in the minor key on that tonic. */
+export function degreeChord(key: string, numeral: string, minor = false): { root: Tonic; quality: ChordQuality } {
+  const n = (minor ? MINOR_NUMERALS : NUMERALS)[numeral]
+  if (!n) throw new Error(`Unknown numeral: ${numeral}`)
+  const { letter, acc } = scaleOctave(parseTonic(key), minor ? 'natural' : 'major', 4)[n.degree]
+  const raise = 'raise' in n && n.raise ? 1 : 0
+  return { root: { letter, acc: (acc + raise) as Accidental }, quality: n.quality }
+}
+
 /** How far a chord's notes move from the previous chord's: each note to its nearest neighbour. */
 export function movement(from: number[], to: number[]): number {
   return to.reduce((n, m) => n + Math.min(...from.map((f) => Math.abs(f - m))), 0)
@@ -260,29 +289,27 @@ export interface ProgressionOptions {
   hands?: 'right' | 'both'
   /** Pick each chord's inversion so the hand moves as little as possible (the default). */
   voiceLead?: boolean
+  /** The key is minor: numerals i, ii°, III, iv, V, V7, VI, VII, vii°. */
+  minor?: boolean
 }
 
 /**
- * A progression in a major key, e.g. ("C", ["I", "IV", "V", "I"]). With
- * voice leading the first chord is in root position and every next chord
- * takes the inversion nearest to the one before: in C, I – IV – V – I is
- * C-E-G, C-F-A, B-D-G, C-E-G.
+ * A progression in a key, e.g. ("C", ["I", "IV", "V", "I"]), or with `minor`
+ * ("A", ["i", "iv", "V7", "i"]). With voice leading the first chord is in root
+ * position and every next chord takes the inversion nearest to the one
+ * before: in C, I – IV – V – I is C-E-G, C-F-A, B-D-G, C-E-G.
  */
 export function progression(
   key: string,
   numerals: string[],
-  { hands = 'right', voiceLead = true }: ProgressionOptions = {},
+  { hands = 'right', voiceLead = true, minor = false }: ProgressionOptions = {},
 ): ChordTarget[] {
-  const scale = scaleOctave(parseTonic(key), 'major', 4)
   let prev: number[] | null = null
   return numerals.map((numeral) => {
-    const n = NUMERALS[numeral]
-    if (!n) throw new Error(`Unknown numeral: ${numeral}`)
-    const { letter, acc } = scale[n.degree]
-    const root: Tonic = { letter, acc }
+    const { root, quality } = degreeChord(key, numeral, minor)
     let pick: { inversion: Inversion; tones: SpelledNote[] }
     if (!voiceLead || prev === null) {
-      pick = { inversion: 0, tones: chordTarget(root, n.quality).notes }
+      pick = { inversion: 0, tones: chordTarget(root, quality).notes }
     } else {
       const from = prev
       const cost = (c: { tones: SpelledNote[] }) =>
@@ -290,10 +317,66 @@ export function progression(
           from,
           c.tones.map((x) => x.midi),
         )
-      pick = candidates(root, n.quality).sort((a, b) => cost(a) - cost(b) || a.inversion - b.inversion)[0]
+      pick = candidates(root, quality).sort((a, b) => cost(a) - cost(b) || a.inversion - b.inversion)[0]
     }
     prev = pick.tones.map((x) => x.midi)
-    return withBass({ root, quality: n.quality, inversion: pick.inversion, hands, numeral }, pick.tones)
+    return withBass({ root, quality, inversion: pick.inversion, hands, numeral }, pick.tones)
+  })
+}
+
+// --- Exercises in a key ---
+
+/** Semitones a note lies outside the treble staff (E4 to F5): what makes it hard to read. */
+const outsideTreble = (midi: number) => Math.max(0, 64 - midi, midi - 77)
+
+/** Of the octaves 3 and 4, the one where the notes `span` semitones up from the root sit best on the treble staff. */
+function trebleOctave(root: Tonic, span: number): number {
+  const cost = (o: number) => {
+    const low = midiFrom(root.letter, o) + root.acc
+    return Math.max(outsideTreble(low), outsideTreble(low + span))
+  }
+  return cost(3) < cost(4) ? 3 : 4
+}
+
+/**
+ * Gamın akorları: the triad on every degree of the key in root position,
+ * going up from the tonic to the tonic an octave higher and back down
+ * (15 chords), right hand 1-3-5, numerals on each.
+ */
+export function scaleChords(key: string, minor = false): ChordTarget[] {
+  const tonic = parseTonic(key)
+  const octave = trebleOctave(tonic, 19)
+  const scale = scaleOctave(tonic, minor ? 'natural' : 'major', octave)
+  const degrees = minor ? MINOR_DEGREES : MAJOR_DEGREES
+  const rising = [...degrees, degrees[0]].map((numeral, i) => {
+    const { root, quality } = degreeChord(key, numeral, minor)
+    const tones = chordTones(root, quality, scale[i].octave)
+    return withBass({ root, quality, inversion: 0, hands: 'right', numeral }, tones)
+  })
+  return [...rising, ...rising.slice(0, -1).reverse()]
+}
+
+/**
+ * Çevrim merdiveni: one triad climbing through its inversions (root position,
+ * 1st, 2nd, root position an octave up) and back down: seven chords, right hand.
+ */
+export function inversionLadder(root: string | Tonic, quality: ChordQuality, numeral?: string): ChordTarget[] {
+  const tonic = typeof root === 'string' ? parseTonic(root) : root
+  const octave = trebleOctave(tonic, 19)
+  const at = (inversion: Inversion, o: number) =>
+    withBass(
+      { root: tonic, quality, inversion, hands: 'right', ...(numeral && { numeral }) },
+      invert(chordTones(tonic, quality, o), inversion),
+    )
+  const rising = [at(0, octave), at(1, octave), at(2, octave), at(0, octave + 1)]
+  return [...rising, ...rising.slice(0, -1).reverse()]
+}
+
+/** The key's triads (each degree once), placed for reading like `chordTarget`: chord games draw from them. */
+export function keyTriads(key: string, minor = false, inversions: Inversion[] = [0]): ChordTarget[] {
+  return (minor ? MINOR_DEGREES : MAJOR_DEGREES).flatMap((numeral) => {
+    const { root, quality } = degreeChord(key, numeral, minor)
+    return inversions.map((inv) => chordTarget(root, quality, inv, 'right', numeral))
   })
 }
 

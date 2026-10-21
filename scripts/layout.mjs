@@ -121,6 +121,13 @@ const CASES = [
     area: '.beat-field',
   },
   { id: 'waterfall', name: 'Nota Şelalesi (ritimli)', title: 'Azizler Yürürken', drive: 'beat', area: '.beat-field' },
+  // Tonlar yolculuğu: the key intro (key signature art), the chords of a key with its long numeral row,
+  // a two-hand cadence, six sharps with a double sharp, a song carried into a key.
+  { id: 'key-intro', name: 'Ton tanışması', title: 'Si♭ Majör ve Sol Minör', drive: 'theory', area: '.theory-card' },
+  { id: 'key-chords', name: 'Gamın akorları', title: 'Fa# Majör Akorları', drive: 'chord', area: '.chord-wrap' },
+  { id: 'key-cadence', name: 'Kadanslar (iki el)', title: 'Re♭ Majör: Kadanslar', drive: 'chord', area: '.chord-wrap' },
+  { id: 'key-minor', name: 'Sol# minör gamı', title: 'Sol# Minör Gamı', drive: 'melody', area: '.melody-wrap' },
+  { id: 'key-piece', name: 'Ton parçası', title: 'Menüet (Fa# Majör)', drive: 'melody', area: '.melody-wrap' },
   // Unit boss: the boss stage before and between the phases, and a phase (a lesson of the unit) on its own screen.
   { id: 'boss', name: 'Ünite boss’u', title: 'Boss: Sol Ejderhası', drive: 'boss', area: '.staff-wrap' },
   // Günün Karışımı (seeded cards): the stage, the reading phase, between the phases, the chord phase.

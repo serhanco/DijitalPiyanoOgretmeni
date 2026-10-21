@@ -5,6 +5,8 @@ import { BADGES, currentStreak, dayKey, levelFromXp } from '../progress/gamifica
 import { noteScores, recentSessions, rhythmSessions } from '../progress/history'
 import { rhythmTrend, type RhythmTrend } from '../progress/rhythmTrend'
 import { RhythmChart } from '../components/RhythmChart'
+import { KeyCircle } from '../components/KeyCircle'
+import { keyCircle } from '../progress/keyCircle'
 import { ThisWeekCard } from '../components/WeekSummary'
 import { Wardrobe } from '../components/Wardrobe'
 import { MIX_LESSON_ID } from '../progress/mix'
@@ -24,7 +26,7 @@ function heatColor(accuracy: number): string {
 }
 
 export function ProfileScreen({ onBack }: Props) {
-  const { totalXp, streak, lessonsCompleted, badges } = useProfile()
+  const { totalXp, streak, lessonsCompleted, badges, lessons } = useProfile()
   const { level, intoLevel, needed } = levelFromXp(totalXp)
   const [today] = useState(() => dayKey(new Date()))
   const [sessions, setSessions] = useState<SessionRow[]>([])
@@ -128,6 +130,15 @@ export function ProfileScreen({ onBack }: Props) {
             </section>
           ),
       )}
+
+      <section className="card key-circle-card">
+        <h2>Ton çemberi</h2>
+        <KeyCircle nodes={keyCircle((id) => lessons[id]?.bestStars ?? 0)} />
+        <p className="muted small">
+          Dışta majör, içte göreceli minör tonlar. Her daire o tonda kazandığın yıldızlarla dolar; 🏆 boss’u yendiğin
+          ton.
+        </p>
+      </section>
 
       <section className="card">
         <h2>Ritim gelişimi</h2>

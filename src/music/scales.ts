@@ -4,7 +4,8 @@
 import { type Hand, LETTER_SEMITONES, LETTERS, type Letter, midiFrom, SOLFEGE } from './notes'
 
 export type ScaleType = 'major' | 'natural' | 'harmonic' | 'melodic'
-export type Accidental = -1 | 0 | 1
+/** Flats below 0, sharps above; ±2 is a double flat or sharp (F𝄪 in G♯ harmonic minor). */
+export type Accidental = -2 | -1 | 0 | 1 | 2
 
 export interface Tonic {
   letter: Letter
@@ -42,7 +43,7 @@ export function parseTonic(name: string): Tonic {
   return { letter: m[1].toLowerCase() as Letter, acc: m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0 }
 }
 
-const accText = (acc: Accidental, flat: string) => (acc === 1 ? '#' : acc === -1 ? flat : '')
+const accText = (acc: Accidental, flat: string) => (acc > 0 ? '#'.repeat(acc) : flat.repeat(-acc))
 
 /** "Si♭4", "Fa#3", "Do4". */
 export function spelledName(n: SpelledNote, withOctave = true): string {
@@ -76,7 +77,7 @@ export function scaleOctave(tonic: Tonic, type: ScaleType, octave: number, form:
     const letter = LETTERS[(first + i) % 7]
     const oct = octave + Math.floor((first + i) / 7)
     const acc = midi - ((oct + 1) * 12 + LETTER_SEMITONES[letter])
-    if (acc < -1 || acc > 1) throw new Error(`Scale needs a double accidental: ${tonic.letter} ${type}`)
+    if (acc < -2 || acc > 2) throw new Error(`Scale needs a triple accidental: ${tonic.letter} ${type}`)
     return { midi, letter, acc: acc as Accidental, octave: oct }
   })
 }
@@ -109,21 +110,38 @@ const RIGHT: Fingering = { cycle: [1, 2, 3, 1, 2, 3, 4], last: 5 }
 const LEFT: Fingering = { cycle: [1, 4, 3, 2, 1, 3, 2], first: 5 }
 /** The four flats' left hand: the fourth finger on the fourth degree, the third on the tonic. */
 const FLATS_LEFT: Fingering = { cycle: [3, 2, 1, 4, 3, 2, 1] }
+/** F♯ major and minor, left hand: the fourth finger on the tonic. */
+const F_SHARP_LEFT: Fingering = { cycle: [4, 3, 2, 1, 3, 2, 1] }
+/** C♯, F♯ and G♯ minor, right hand: the thumbs on the white keys after the third and sixth degrees. */
+const SHARP_MINOR_RIGHT: Fingering = { cycle: [3, 4, 1, 2, 3, 1, 2] }
 /**
- * Scales whose fingering differs from the C major pattern. Keyed by tonic:
- * the minors of these tonics (B, B♭, E♭ minor) use the same fingers.
+ * Scales whose fingering differs from the C major pattern. Keyed by tonic for
+ * the major scale; a minor scale looks for its own entry ("bbm") first, then
+ * shares its major's (B and E♭ minor use the same fingers as B and E♭ major).
  */
 const SPECIAL: Partial<Record<string, Partial<Record<Hand, Fingering>>>> = {
   f: { right: { cycle: [1, 2, 3, 4, 1, 2, 3], last: 4 } },
   bb: { right: { cycle: [4, 1, 2, 3, 1, 2, 3], first: 2 }, left: FLATS_LEFT },
   eb: { right: { cycle: [3, 1, 2, 3, 4, 1, 2] }, left: FLATS_LEFT },
   ab: { right: { cycle: [3, 4, 1, 2, 3, 1, 2] }, left: FLATS_LEFT },
+  db: { right: { cycle: [2, 3, 1, 2, 3, 4, 1] }, left: FLATS_LEFT },
+  'f#': { right: { cycle: [2, 3, 4, 1, 2, 3, 1] }, left: F_SHARP_LEFT },
   b: { left: { cycle: [1, 3, 2, 1, 4, 3, 2], first: 4 } },
+  bbm: { left: { cycle: [2, 1, 3, 2, 1, 4, 3] } },
+  'f#m': { right: SHARP_MINOR_RIGHT, left: F_SHARP_LEFT },
+  'c#m': { right: SHARP_MINOR_RIGHT, left: FLATS_LEFT },
+  'g#m': { right: SHARP_MINOR_RIGHT, left: FLATS_LEFT },
+  'd#m': { right: { cycle: [3, 1, 2, 3, 4, 1, 2] }, left: { cycle: [2, 1, 4, 3, 2, 1, 3] } },
+  fm: { right: { cycle: [1, 2, 3, 4, 1, 2, 3], last: 4 } },
 }
 
 /** Standard fingering going up, one finger per note (1 = thumb): 8 notes per octave, 15 for two. */
-export function scaleFingering(tonic: Tonic, hand: Hand, octaves = 1): number[] {
-  const f = SPECIAL[`${tonic.letter}${accText(tonic.acc, 'b')}`]?.[hand] ?? (hand === 'right' ? RIGHT : LEFT)
+export function scaleFingering(tonic: Tonic, hand: Hand, octaves = 1, type: ScaleType = 'major'): number[] {
+  const name = `${tonic.letter}${accText(tonic.acc, 'b')}`
+  const f =
+    (type !== 'major' ? SPECIAL[`${name}m`]?.[hand] : undefined) ??
+    SPECIAL[name]?.[hand] ??
+    (hand === 'right' ? RIGHT : LEFT)
   const n = 7 * octaves + 1
   return Array.from({ length: n }, (_, i) =>
     i === 0 ? (f.first ?? f.cycle[0]) : i === n - 1 ? (f.last ?? f.cycle[0]) : f.cycle[i % 7],
@@ -182,7 +200,7 @@ export function scaleRun(
   downFirst = false,
   octaves = 1,
 ): RunNote[] {
-  const fingers = scaleFingering(tonic, hand, octaves)
+  const fingers = scaleFingering(tonic, hand, octaves, type)
   const reversed = [...fingers].reverse()
   let notes: SpelledNote[]
   let fs: number[]

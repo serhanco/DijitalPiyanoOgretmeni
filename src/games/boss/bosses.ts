@@ -44,13 +44,13 @@ export interface BossSpec {
   phases: BossPhase[]
 }
 
-interface PhaseDef {
+export interface PhaseDef {
   from: string
   label: string
   patch?: (l: NoteLesson) => Partial<NoteLesson>
 }
 
-interface BossDef {
+export interface BossDef {
   unit: string
   name: string
   taunt: string
@@ -223,10 +223,11 @@ const UNIT_LESSONS: Record<string, NoteLesson[]> = {
 
 export const bossId = (unit: string) => `boss-${unit}`
 
-function buildBoss(def: BossDef): NoteLesson {
+/** A unit's boss from its definition; `lessons` are the unit's own (the built-in units' by default). */
+export function buildBoss(def: BossDef, lessons: NoteLesson[] = UNIT_LESSONS[def.unit]): NoteLesson {
   const id = bossId(def.unit)
   const phases = def.phases.map((p, i): BossPhase => {
-    const base = UNIT_LESSONS[def.unit].find((l) => l.id === p.from)
+    const base = lessons.find((l) => l.id === p.from)
     if (!base) throw new Error(`Boss ${id}: no lesson ${p.from}`)
     const lesson: NoteLesson = { ...base, ...p.patch?.(base), id: `${id}-${i + 1}` }
     // A boss phase is one go: no tempo ladder.

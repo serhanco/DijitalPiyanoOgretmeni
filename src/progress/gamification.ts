@@ -151,7 +151,14 @@ export interface BadgeContext {
   bossCount?: number
   /** This lesson finished the weekly challenge. */
   weeklyDone?: boolean
+  /** Key units (Tonlar yolculuğu) with every lesson starred, this lesson included. */
+  keyUnitsDone?: string[]
 }
+
+/** The key units with sharps and with flats, as unit ids. */
+const SHARP_KEY_UNITS = ['key-g', 'key-d', 'key-a', 'key-e', 'key-b', 'key-fs']
+const FLAT_KEY_UNITS = ['key-f', 'key-bb', 'key-eb', 'key-ab', 'key-db']
+const allDone = (ids: string[], c: BadgeContext) => ids.every((id) => c.keyUnitsDone?.includes(id))
 
 export interface Badge {
   id: string
@@ -355,6 +362,27 @@ export const BADGES: Badge[] = [
     description: 'Bütün ünite boss’larını yen',
     icon: '🐉',
     earned: (c) => !!c.bossCount && (c.bossesDefeated ?? 0) >= c.bossCount,
+  },
+  {
+    id: 'sharp-explorer',
+    title: 'Diyez Kâşifi',
+    description: 'Diyezli altı tonun ünitelerini bitir (Sol’dan Fa#’ya)',
+    icon: '♯',
+    earned: (c) => allDone(SHARP_KEY_UNITS, c),
+  },
+  {
+    id: 'flat-master',
+    title: 'Bemol Ustası',
+    description: 'Bemollü beş tonun ünitelerini bitir (Fa’dan Re♭’ye)',
+    icon: '♭',
+    earned: (c) => allDone(FLAT_KEY_UNITS, c),
+  },
+  {
+    id: 'circle',
+    title: 'Çemberi Tamamladın',
+    description: 'Beşliler çemberinin on iki ton ünitesini bitir',
+    icon: '🎡',
+    earned: (c) => allDone(['key-c', ...SHARP_KEY_UNITS, ...FLAT_KEY_UNITS], c),
   },
   {
     id: 'week-star',

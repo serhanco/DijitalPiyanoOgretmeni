@@ -1130,6 +1130,9 @@ button.chip {
   gap: 12px;
   margin-top: 8px;
 }
+.prompt-row > div {
+  min-width: 0;
+}
 .prompt-row .prompt {
   margin-top: 0;
   text-align: left;
@@ -1834,7 +1837,8 @@ button.chip {
 /* Phase 8: chords */
 .numerals {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   margin: 0 0 2px;
   font-weight: 900;
   font-family: Georgia, 'Times New Roman', serif;
@@ -3999,4 +4003,32 @@ button.chip:not(.streak):not(.xp) {
 }
 .update-toast .link {
   color: var(--bg);
+}
+
+/* Ton çemberi (profile) */
+.key-circle {
+  display: block;
+  width: min(100%, 320px);
+  margin: 0 auto;
+}
+.key-circle-ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2;
+}
+.key-node {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+.key-node.locked {
+  opacity: 0.45;
+}
+.key-node-label {
+  fill: var(--text);
+  font-weight: 800;
+  pointer-events: none;
+}
+.key-node-label.filled {
+  fill: #fff;
 }

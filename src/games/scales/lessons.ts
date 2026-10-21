@@ -31,7 +31,7 @@ export function scaleLesson(id: string, title: string, description: string, scal
 }
 
 /** Gam Merdiveni: the same scales on the metronome, one note per beat; with `tempoLadder`, again faster. */
-function ladderLesson(
+export function ladderLesson(
   id: string,
   title: string,
   description: string,
@@ -53,7 +53,7 @@ function ladderLesson(
 }
 
 /** Melodi Hafızası on one octave of a scale. */
-function memoryLesson(
+export function memoryLesson(
   id: string,
   title: string,
   description: string,

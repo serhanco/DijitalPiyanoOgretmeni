@@ -34,11 +34,13 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Oyun turu (Salon, Nota Treni, Kuş Sesi)       | Birleşti (PR #38) |
 | Oyun turu 2 (altın hedef, ipucu, kostüm, …)   | Birleşti (PR #39) |
 | Oyun turu 3 (Notiş kuralı, ses, hayalet, …)   | Birleşti (PR #44) |
-| 13 Gerçek piyano ve her cihaz (Android)       | Bu dal (PR #45)   |
-| 14 Görsel dünya                               | Başlanmadı        |
-| 15 Hesap ve sosyal                            | Başlanmadı        |
-| 16 Yerleştirme ve yeni beceriler              | Başlanmadı        |
-| 17 Yayın (mağazalar, iOS)                     | Başlanmadı        |
+| 13 Gerçek piyano ve her cihaz (Android)       | Birleşti (PR #45) |
+| 14 Tonlar yolculuğu (12 ton ünitesi)          | Bu dal            |
+| 15 Klasik etütler                             | Başlanmadı        |
+| 16 Görsel dünya                               | Başlanmadı        |
+| 17 Hesap ve sosyal                            | Başlanmadı        |
+| 18 Yerleştirme ve yeni beceriler              | Başlanmadı        |
+| 19 Yayın (mağazalar, iOS)                     | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -50,7 +52,7 @@ Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [d
 | Dağıtım      | PWA (kurulabilir web uygulaması), sonra Capacitor      | Telefon, tablet, bilgisayar; sonra mağazalar             |
 | MIDI         | Web MIDI API (USB + Bluetooth MIDI)                    | Chrome/Edge/Android'de yerleşik, kurulum yok             |
 | Android      | Capacitor 8 + yerel MIDI eklentisi (Faz 13)            | WebView'da Web MIDI yok; Bluetooth MIDI uygulama içinde  |
-| iOS MIDI     | Capacitor + yerel CoreMIDI eklentisi (Faz 17)          | Safari Web MIDI desteklemiyor; Mac ve Apple hesabı ister |
+| iOS MIDI     | Capacitor + yerel CoreMIDI eklentisi (Faz 19)          | Safari Web MIDI desteklemiyor; Mac ve Apple hesabı ister |
 | Nota çizimi  | VexFlow 5 (`vexflow/bravura`)                          | Standart, SVG çıktısı, hızlı                             |
 | Ses          | Tone.js + Salamander piyano örnekleri                  | Gerçekçi ses, hassas zamanlama (metronom)                |
 | Durum        | Zustand                                                | Küçük, hızlı, basit                                      |
@@ -61,7 +63,7 @@ Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [d
 | CI / yayın   | GitHub Actions + GitHub Pages                          | Her değişiklik HTTPS adresinde denenebilir (MIDI ister)  |
 
 **Cihaz notu:** Prototip Android tablet/telefonda Chrome ile ve bilgisayarda Chrome/Edge ile MIDI'ye bağlanır.
-iPhone/iPad'de MIDI, Faz 17'deki yerel sarmalayıcıyla gelir; o zamana kadar orada ekran klavyesi çalışır.
+iPhone/iPad'de MIDI, Faz 19'daki yerel sarmalayıcıyla gelir; o zamana kadar orada ekran klavyesi çalışır.
 
 ## Oyun ve beceri matrisi
 
@@ -274,8 +276,8 @@ ilk açılışında "Geçen haftan" (kapatılabilir).
 ### Faz 13 — Gerçek piyano ve her cihaz
 
 Her fazdan önce içerik yeniden ele alınır (Serhan, 2026-10-20); bu fazın gözden geçirilmiş planı:
-`/mnt/project-files/faz-13/plan.md`. Eski "platformlar" içeriğinden mağaza hazırlığı ve iOS Faz 17'ye, bulut
-eşitleme hesap sistemiyle Faz 15'e taşındı; önce uygulamanın gerçek piyanoya hazır olması seçildi.
+`/mnt/project-files/faz-13/plan.md`. Eski "platformlar" içeriğinden mağaza hazırlığı ve iOS Yayın fazına, bulut
+eşitleme hesap fazına taşındı; önce uygulamanın gerçek piyanoya hazır olması seçildi.
 
 Yapıldı: **Piyanonu bağla** sihirbazı (bağlantı, tuş aralığı, Do-Mi-Sol birlikte, dokunuş hassasiyeti, pedal, piyanodan
 ses, gecikme, kopyalanabilir rapor). **Sustain pedalı**: ritim derslerinde pedal basılıyken bırakılan tuş tutulmuş
@@ -284,25 +286,45 @@ hoparlöründen çalar (Ayarlar'dan kapanır). Ders sırasında **ekran kararmaz
 "Uygulamayı yükle" ve "Yeni sürüm hazır" bildirimi. **Android uygulaması** (Capacitor): yerel USB ve Bluetooth MIDI,
 Bluetooth piyanoyu uygulamanın içinden bulma; her `main` yayınında sitede `piyano-ogretmeni.apk`.
 
-### Faz 14 — Görsel dünya
+### Faz 14 — Tonlar yolculuğu
 
-- Ünite manzaraları, Notiş çizgisinde kendi simge setimiz, ekran geçişleri ve açılış animasyonu
+Planı Serhan'la gözden geçirildi (`/mnt/project-files/faz-14/plan.md`, 2026-10-21): önce içerik, görsel dünya sonra;
+12 ton; üniteler beşliler çemberi sırasıyla birbirini açar.
+
+Yapıldı: Akorlar ünitesinden sonra **12 ton ünitesi** (Ünite 10 Do Majör ve La Minör … Ünite 21 Fa# Majör ve Re#
+Minör), sıra Do, Sol, Fa, Re, Si♭, La, Mi♭, Mi, La♭, Si, Re♭, Fa#. Her ünitede 15 ders: donanım ve tonun akorları
+(teori), gam, Gam Merdiveni, iki el (paralel, sonra ters yön, iki oktav), tonun yedi akoru (I ii iii IV V vi vii°),
+Aşçı, çevrimler, Çevrim Merdiveni, kadanslar (I–IV–V7–I–ii–V7–I, iki el), arpejler, göreceli minörün gamı (doğal ve
+armonik), minör akorlar ve kadans, Melodi Hafızası, o tona taşınmış tanıdık bir şarkı ve ünite boss'u. Zorluk dörder
+tonluk dört seviyede artar (tempo merdiveni, ters yön, iki oktav, adlar gizli, kulaktan hafıza). Çift diyezler
+(Sol# minörde Fa𝄪) doğru yazılır, her tonun gam parmakları standarttır (başparmak siyah tuşa düşmez). Profilde
+**Ton çemberi**, yeni rozetler (Diyez Kâşifi, Bemol Ustası, Çemberi Tamamladın), Oyun Salonu'nda her tonun akorları.
+
+### Faz 15 — Klasik etütler
+
+- Partisyon modu: iki porteli gerçek nota yazısı (sekizlik, noktalı, bağ, parmak), bekleyen ve tempolu mod
+- Beyer, Czerny, Hanon, Burgmüller (hepsi kamu malı); notalar 19. yüzyıl baskılarından, parmaklar bizim
+- Seviyeye ve tona göre kolaydan zora; Hanon kalıpları her tona taşınır; Etüt Kitaplığı kartı; öğretmen eşliği
+
+### Faz 16 — Görsel dünya
+
+- Ünite manzaraları (12 ton ünitesi dahil), Notiş çizgisinde kendi simge setimiz, ekran geçişleri ve açılış animasyonu
 - Elle karanlık mod (Sistem / Açık / Koyu), art arda bitmiş dersleri haritada katlama
 
-### Faz 15 — Hesap ve sosyal (Duolingo gibi)
+### Faz 17 — Hesap ve sosyal (Duolingo gibi)
 
 - Google ya da e-postayla giriş, ilerleme bulutta ve her cihazda aynı
 - Arkadaşlar, haftalık lig, seri hatırlatmaları, Salon oyunlarında arkadaşın hayaletiyle düello, ortak görevler
 - Sonra öğretmen/veli ekranı; hazır bir sunucu servisi (Supabase ya da Firebase)
 
-### Faz 16 — Yerleştirme ve yeni beceriler
+### Faz 18 — Yerleştirme ve yeni beceriler
 
 - "Biraz biliyorum" diyene yerleştirme sınavı
 - Dinamikler (piyano/forte, tuşa basma gücü), pedal dersleri, legato/staccato, deşifre
 
-### Faz 17 — Yayın
+### Faz 19 — Yayın
 
-- Mağaza sayfaları ve gizlilik metni, uygulama imza anahtarı CI gizlerinde
+- Mağaza sayfaları ve gizlilik metni, kalıcı uygulama imza anahtarı CI gizlerinde
 - iPhone/iPad uygulaması (CoreMIDI eklentisi; Mac ve Apple geliştirici hesabı gerekir)
 
 ## Çalışma şekli
