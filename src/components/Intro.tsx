@@ -28,39 +28,39 @@ export function Intro({ onDone }: { onDone: () => void }) {
 
   return (
     <motion.div
-      className="intro"
+      className="opening"
       role="presentation"
       onPointerDown={skip}
       initial={{ opacity: 1 }}
       animate={{ opacity: leaving ? 0 : 1 }}
       transition={{ duration: 0.25 }}
       onAnimationComplete={() => leaving && onDone()}
-      data-intro
+      data-opening
     >
-      <div className="intro-stage">
+      <div className="opening-stage">
         <motion.div
-          className="intro-notis"
+          className="opening-notis"
           initial={{ y: 70, scale: 0.4, opacity: 0 }}
           animate={{ y: [70, -34, 0], scale: [0.4, 1.08, 1], opacity: 1 }}
           transition={{ duration: 0.6, times: [0, 0.6, 1], ease: 'easeOut', delay: 0.1 }}
         >
           <Mascot size={110} mood="happy" />
         </motion.div>
-        <div className="intro-keys" aria-hidden>
+        <div className="opening-keys" aria-hidden>
           {Array.from({ length: 8 }, (_, i) => (
             <span
               key={i}
-              className="intro-key"
+              className="opening-key"
               style={
                 PRESSED.includes(i) ? { animationDelay: `${0.2 + PRESSED.indexOf(i) * 0.13}s` } : { animation: 'none' }
               }
             />
           ))}
           {[0, 1, 3, 4, 5].map((i) => (
-            <span key={`b${i}`} className="intro-black" style={{ left: `${((i + 1) / 8) * 100}%` }} />
+            <span key={`b${i}`} className="opening-black" style={{ left: `${((i + 1) / 8) * 100}%` }} />
           ))}
         </div>
-        <p className="intro-title">Piyano Öğretmeni</p>
+        <p className="opening-title">Piyano Öğretmeni</p>
       </div>
     </motion.div>
   )

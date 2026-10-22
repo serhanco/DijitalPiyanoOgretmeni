@@ -3329,7 +3329,7 @@ button.chip {
   background: #7c4dff;
 }
 /* Açılış (components/Intro.tsx): Notiş hops out of the keys, Do-Mi-Sol light up. */
-.intro {
+.opening {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -3338,17 +3338,17 @@ button.chip {
   background: var(--bg);
   cursor: pointer;
 }
-.intro-stage {
+.opening-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.intro-notis {
+.opening-notis {
   margin-bottom: -18px;
   position: relative;
   z-index: 1;
 }
-.intro-keys {
+.opening-keys {
   position: relative;
   display: flex;
   width: min(300px, 80vw);
@@ -3359,13 +3359,13 @@ button.chip {
   background: #2b1a5c;
   gap: 2px;
 }
-.intro-key {
+.opening-key {
   flex: 1;
   background: var(--key-white);
   border-radius: 0 0 5px 5px;
-  animation: intro-press 0.32s ease-out backwards;
+  animation: opening-press 0.32s ease-out backwards;
 }
-@keyframes intro-press {
+@keyframes opening-press {
   0% {
     background: var(--key-white);
   }
@@ -3377,7 +3377,7 @@ button.chip {
     background: var(--key-white);
   }
 }
-.intro-black {
+.opening-black {
   position: absolute;
   top: 0;
   width: 7%;
@@ -3386,7 +3386,7 @@ button.chip {
   background: #2b1a5c;
   border-radius: 0 0 4px 4px;
 }
-.intro-title {
+.opening-title {
   margin-top: 16px;
   font-weight: 900;
   font-size: 1.3rem;
