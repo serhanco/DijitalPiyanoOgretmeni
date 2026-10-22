@@ -677,8 +677,9 @@ async function opening(page, snap) {
 async function smartMap(page, snap, vpId) {
   await page.evaluate(seedSmart)
   await page.reload()
-  await page.waitForSelector('.mix-card[data-due="yes"]')
-  await page.waitForSelector('.week-card[data-week="last"]')
+  // The cards wait for the database: give a busy CI machine more time.
+  await page.waitForSelector('.mix-card[data-due="yes"]', { timeout: 25000 })
+  await page.waitForSelector('.week-card[data-week="last"]', { timeout: 25000 })
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForTimeout(300)
   await snap('akilli-harita')
@@ -1215,7 +1216,13 @@ async function runViewport(vp) {
   )
   const results = []
   const check = async (name, opts) => {
-    const r = await page.evaluate(measure, { minKey: MIN_WHITE_KEY_PX, minShare: MIN_AREA_SHARE, ...opts })
+    const args = { minKey: MIN_WHITE_KEY_PX, minShare: MIN_AREA_SHARE, ...opts }
+    let r = await page.evaluate(measure, args)
+    // A Pixi canvas follows its stage one resize later: on a busy machine measure once more before failing.
+    if (r.errors.some((e) => e.startsWith('Oyun tuvali'))) {
+      await page.waitForTimeout(400)
+      r = await page.evaluate(measure, args)
+    }
     return { name, ...r }
   }
   const snap = (file, fullPage = false) => page.screenshot({ path: `${out}/${vp.id}-${file}.png`, fullPage })
@@ -1271,6 +1278,7 @@ async function runViewport(vp) {
       errors: [`Harita kartları denenemedi: ${e.message.split('\n')[0]}`],
       warnings: [],
     })
+    await snap('akilli-hata')
     await page.goto(url)
     await page.waitForTimeout(800)
   }
