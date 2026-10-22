@@ -22,6 +22,7 @@ const KIND_NAME: Record<LessonKind, string> = {
   surf: 'Oyun: Arpej Sörfü',
   ear: 'Oyun: Kulak Dedektifi',
   waterfall: 'Oyun: Nota Şelalesi',
+  etude: 'Etüt: partisyondan çalma',
   boss: 'Boss savaşı',
   mix: 'Günün tekrar karışımı',
   train: 'Oyun: Nota Treni',

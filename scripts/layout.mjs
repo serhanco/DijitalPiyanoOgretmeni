@@ -76,6 +76,16 @@ const CASES = [
   { id: 'chef', name: 'Akor Aşçısı', title: 'Akor Aşçısı', drive: 'chordArcade', area: '.pixi-stage' },
   { id: 'space', name: 'Uzay Savunması', title: 'Uzay Savunması', drive: 'chordArcade', area: '.pixi-stage' },
   { id: 'chordbar', name: 'Akor Barmeni', title: 'Akor Barmeni', drive: 'chordArcade', area: '.pixi-stage' },
+  // Cards with sharps and flats (a key unit): the accidentals must stay on the card.
+  { id: 'key-hanon', name: 'Hanon (bemoller)', title: 'Hanon 1: Re♭ Majör', drive: 'waterfall', area: '.beat-field' },
+  { id: 'key-space', name: 'Uzay (diyezler)', title: 'Uzay: Fa# Majör', drive: 'chordArcade', area: '.pixi-stage' },
+  {
+    id: 'key-chordbar',
+    name: 'Akor Barmeni (bemoller)',
+    title: 'Barmen: Si♭ Majör ve Sol Minör',
+    drive: 'chordArcade',
+    area: '.pixi-stage',
+  },
   { id: 'arpeggio', name: 'Arpej', title: 'Arpejler', drive: 'melody', area: '.melody-wrap' },
   { id: 'surf', name: 'Arpej Sörfü', title: 'Arpej Sörfü', drive: 'beat', area: '.beat-field' },
   // Kulak Dedektifi: answered on buttons (no keyboard) or on the keys.
@@ -121,6 +131,64 @@ const CASES = [
     area: '.beat-field',
   },
   { id: 'waterfall', name: 'Nota Şelalesi (ritimli)', title: 'Azizler Yürürken', drive: 'beat', area: '.beat-field' },
+  // Etüt Kitaplığı (opened from its map card, `etude` is the lesson id): the score with both staves in both
+  // modes, a dense Czerny bar of sixteenths, and the theory card with score pictures.
+  {
+    id: 'etude-theory',
+    name: 'Etüt teori kartı',
+    title: 'Partisyonu Okumak',
+    etude: 'etude-intro',
+    drive: 'theory',
+    area: '.theory-card',
+  },
+  {
+    id: 'etude-wait',
+    name: 'Etüt (bekleyen, iki porte)',
+    title: 'Sol Majör Menüet: İki El',
+    etude: 'etude-menuet-g-both',
+    drive: 'waterfall',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-czerny',
+    name: 'Etüt (on altılıklar)',
+    title: 'Czerny 8: İki El',
+    etude: 'etude-czerny-8-both',
+    drive: 'waterfall',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-five',
+    name: 'Etüt (beş parmak, ters yön)',
+    title: 'Ayna: Ters Yönde İki El',
+    etude: 'etude-five-c-mirror',
+    drive: 'waterfall',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-hanon',
+    name: 'Etüt (Hanon, iki oktav)',
+    title: 'Hanon 1 (iki oktav): Metronomla',
+    etude: 'etude-hanon-1-2-both-tempo',
+    drive: 'beat',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-pastorale',
+    name: 'Etüt (Burgmüller, 6/8)',
+    title: 'Kır Şarkısı: İki El',
+    etude: 'etude-burg-pastorale-both',
+    drive: 'waterfall',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-tempo',
+    name: 'Etüt (ritimli, 2/4)',
+    title: 'Musette: Metronomla',
+    etude: 'etude-musette-tempo',
+    drive: 'beat',
+    area: '.beat-field',
+  },
   // Tonlar yolculuğu: the key intro (key signature art), the chords of a key with its long numeral row,
   // a two-hand cadence, six sharps with a double sharp, a song carried into a key.
   { id: 'key-intro', name: 'Ton tanışması', title: 'Si♭ Majör ve Sol Minör', drive: 'theory', area: '.theory-card' },
@@ -368,6 +436,17 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
 async function openLesson(page, title) {
   await page.getByRole('button', { name: title, exact: true }).click()
   await page.locator('.lesson-peek-go').click()
+}
+
+/** Back in the Etüt Kitaplığı after an étude: its row is on screen and marked. */
+function etudePlace(id) {
+  const row = document.querySelector(`[data-etude="${id}"]`)
+  if (!row) return { errors: [`Etüt Kitaplığı’nda "${id}" yok`], warnings: [] }
+  const r = row.getBoundingClientRect()
+  const errors = []
+  if (r.top < 0 || r.bottom > window.innerHeight) errors.push(`Kitaplığa dönünce "${id}" ekranda değil`)
+  if (!row.classList.contains('back')) errors.push(`"${id}" son çalınan ders olarak işaretli değil`)
+  return { errors, warnings: [] }
 }
 
 /**
@@ -1053,7 +1132,11 @@ async function runViewport(vp) {
     results.push(entry)
     try {
       if (c.direct) await page.getByRole('button', { name: c.title, exact: true }).click()
-      else await openLesson(page, c.title)
+      else if (c.etude) {
+        await page.locator('[data-node="etudes"] button').click()
+        await page.locator(`[data-etude="${c.etude}"]`).click()
+        await page.locator('.lesson-peek-go').click()
+      } else await openLesson(page, c.title)
       await page.waitForTimeout(400)
       const shot = async (suffix = '', area = c.area) => {
         const file = `${c.id}${suffix ? `-${suffix}` : ''}`
@@ -1072,8 +1155,17 @@ async function runViewport(vp) {
       await snap(`${c.id}-sonuc`, true)
       entry.checks.push({ ...(await check(`${c.id}-sonuc`, { play: false })), shot: `${vp.id}-${c.id}-sonuc.png` })
       await page.getByText('Derslere dön').click()
-      await settle(page)
-      entry.checks.push({ name: `${c.id}-donus`, ...(await page.evaluate(mapPlace, c.title)) })
+      if (c.etude) {
+        await page.waitForSelector('.etudes')
+        await page.waitForTimeout(300)
+        // Études come back to the Etüt Kitaplığı at the lesson just played, then to the map.
+        entry.checks.push({ name: `${c.id}-donus`, ...(await page.evaluate(etudePlace, c.etude)) })
+        await page.getByLabel('Haritaya dön').click()
+        await settle(page)
+      } else {
+        await settle(page)
+        entry.checks.push({ name: `${c.id}-donus`, ...(await page.evaluate(mapPlace, c.title)) })
+      }
     } catch (e) {
       entry.checks.push({ name: 'çalıştırma', errors: [`Ders oynanamadı: ${e.message.split('\n')[0]}`], warnings: [] })
       await snap(`${c.id}-hata`)

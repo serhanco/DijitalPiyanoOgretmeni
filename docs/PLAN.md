@@ -35,8 +35,9 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | Oyun turu 2 (altın hedef, ipucu, kostüm, …)   | Birleşti (PR #39) |
 | Oyun turu 3 (Notiş kuralı, ses, hayalet, …)   | Birleşti (PR #44) |
 | 13 Gerçek piyano ve her cihaz (Android)       | Birleşti (PR #45) |
-| 14 Tonlar yolculuğu (12 ton ünitesi)          | Bu dal            |
-| 15 Klasik etütler                             | Başlanmadı        |
+| 14 Tonlar yolculuğu (12 ton ünitesi)          | Birleşti (PR #46) |
+| 15a Klasik etütler: partisyon, seviye 1–3     | Bu dal            |
+| 15b Klasik etütler: beş parmak, Hanon, 4–8    | Bu dal            |
 | 16 Görsel dünya                               | Başlanmadı        |
 | 17 Hesap ve sosyal                            | Başlanmadı        |
 | 18 Yerleştirme ve yeni beceriler              | Başlanmadı        |
@@ -302,9 +303,28 @@ tonluk dört seviyede artar (tempo merdiveni, ters yön, iki oktav, adlar gizli,
 
 ### Faz 15 — Klasik etütler
 
-- Partisyon modu: iki porteli gerçek nota yazısı (sekizlik, noktalı, bağ, parmak), bekleyen ve tempolu mod
-- Beyer, Czerny, Hanon, Burgmüller (hepsi kamu malı); notalar 19. yüzyıl baskılarından, parmaklar bizim
-- Seviyeye ve tona göre kolaydan zora; Hanon kalıpları her tona taşınır; Etüt Kitaplığı kartı; öğretmen eşliği
+Planı Serhan'la gözden geçirildi (`/mnt/project-files/faz-15/plan.md`, 2026-10-21): iki PR'a bölündü, varsayılan
+görünüm partisyon, öğretmen eşliği sonraya.
+
+**15a (yapıldı):** Mutopia Projesi'nden yalnızca "Public Domain" işaretli eserler, bir içe aktarma aracıyla
+(`scripts/etudes/import.mjs`: LilyPond kaynağı okur, her ölçüyü ve Mutopia'nın MIDI dosyasını karşılaştırır; elle
+nota yazılmaz). Mutopia'da Beyer ve Czerny Op. 599 yok; yerine Anna Magdalena Bach defterinden beş parça (Sol majör ve
+Sol minör menüetler, Si♭ menüet, Musette, Tütün Pipası Aryası), Pleyel'in Menüeti ve Czerny Op. 821'den üç alıştırma.
+**Partisyon görünümü**: iki porte, anahtar, donanım, ölçü, kiriş, uzatma bağı, legato yayı, staccato, parmak
+numaraları, ölçü içi değiştirme işaretleri; çalınan notalar renklenir; "🌊 Şelale" ile düşen notalara geçilir.
+**16'lık nota**, 2/4 ölçü. **Etüt Kitaplığı** (haritada kart, Başlangıç bitince açılır): Seviye 1 tek elle ilk
+cümleler, Seviye 2 iki elle menüetler, Seviye 3 on altılıklar ve 2/4; 38 ders. Ayrıca Uzay Savunması ve Akor
+Barmeni kartları ♯/♭ çiziyor; her ton ünitesine bu iki oyun eklendi (üniteler 17 ders).
+
+**15b (yapıldı, aynı dal):** Serhan: "marka / isimden ziyade o tip başka pratiklerle içeriği genişletmek". Kitaplık
+8 seviye, 106 ders. **Beş parmak pozisyonu** (yeni Seviye 1, kuralla yazılan kendi alıştırmalarımız, Beyer'in
+yöntemindeki gibi: her el ayrı, iki el aynı ve ters yönde, melodi ve eşlik, vals; Do, Sol, Fa, Re ve La minör
+pozisyonları). **Hanon 1–10** (Seviye 5): kalıplar 1873 baskısından okundu, kural her tona ve bir ya da iki oktava
+taşır (iki oktavda sağ el fa anahtarıyla başlar; anahtar değişimleri ölçü başında küçük anahtarla yazılır); her ton
+ünitesine bir Hanon dersi (üniteler 18 ders; Do'da 1, Sol'de 2, …). Mutopia'dan yeni kamu malı eserler: **Burgmüller
+Op. 100**'den 11 etüt (Seviye 6–7), **Çaykovski** Çocuk Albümü'nden Sabah Duası, Tahta Askerlerin Marşı, Eski Fransız
+Şarkısı, **Czerny Op. 840** No. 1 ve 6, **Kuhlau** Sonatin Op. 20 No. 1 Andante (Seviye 8). 6/8 ölçü. Dört rozet: Beş
+Parmak, Hanon Çırağı, Hikâye Anlatıcısı, Kitap Kurdu.
 
 ### Faz 16 — Görsel dünya
 

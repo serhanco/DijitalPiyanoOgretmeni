@@ -2,6 +2,7 @@
 // by bar, split into sections the learner can practise on their own. Pure.
 
 import { type Clef, type Hand, parseNote } from '../../music/notes'
+import { parseScore, type ScoreSource, scoreNotes } from '../etudes/score'
 import type { Tune } from '../../rhythm/plan'
 import { VALUE_BEATS, type RhythmValue } from '../../rhythm/rhythm'
 
@@ -15,6 +16,8 @@ export interface Song extends Tune {
   left?: string
   /** Bars per section, in order; the whole song is one section when left out. */
   sections?: number[]
+  /** Études: the written score (both hands); `notes` and `left` are then unused. */
+  score?: ScoreSource
 }
 
 /** Played notes are any value; rests (`qr`, `hr`, `wr`, `er`) only keep time. */
@@ -30,6 +33,8 @@ export interface SongNote {
   clef: Clef
   /** Bar index from 0. */
   bar: number
+  /** Études: the id of the written note (`ScoreNote.id`), to colour it in the score. */
+  ref?: number
 }
 
 export interface Section {
@@ -92,20 +97,30 @@ export const sectionLabel = (index: number, from: number, to: number) =>
 
 /** Both hands, sorted by time (left hand first on the same beat), and the sections. */
 export function parseSong(song: Song): ParsedSong {
-  const right = parsePart(song.notes, 'right', song.beatsPerBar, song.title)
-  const left = song.left ? parsePart(song.left, 'left', song.beatsPerBar, song.title) : null
-  if (left && left.bars !== right.bars)
-    throw new Error(`${song.title}: ${right.bars} bars in the right hand, ${left.bars} in the left`)
-  const sizes = song.sections ?? [right.bars]
-  if (sizes.reduce((a, b) => a + b, 0) !== right.bars) throw new Error(`${song.title}: sections do not add up`)
+  const { notes, bars } = song.score ? scoreTimeline(song.score) : songTimeline(song)
+  const sizes = song.sections ?? [bars]
+  if (sizes.reduce((a, b) => a + b, 0) !== bars) throw new Error(`${song.title}: sections do not add up`)
   let from = 0
   const sections = sizes.map((size, index) => {
     const s = { index, from, to: from + size - 1, label: sectionLabel(index, from, from + size - 1) }
     from += size
     return s
   })
+  return { notes, bars, beatsPerBar: song.beatsPerBar, sections }
+}
+
+function songTimeline(song: Song): { notes: SongNote[]; bars: number } {
+  const right = parsePart(song.notes, 'right', song.beatsPerBar, song.title)
+  const left = song.left ? parsePart(song.left, 'left', song.beatsPerBar, song.title) : null
+  if (left && left.bars !== right.bars)
+    throw new Error(`${song.title}: ${right.bars} bars in the right hand, ${left.bars} in the left`)
   const notes = [...(left?.notes ?? []), ...right.notes].sort((a, b) => a.beat - b.beat || a.midi - b.midi)
-  return { notes, bars: right.bars, beatsPerBar: song.beatsPerBar, sections }
+  return { notes, bars: right.bars }
+}
+
+function scoreTimeline(source: ScoreSource): { notes: SongNote[]; bars: number } {
+  const score = parseScore(source)
+  return { notes: scoreNotes(score), bars: score.bars.length }
 }
 
 export type SongHands = Hand | 'both'

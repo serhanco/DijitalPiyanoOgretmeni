@@ -1,9 +1,9 @@
 import { type Application, Container, Graphics, type Sprite, Text } from 'pixi.js'
 import { type Clef, naturalClef } from '../../../music/notes'
 import { clefSprite, placeClef } from '../clef'
-import { drawNote, drawStaffLines, INK } from '../draw'
+import { drawCardNotes, drawStaffLines, INK } from '../draw'
 import type { Scene } from '../PixiStage'
-import { staffStep } from '../staffGeometry'
+import { type CardPitch, pitchStep, staffStep } from '../staffGeometry'
 import {
   bartenderLook,
   type BartenderLook,
@@ -46,7 +46,7 @@ export interface BarSceneOptions<C> {
   /** Staff steps each staff's cards must fit (see `noteSpans`, `chordSpans`). */
   spans: Partial<Record<Clef, { lo: number; hi: number }>>
   /** A customer's order: the notes on the card, and a name written beside them. */
-  order: (c: C) => { clef: Clef; notes: number[]; name?: string }
+  order: (c: C) => { clef: Clef; notes: CardPitch[]; name?: string }
 }
 
 type Span = { lo: number; hi: number }
@@ -63,11 +63,11 @@ export function noteSpans(range: number[], bothStaves: number[]): Record<Clef, S
 }
 
 /** Card spans for chords, each read on the staff of its notes. */
-export function chordSpans(chords: { clef: Clef; notes: number[] }[]): Partial<Record<Clef, Span>> {
+export function chordSpans(chords: { clef: Clef; notes: CardPitch[] }[]): Partial<Record<Clef, Span>> {
   const out: Partial<Record<Clef, Span>> = {}
   for (const clef of ['treble', 'bass'] as Clef[]) {
     const own = chords.filter((c) => c.clef === clef)
-    if (own.length) out[clef] = spanOf(own.flatMap((c) => c.notes.map((m) => staffStep(m, clef))))
+    if (own.length) out[clef] = spanOf(own.flatMap((c) => c.notes.map((m) => pitchStep(m, clef))))
   }
   return out
 }
@@ -434,7 +434,8 @@ export function createBarScene<C extends BarCustomer, E extends { type: string }
     const staffEnd = card.name ? 0.62 : 0.94
     drawStaffLines(g, cardW * 0.06, cardW * staffEnd, layout, INK, 0.7)
     const color = c.state === 'served' ? 0x22a559 : INK
-    for (const m of notes) drawNote(g, cardW * (card.name ? 0.42 : 0.66), staffStep(m, clef), layout, color)
+    // Right of the clef, or further right when sharps and flats need the room.
+    drawCardNotes(g, cardW * (card.name ? 0.42 : 0.66), notes, clef, layout, color, cardW * 0.06 + gap * 2.4)
     if (card.name) {
       card.name.style.fontSize = Math.max(10, cardH * 0.26)
       card.name.position.set(cardW * 0.81, cardH / 2)

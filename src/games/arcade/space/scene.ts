@@ -1,8 +1,8 @@
 import { type Application, Container, Graphics, Text } from 'pixi.js'
 import { chordSymbol } from '../../../music/chords'
-import { drawNote, drawStaffLines } from '../draw'
+import { drawCardNotes, drawStaffLines } from '../draw'
 import type { Scene } from '../PixiStage'
-import { fitStaff, staffStep } from '../staffGeometry'
+import { fitStaff, pitchStep } from '../staffGeometry'
 import { BASE_Y, type Invader, LINGER_S, SPACE_LANES, type SpaceEvent, type SpaceGame, START_Y } from './engine'
 
 const SKY_TOP = 0x1b1446
@@ -102,11 +102,11 @@ export function createSpaceScene(
       .fill({ color: 0xffffff, alpha: landed ? 0.5 : 0.97 })
     world.roundRect(x - cardW / 2, cardY, cardW, cardH, unit * 0.16).stroke({ width: 2, color })
     const notes = inv.record.chord.notes
-    const steps = notes.map((n) => staffStep(n.midi, n.clef))
+    const steps = notes.map((n) => pitchStep(n, n.clef))
     const fit = fitStaff(cardH, Math.min(...steps), Math.max(...steps), 1, cardW * 0.16)
     const layout = { gap: fit.gap, bottomY: cardY + fit.bottomY }
     drawStaffLines(world, x - cardW * 0.42, x + cardW * 0.42, layout, INK, 0.7)
-    for (const s of steps) drawNote(world, x + cardW * 0.08, s, layout)
+    drawCardNotes(world, x + cardW * 0.08, notes, notes[0].clef, layout, INK, x - cardW * 0.42)
     // the saucer: a glass dome with a little alien, a disc with lights
     world.ellipse(x, cy - unit * 0.12, unit * 0.42, unit * 0.36).fill({ color: 0xbff4ff, alpha: 0.85 })
     world.circle(x, cy - unit * 0.12, unit * 0.2).fill(0x8ee000)

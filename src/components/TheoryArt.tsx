@@ -1,9 +1,13 @@
 // Static pictures for the theory lessons: a keyboard, a treble staff, a hand
-// with finger numbers and the note durations. Plain SVG, scaled by CSS.
+// with finger numbers and the note durations. Plain SVG, scaled by CSS; an
+// étude's bars come from the score view in their own chunk.
 
+import { lazy, Suspense } from 'react'
 import type { Illustration } from '../games/theory/quiz'
 import { isRest, layoutRhythm, parseRhythm, VALUE_BEATS } from '../rhythm/rhythm'
 import { diatonicIndex, isBlackKey, type Letter, LETTERS, MIDDLE_C, parseNote, solfegeName } from '../music/notes'
+
+const ScoreArt = lazy(() => import('./ScoreArt'))
 
 const ACCENT = '#ffc800'
 const ACCENT_DARK = '#e0a000'
@@ -540,5 +544,11 @@ export function TheoryArt({ art }: { art: Illustration }) {
       return <RhythmArt {...art} />
     case 'waterfall':
       return <WaterfallArt {...art} />
+    case 'score':
+      return (
+        <Suspense fallback={null}>
+          <ScoreArt piece={art.piece} bars={art.bars} />
+        </Suspense>
+      )
   }
 }

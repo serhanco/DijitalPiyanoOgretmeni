@@ -27,6 +27,8 @@ import type { ArpeggioPart } from '../chords/arpeggio'
 import { arpeggioLesson, chordLesson, type ChordSpec } from '../chords/lessons'
 import { stepsKeyboard, type ScalePart } from '../scales/steps'
 import { ladderLesson, memoryLesson, scaleLesson } from '../scales/lessons'
+import { HANON } from '../etudes/drills'
+import { etudePart, hanonPiece } from '../etudes/part'
 import type { NoteLesson } from '../noteHunter/lessons'
 import type { Question, TheorySpec } from '../theory/quiz'
 import { pieceSteps, type PiecePart } from './piece'
@@ -448,6 +450,7 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
         ...(level >= 1 ? [part('major', 'contrary')] : []),
       ],
     ),
+    hanonLesson(id('hanon'), k, index),
     chordLesson('chord', id('chords'), `${M} Akorları`, 'Gamın her basamağında bir üçlü: I’den vii°’ye ve geri', {
       chords: scaleChords(k.major),
       mode: 'exact',
@@ -471,6 +474,12 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
         : 'I, IV ve V çevrimleri: adları yazmıyor, porteden oku',
       { chords: primaryInversions(k), draw: 12, mode: 'exact', showName: level < 2, key: majorKey },
     ),
+    chordLesson('space', id('space'), `Uzay: ${M}`, 'İstilacılar I, IV ve V’yi çevrimleriyle getiriyor', {
+      chords: primaryInversions(k),
+      draw: 12 + 2 * level,
+      mode: 'voicing',
+      showName: level < 2,
+    }),
     chordLesson(
       'chord',
       id('inv-ladder'),
@@ -520,6 +529,12 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
       progression: MINOR_CADENCE,
       key: minorKey,
     }),
+    chordLesson('chordbar', id('bar'), `Barmen: ${M} ve ${m}`, 'Müşteriler iki tonun akorlarını karışık ister', {
+      chords: [...keyTriads(k.major), ...keyTriads(k.minor, true)],
+      draw: 12 + 2 * level,
+      mode: 'voicing',
+      showName: level < 3,
+    }),
     memoryLesson(
       id('memory'),
       `Hafıza: ${M}`,
@@ -533,6 +548,14 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
     pieceLesson(id('piece'), { tune: k.tune, key: k.major }),
   ]
   return [...lessons, keyBoss(k, lessons)]
+}
+
+/** Hanon's exercises one after another around the circle (No. 1 in C, No. 2 in G, …), one octave, both hands. */
+function hanonLesson(id: string, k: KeyDef, index: number): NoteLesson {
+  const no = (index % HANON.length) + 1
+  const song = hanonPiece(no, k.major)
+  const lesson = etudePart(id, song, 'both', 'wait', [1, song.score!.bars], `Hanon ${no}: ${majorName(k)}`)
+  return { ...lesson, description: `Hanon’un ${no}. alıştırması ${majorName(k)} tonunda, iki el bir oktav` }
 }
 
 /** I – IV – V7 – I, then ii – V7 – I: the two cadences of the key, one chord flowing into the next. */

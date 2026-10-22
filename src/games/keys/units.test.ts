@@ -38,9 +38,9 @@ describe('key units', () => {
     expect(new Set(ALL_LESSONS.map((l) => l.id)).size).toBe(ALL_LESSONS.length)
   })
 
-  it('has fifteen lessons per unit, the boss last', () => {
+  it('has seventeen lessons per unit, the boss last', () => {
     for (const u of KEY_UNITS) {
-      expect(u.lessons).toHaveLength(15)
+      expect(u.lessons).toHaveLength(18)
       expect(u.lessons.at(-1)!.kind).toBe('boss')
       expect(u.lessons[0].kind).toBe('theory')
     }

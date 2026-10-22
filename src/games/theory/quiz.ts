@@ -49,6 +49,8 @@ export type Illustration =
   | { kind: 'rhythm'; pattern: string; beatsPerBar?: number }
   /** Nota Şelalesi: notes ("E4/q") falling onto a white-key keyboard; `left` marks the left hand's notes. */
   | { kind: 'waterfall'; low: number; high: number; notes: string; left?: string }
+  /** A few bars of an étude's score (`bars` from 0, inclusive). */
+  | { kind: 'score'; piece: string; bars: [number, number] }
 
 export interface TheoryCard {
   title: string

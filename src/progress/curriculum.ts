@@ -1,4 +1,5 @@
 import { CHORD_LESSONS } from '../games/chords/lessons'
+import { ETUDE_LESSONS } from '../games/etudes/lessons'
 import { EAR_LESSONS } from '../games/ear/lessons'
 import { BASS_LESSONS } from '../games/noteHunter/bassLessons'
 import { HANDS_LESSONS } from '../games/noteHunter/handsLessons'
@@ -137,8 +138,9 @@ export const ALL_LESSONS: NoteLesson[] = UNITS.flatMap((u) => u.lessons)
 
 export const BOSS_LESSON_IDS: string[] = ALL_LESSONS.filter((l) => l.kind === 'boss').map((l) => l.id)
 
+/** A lesson of the map or of the Etüt Kitaplığı. */
 export function findLesson(id: string): NoteLesson | undefined {
-  return ALL_LESSONS.find((l) => l.id === id)
+  return ALL_LESSONS.find((l) => l.id === id) ?? ETUDE_LESSONS.find((l) => l.id === id)
 }
 
 /** True when every lesson of the unit has at least one star. The boss is a bonus: it opens nothing. */

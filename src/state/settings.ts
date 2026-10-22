@@ -33,6 +33,8 @@ interface SettingsState {
   deviceLatency: Record<string, number>
   /** Tempo last played in each rhythm lesson, by lesson id. */
   tempo: Record<string, number>
+  /** Études: the written score (the default) or the falling notes of Nota Şelalesi. */
+  etudeView: 'score' | 'waterfall'
   /** For trying the app out: every lesson open and a note button on every screen. */
   testMode: boolean
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void
@@ -56,6 +58,7 @@ export const useSettings = create<SettingsState>()(
       latency: NO_LATENCY,
       deviceLatency: {},
       tempo: {},
+      etudeView: 'score',
       testMode: false,
       set: (patch) => set(patch),
     }),

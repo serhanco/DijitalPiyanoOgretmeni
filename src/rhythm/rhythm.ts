@@ -1,20 +1,35 @@
 // Rhythm values and patterns. Beats are quarter notes; bars are 4/4 or 3/4.
 
-/** w = whole, h = half, q = quarter, e = eighth, qr = quarter rest, qd = dotted quarter, hd = dotted half. */
-export type RhythmValue = 'w' | 'h' | 'q' | 'e' | 'qr' | 'qd' | 'hd'
+/**
+ * w = whole, h = half, q = quarter, e = eighth, s = sixteenth, qr = quarter rest, qd = dotted quarter,
+ * hd = dotted half, ed = dotted eighth (the études' notes; the rhythm lessons do not use s and ed).
+ */
+export type RhythmValue = 'w' | 'h' | 'q' | 'e' | 's' | 'qr' | 'qd' | 'hd' | 'ed'
 
-export const VALUE_BEATS: Record<RhythmValue, number> = { w: 4, h: 2, q: 1, e: 0.5, qr: 1, qd: 1.5, hd: 3 }
+export const VALUE_BEATS: Record<RhythmValue, number> = {
+  w: 4,
+  h: 2,
+  q: 1,
+  e: 0.5,
+  s: 0.25,
+  qr: 1,
+  qd: 1.5,
+  hd: 3,
+  ed: 0.75,
+}
 
-export type RhythmTopic = 'quarter' | 'half' | 'whole' | 'eighth' | 'rest' | 'dotted'
+export type RhythmTopic = 'quarter' | 'half' | 'whole' | 'eighth' | 'sixteenth' | 'rest' | 'dotted'
 
 export const VALUE_TOPIC: Record<RhythmValue, RhythmTopic> = {
   w: 'whole',
   h: 'half',
   q: 'quarter',
   e: 'eighth',
+  s: 'sixteenth',
   qr: 'rest',
   qd: 'dotted',
   hd: 'dotted',
+  ed: 'dotted',
 }
 
 export const TOPIC_LABELS: Record<RhythmTopic, string> = {
@@ -22,12 +37,13 @@ export const TOPIC_LABELS: Record<RhythmTopic, string> = {
   half: 'İkilikler',
   whole: 'Birlikler',
   eighth: 'Sekizlikler',
+  sixteenth: 'On altılıklar',
   rest: 'Esler',
   dotted: 'Noktalı notalar',
 }
 
 /** Order of topics in reports. */
-export const TOPIC_ORDER: RhythmTopic[] = ['quarter', 'half', 'whole', 'eighth', 'dotted', 'rest']
+export const TOPIC_ORDER: RhythmTopic[] = ['quarter', 'half', 'whole', 'eighth', 'sixteenth', 'dotted', 'rest']
 
 export const isRest = (v: RhythmValue) => v === 'qr'
 

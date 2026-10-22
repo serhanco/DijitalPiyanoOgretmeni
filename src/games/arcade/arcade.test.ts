@@ -6,7 +6,7 @@ import { BalloonGame } from './balloon/engine'
 import { BAR_X, BarGame, clefOfCounter } from './bar/engine'
 import { BIRD_X, BirdGame } from './bird/engine'
 import { noteSkill } from './skill'
-import { fitStaff, ledgerSteps, staffStep, stepY } from './staffGeometry'
+import { fitStaff, ledgerSteps, pitchAcc, pitchStep, staffStep, stepY } from './staffGeometry'
 
 function seeded(seed = 1) {
   return () => {
@@ -25,6 +25,16 @@ describe('staff geometry', () => {
     expect(staffStep(parseNote('F5'), 'treble')).toBe(8)
     expect(staffStep(C4, 'treble')).toBe(-2)
     expect(staffStep(parseNote('G2'), 'bass')).toBe(0)
+  })
+
+  it('puts a written note on its own letter: B♭ on B, not on A', () => {
+    const bFlat = { midi: 70, letter: 'b' as const, acc: -1 as const, octave: 4 }
+    expect(pitchStep(bFlat, 'treble')).toBe(staffStep(parseNote('B4'), 'treble'))
+    expect(pitchStep(70, 'treble')).toBe(staffStep(parseNote('A4'), 'treble'))
+    expect(pitchAcc(bFlat)).toBe(-1)
+    expect(pitchAcc(70)).toBe(0)
+    // F𝄪 sits on F.
+    expect(pitchStep({ midi: 67, letter: 'f', acc: 2, octave: 4 }, 'treble')).toBe(1)
   })
 
   it('lists ledger lines', () => {
