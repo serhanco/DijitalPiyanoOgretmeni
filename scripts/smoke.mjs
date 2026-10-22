@@ -33,7 +33,22 @@ page.on('pageerror', (e) => {
 page.on('console', (m) => m.type() === 'error' && !/ERR_FAILED|ERR_TUNNEL/.test(m.text()) && errors.push(m.text()))
 
 /** Open a lesson from the map: tap its node, then Başla / Tekrar çal on the card that opens. */
+/** A finished lesson may sit in a fold of finished lessons (map or Etüt Kitaplığı): open the fold first. */
+async function unfold(page, title) {
+  await page.evaluate((title) => {
+    const node = [...document.querySelectorAll('.home .node, .etudes .etude-row')].find(
+      (n) => n.getAttribute('aria-label') === title,
+    )
+    if (node) return
+    const fold = [...document.querySelectorAll('.fold-capsule')].find((f) =>
+      JSON.parse(f.dataset.titles).includes(title),
+    )
+    fold?.click()
+  }, title)
+}
+
 async function openLesson(title, force = false) {
+  await unfold(page, title)
   await page.getByRole('button', { name: title, exact: true }).click({ force })
   await page.locator('.lesson-peek-go').click()
 }
@@ -646,7 +661,7 @@ async function testModeFlow() {
   await other.waitForTimeout(1000)
   const xpThere = (await other.textContent('.chip.xp'))?.trim()
   if (xpThere !== xpHere) errors.push(`Progress code moved ${xpThere} instead of ${xpHere}`)
-  const stars = await other.locator('.node-stars .on').count()
+  const stars = await other.locator('.node-stars .on, .fold-dot').count()
   if (!stars) errors.push('Progress code moved no stars')
   await other.close()
 }

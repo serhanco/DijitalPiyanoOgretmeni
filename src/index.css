@@ -28,19 +28,29 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131f24;
-    --surface: #1b2a31;
-    --text: #eef3f6;
-    --muted: #9aa9b3;
-    --border: #2c3d45;
-    --key-white: #f1f4f6;
-    color-scheme: dark;
-  }
-  .staff svg {
-    filter: invert(1) hue-rotate(180deg);
-  }
+:root[data-theme='dark'] {
+  --bg: #131f24;
+  --surface: #1b2a31;
+  --text: #eef3f6;
+  --muted: #9aa9b3;
+  --border: #2c3d45;
+  --key-white: #f1f4f6;
+  color-scheme: dark;
+}
+:root[data-theme='dark'] .staff svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+:root[data-theme='dark'] .quiz-option.right,
+:root[data-theme='dark'] .case-pin.clean {
+  background: color-mix(in srgb, var(--primary) 22%, var(--surface));
+  color: #9be15d;
+}
+:root[data-theme='dark'] .quiz-option.wrong {
+  background: color-mix(in srgb, var(--danger) 22%, var(--surface));
+  color: #ff8a8a;
+}
+:root[data-theme='dark'] .key.white[data-held] {
+  background: #b9c6d2;
 }
 
 * {
@@ -1710,11 +1720,9 @@ button.chip {
   padding: 2px 8px;
   display: inline-block;
 }
-@media (prefers-color-scheme: dark) {
-  .finger-tip.cross {
-    background: #3a2c12;
-    color: #ffb54a;
-  }
+:root[data-theme='dark'] .finger-tip.cross {
+  background: #3a2c12;
+  color: #ffb54a;
 }
 @keyframes pop-in {
   from {
@@ -3249,6 +3257,86 @@ button.chip {
   border: none;
   border-radius: 999px;
   padding: 5px 12px;
+}
+/* Finished lessons in a row fold into one capsule on the path (progress/mapFold.ts). */
+.path-fold {
+  margin-bottom: 10px;
+}
+.fold-capsule {
+  --node: var(--primary);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  min-width: 210px;
+  max-width: 280px;
+  padding: 8px 16px 8px 8px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  background: color-mix(in srgb, var(--node) 14%, var(--surface));
+  border: 2px solid color-mix(in srgb, var(--node) 45%, var(--border));
+  border-radius: 999px;
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--node) 30%, var(--border));
+  transition: transform 0.08s;
+}
+.fold-capsule:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--node) 30%, var(--border));
+}
+.fold-check {
+  grid-row: span 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #fff;
+  background: var(--node);
+}
+.fold-text {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.fold-text span {
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.fold-medals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.fold-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #cd7f32;
+}
+.fold-dot.m2 {
+  background: #9aa5b1;
+}
+.fold-dot.m3 {
+  background: #ffc800;
+}
+.fold-again {
+  font: inherit;
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 14px;
 }
 .unit[data-folded] .unit-banner {
   opacity: 0.9;

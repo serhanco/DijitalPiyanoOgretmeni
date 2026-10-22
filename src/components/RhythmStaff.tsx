@@ -14,6 +14,7 @@ import {
   StaveNote,
   Voice,
 } from 'vexflow/bravura'
+import { useDark } from '../state/theme'
 import { vexKey } from '../music/notes'
 import { VALUE_BEATS, type RhythmValue } from '../rhythm/rhythm'
 import type { HoldVerdict } from '../rhythm/hold'
@@ -71,19 +72,6 @@ const DURATION: Record<RhythmValue, string> = {
 const THEMES = {
   light: { paper: '#ffffff', ink: '#1f2a30' },
   dark: { paper: '#1b2a31', ink: '#eef3f6' },
-}
-
-function useDark() {
-  const query = '(prefers-color-scheme: dark)'
-  const [dark, setDark] = useState(() => window.matchMedia?.(query).matches ?? false)
-  useEffect(() => {
-    const mq = window.matchMedia?.(query)
-    if (!mq) return
-    const on = () => setDark(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return dark
 }
 
 let fontsReady: Promise<unknown> | null = null

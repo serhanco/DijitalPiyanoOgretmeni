@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useProfile } from '../state/profile'
-import { useSettings } from '../state/settings'
+import { type ThemeChoice, useSettings } from '../state/settings'
 import { BackupPanel } from '../testing/BackupPanel'
 import { InstallPanel } from './InstallPanel'
 
@@ -13,6 +13,12 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
     </label>
   )
 }
+
+const THEMES: [ThemeChoice, string][] = [
+  ['system', '📱 Sistem'],
+  ['light', '☀️ Açık'],
+  ['dark', '🌙 Koyu'],
+]
 
 interface Props {
   onCalibrate: () => void
@@ -59,6 +65,22 @@ export function SettingsPanel({ onCalibrate, onSetup, onClose }: Props) {
           checked={settings.hintGlow}
           onChange={(v) => settings.set({ hintGlow: v })}
         />
+        <h3 className="settings-group">Görünüm</h3>
+        <div className="goal-picker" role="radiogroup" aria-label="Tema">
+          <span>Tema</span>
+          {THEMES.map(([value, label]) => (
+            <button
+              key={value}
+              className={`pill ${settings.theme === value ? 'on' : ''}`}
+              role="radio"
+              aria-checked={settings.theme === value}
+              data-theme-choice={value}
+              onClick={() => settings.set({ theme: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <h3 className="settings-group">Ses</h3>
         <Toggle
           label="Ses efektleri"

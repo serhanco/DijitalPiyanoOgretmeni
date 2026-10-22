@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { type Latency, NO_LATENCY } from '../rhythm/calibration'
 
+export type ThemeChoice = 'system' | 'light' | 'dark'
+
 interface SettingsState {
   /** Play sound for notes coming from a MIDI keyboard. Digital pianos usually make their own sound. */
   soundForMidi: boolean
@@ -35,6 +37,8 @@ interface SettingsState {
   tempo: Record<string, number>
   /** Études: the written score (the default) or the falling notes of Nota Şelalesi. */
   etudeView: 'score' | 'waterfall'
+  /** Görünüm: follow the device ('system') or force the light or dark colours. */
+  theme: ThemeChoice
   /** For trying the app out: every lesson open and a note button on every screen. */
   testMode: boolean
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void
@@ -59,6 +63,7 @@ export const useSettings = create<SettingsState>()(
       deviceLatency: {},
       tempo: {},
       etudeView: 'score',
+      theme: 'system',
       testMode: false,
       set: (patch) => set(patch),
     }),

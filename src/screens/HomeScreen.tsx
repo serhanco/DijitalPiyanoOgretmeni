@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
 import { DailyMixCard } from '../components/DailyMixCard'
+import { FoldCapsule } from '../components/FoldCapsule'
 import { SalonCard } from '../components/SalonCard'
 import { KIND_ICON } from './kindIcons'
 import { HomeShortcuts } from '../components/HomeShortcuts'
@@ -9,6 +10,7 @@ import { QuestBoard } from '../components/QuestBoard'
 import { EtudeCard } from '../components/EtudeCard'
 import { LessonPeek } from '../components/LessonPeek'
 import { LastWeekCard } from '../components/WeekSummary'
+import { foldPath } from '../progress/mapFold'
 import { MIX_LESSON_ID } from '../progress/mix'
 import { TopBar } from '../components/TopBar'
 import { UnitNav, type UnitRow } from '../components/UnitNav'
@@ -76,6 +78,8 @@ function useWide(): boolean {
 
 /** Finished units that the learner opened again, kept while the app runs. */
 const openedUnits = new Set<string>()
+/** Folds of finished lessons in a row (`progress/mapFold.ts`) that the learner opened, kept while the app runs. */
+const openedFolds = new Set<string>()
 
 /** Horizontal offsets that make the lesson path zigzag, Duolingo style. */
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
@@ -126,11 +130,18 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
     !unit.lessons.some((l) => mapNodeOf(l) === focus || l.id === focus)
   const stars = (unit: (typeof UNITS)[number]) => unit.lessons.reduce((n, l) => n + bestStars(l.id), 0)
   const folded = (unit: (typeof UNITS)[number]) => finished(unit) && !openedUnits.has(unit.id)
-  const toggleUnit = (id: string) => {
-    if (openedUnits.has(id)) openedUnits.delete(id)
-    else openedUnits.add(id)
+  const toggle = (opened: Set<string>, id: string) => {
+    if (opened.has(id)) opened.delete(id)
+    else opened.add(id)
     rerender((n) => n + 1)
   }
+  const toggleUnit = (id: string) => toggle(openedUnits, id)
+  // Inside an unfinished unit, finished lessons in a row fold; the current lesson and the one just left stay out.
+  const keepInSight = (l: NoteLesson) => l.id === current?.id || l.id === focus || mapNodeOf(l) === focus
+  const pathOf = (unit: (typeof UNITS)[number], path: NoteLesson[]) =>
+    testMode || finished(unit)
+      ? path.map((lesson) => ({ kind: 'node' as const, lesson }))
+      : foldPath(path, (l) => bestStars(l.id) > 0 && unlockedLesson(l.id), keepInSight, openedFolds)
   const unitRows: UnitRow[] = UNITS.map((u) => ({
     id: u.id,
     title: u.title,
@@ -187,6 +198,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
         // The weak-notes review comes before the boss, the unit's last node.
         const path = unit.lessons.filter((l) => l.kind !== 'boss')
         const boss = unit.lessons.find((l) => l.kind === 'boss')
+        const items = pathOf(unit, path)
         const node = (lesson: NoteLesson, i: number) => {
           const unlocked = unlockedLesson(lesson.id)
           const stars = bestStars(lesson.id)
@@ -280,7 +292,22 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
 
             {!unit.comingSoon && !folded(unit) && (
               <div className="path">
-                {path.map(node)}
+                {items.map((item, i) =>
+                  item.kind === 'node' ? (
+                    node(item.lesson, i)
+                  ) : (
+                    <div key={item.id} className={`path-step path-fold ${item.kind === 'fold' ? '' : 'open'}`}>
+                      <FoldCapsule
+                        id={item.id}
+                        lessons={item.lessons}
+                        folded={item.kind === 'fold'}
+                        stars={bestStars}
+                        color={unit.color}
+                        onToggle={() => toggle(openedFolds, item.id)}
+                      />
+                    </div>
+                  ),
+                )}
 
                 {unit.review &&
                   (() => {
@@ -290,7 +317,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
                       <div
                         className={`path-step ${focus === `review-${clef}` ? 'back' : ''}`}
                         data-node={`review-${clef}`}
-                        style={{ transform: `translateX(${ZIGZAG[path.length % ZIGZAG.length]}px)` }}
+                        style={{ transform: `translateX(${ZIGZAG[items.length % ZIGZAG.length]}px)` }}
                       >
                         <button
                           className={`node review ${notes.length ? 'open' : 'locked'}`}

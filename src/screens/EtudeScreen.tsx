@@ -2,6 +2,8 @@
 // the one before it. A tap shows the lesson card, as on the map.
 
 import { useEffect, useState } from 'react'
+import { FoldCapsule } from '../components/FoldCapsule'
+import { foldPath } from '../progress/mapFold'
 import { LessonPeek } from '../components/LessonPeek'
 import { ETUDE_LEVELS, etudeOpen } from '../games/etudes/lessons'
 import type { NoteLesson } from '../games/noteHunter/lessons'
@@ -16,12 +18,23 @@ interface Props {
   last?: string
 }
 
+/** Folds of finished lessons the learner opened, kept while the app runs. */
+const openedFolds = new Set<string>()
+
 export function EtudeScreen({ onStart, onBack, last }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const testMode = useSettings((s) => s.testMode)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
   const open = (id: string) => testMode || etudeOpen(id, bestStars)
   const [peek, setPeek] = useState<NoteLesson | null>(null)
+  const [, rerender] = useState(0)
+  const toggleFold = (id: string) => {
+    if (openedFolds.has(id)) openedFolds.delete(id)
+    else openedFolds.add(id)
+    rerender((n) => n + 1)
+  }
+  // Finished lessons in a row fold as on the map; the next lesson and the one just played stay in sight.
+  const next = ETUDE_LEVELS.flatMap((l) => l.lessons).find((l) => open(l.id) && bestStars(l.id) === 0)
 
   useEffect(() => {
     const row = last && document.querySelector(`[data-etude="${last}"]`)
@@ -55,7 +68,28 @@ export function EtudeScreen({ onStart, onBack, last }: Props) {
               {level.text} · {done}/{level.lessons.length}
             </p>
             <ol className="etude-list">
-              {level.lessons.map((l) => {
+              {(testMode
+                ? level.lessons.map((lesson) => ({ kind: 'node' as const, lesson }))
+                : foldPath(
+                    level.lessons,
+                    (l) => bestStars(l.id) > 0,
+                    (l) => l.id === last || l.id === next?.id,
+                    openedFolds,
+                  )
+              ).map((item) => {
+                if (item.kind !== 'node')
+                  return (
+                    <li key={item.id}>
+                      <FoldCapsule
+                        id={item.id}
+                        lessons={item.lessons}
+                        folded={item.kind === 'fold'}
+                        stars={bestStars}
+                        onToggle={() => toggleFold(item.id)}
+                      />
+                    </li>
+                  )
+                const l = item.lesson
                 const ok = open(l.id)
                 const stars = bestStars(l.id)
                 return (

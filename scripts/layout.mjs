@@ -433,7 +433,22 @@ function measure({ area, play, minKey, minShare, keyboard = true }) {
 }
 
 /** Open a lesson from the map: tap its node, then Başla on the card that opens. */
+/** A finished lesson may sit in a fold of finished lessons (map or Etüt Kitaplığı): open the fold first. */
+async function unfold(page, title) {
+  await page.evaluate((title) => {
+    const node = [...document.querySelectorAll('.home .node, .etudes .etude-row')].find(
+      (n) => n.getAttribute('aria-label') === title,
+    )
+    if (node) return
+    const fold = [...document.querySelectorAll('.fold-capsule')].find((f) =>
+      JSON.parse(f.dataset.titles).includes(title),
+    )
+    fold?.click()
+  }, title)
+}
+
 async function openLesson(page, title) {
+  await unfold(page, title)
   await page.getByRole('button', { name: title, exact: true }).click()
   await page.locator('.lesson-peek-go').click()
 }
@@ -544,6 +559,87 @@ function seedSmart() {
       tx.onerror = () => reject(tx.error)
     }
   })
+}
+
+/**
+ * Art arda bitmiş dersler (Faz 16): with stars in Başlangıç and the first five treble lessons and test mode
+ * off, the finished unit folds into its banner, the five lessons into one capsule and the next lesson stays a
+ * node; the capsule opens and folds again. The profile and the setting are put back afterwards.
+ */
+async function mapFolds(page, snap, vpId) {
+  const ids = await page.evaluate(() => {
+    const of = (unit, n) =>
+      [...document.querySelectorAll(`[data-unit="${unit}"] [data-node]`)]
+        .map((e) => e.dataset.node)
+        .filter((id) => !id.startsWith('review-'))
+        .slice(0, n)
+    return [...of('basics', 99), ...of('treble', 5)]
+  })
+  const kv = (write) =>
+    new Promise((resolve, reject) => {
+      const open = indexedDB.open('dijital-piyano')
+      open.onerror = () => reject(open.error)
+      open.onsuccess = () => {
+        const store = open.result.transaction('kv', 'readwrite').objectStore('kv')
+        const get = store.get('profile')
+        get.onsuccess = () => {
+          const before = get.result?.value ?? null
+          if (write === undefined) return resolve(before)
+          const req = write === null ? store.delete('profile') : store.put({ key: 'profile', value: write })
+          req.onsuccess = () => resolve(before)
+          req.onerror = () => reject(req.error)
+        }
+      }
+    })
+  const saved = await page.evaluate(kv)
+  const profile = saved ? JSON.parse(saved) : { state: {}, version: 0 }
+  const lessons = { ...profile.state.lessons }
+  ids.forEach((id, i) => (lessons[id] = { bestStars: 1 + (i % 3), bestAccuracy: 0.9, plays: 1 }))
+  await page.evaluate(kv, JSON.stringify({ ...profile, state: { ...profile.state, lessons } }))
+  const setTestMode = (on) =>
+    page.evaluate((on) => {
+      const s = JSON.parse(localStorage.getItem('dpo-settings') ?? '{"state":{},"version":0}')
+      s.state.testMode = on
+      localStorage.setItem('dpo-settings', JSON.stringify(s))
+    }, on)
+  await setTestMode(false)
+  await page.reload()
+  await page.waitForSelector('.fold-capsule')
+  const errors = []
+  const state = () =>
+    page.evaluate(() => ({
+      unitFolded: !!document.querySelector('[data-unit="basics"][data-folded]'),
+      capsules: [...document.querySelectorAll('[data-unit="treble"] .fold-capsule')].map(
+        (c) => c.querySelectorAll('.fold-dot').length,
+      ),
+      nodes: document.querySelectorAll('[data-unit="treble"] .node:not(.review)').length,
+      current: !!document.querySelector('[data-unit="treble"] .node.current'),
+      again: !!document.querySelector('[data-unit="treble"] .fold-again'),
+    }))
+  const folded = await state()
+  if (!folded.unitFolded) errors.push('Bitmiş Başlangıç ünitesi katlanmadı')
+  if (folded.capsules.join() !== '5')
+    errors.push(`Beş bitmiş ders tek kapsül olmalı (${folded.capsules.join() || 'yok'})`)
+  if (!folded.current) errors.push('Sıradaki ders (BAŞLA) haritada görünmüyor')
+  await page.evaluate(() =>
+    document
+      .querySelector('[data-unit="treble"] .fold-capsule')
+      .scrollIntoView({ block: 'center', behavior: 'instant' }),
+  )
+  await page.waitForTimeout(400)
+  await snap('katlama')
+  await page.locator('[data-unit="treble"] .fold-capsule').click()
+  const opened = await state()
+  if (opened.capsules.length || !opened.again || opened.nodes !== folded.nodes + 5)
+    errors.push(`Kapsül açılınca beş ders görünmedi (${opened.nodes - folded.nodes} ders)`)
+  await snap('katlama-acik')
+  await page.locator('[data-unit="treble"] .fold-again').click()
+  if ((await state()).capsules.join() !== '5') errors.push('Açılan kapsül yeniden katlanmadı')
+  await page.evaluate(kv, saved)
+  await setTestMode(true)
+  await page.reload()
+  await page.waitForTimeout(800)
+  return [{ name: 'katlama', errors, warnings: [], shot: `${vpId}-katlama.png` }]
 }
 
 /** The map with the seeded history: last week's summary and the mix card, then the summary closed. */
@@ -731,6 +827,26 @@ async function topBar(page, snap, vpId) {
     facts: { height: sheet.height },
     shot: `${vpId}-ayarlar.png`,
   })
+  // Görünüm: each choice must reach the page root and the browser bar at once; 'system' follows the device.
+  const themeErrors = []
+  for (const choice of ['dark', 'light', 'system']) {
+    await page.evaluate((c) => document.querySelector(`[data-theme-choice="${c}"]`).click(), choice)
+    await page.waitForTimeout(100)
+    if (choice === 'dark') await snap('tema-koyu')
+    const got = await page.evaluate(() => ({
+      theme: document.documentElement.dataset.theme,
+      bar: document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+      device: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+      bg: getComputedStyle(document.body).backgroundColor,
+    }))
+    const want = choice === 'system' ? got.device : choice
+    if (got.theme !== want) themeErrors.push(`Tema "${choice}" seçilince sayfa ${got.theme} (beklenen ${want})`)
+    if (got.bar !== (want === 'dark' ? '#131f24' : '#58cc02'))
+      themeErrors.push(`Tema "${choice}": tarayıcı çubuğu ${got.bar}`)
+    const dark = got.bg === 'rgb(19, 31, 36)'
+    if (dark !== (want === 'dark')) themeErrors.push(`Tema "${choice}": arka plan ${got.bg}`)
+  }
+  checks.push({ name: 'tema seçimi', errors: themeErrors, warnings: [], shot: `${vpId}-tema-koyu.png` })
   await page.getByLabel('Ayarları kapat').click()
   if (await page.$('.settings-sheet'))
     checks.push({ name: 'ayarları kapat', errors: ['✕ ayarları kapatmadı'], warnings: [] })
@@ -1088,6 +1204,17 @@ async function runViewport(vp) {
     menu.checks.push(...(await topBar(page, snap, vp.id)))
   } catch (e) {
     menu.checks.push({ name: 'çalıştırma', errors: [`Üst menü denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
+    await page.goto(url)
+    await page.waitForTimeout(800)
+  }
+
+  const folds = { id: 'katlama', name: 'Bitmiş dersleri katlama (harita)', checks: [] }
+  results.push(folds)
+  try {
+    folds.checks.push(...(await mapFolds(page, snap, vp.id)))
+  } catch (e) {
+    folds.checks.push({ name: 'çalıştırma', errors: [`Katlama denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
+    await snap('katlama-hata')
     await page.goto(url)
     await page.waitForTimeout(800)
   }

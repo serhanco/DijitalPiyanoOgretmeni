@@ -11,6 +11,14 @@
     <meta name="theme-color" content="#58cc02" />
     <meta name="description" content="Duolingo tarzı oyunlarla, MIDI klavyenle piyano öğren." />
     <title>Dijital Piyano Öğretmeni</title>
+    <script>
+      // The chosen theme before the first paint (src/state/theme.ts keeps it in step afterwards).
+      try {
+        var t = JSON.parse(localStorage.getItem('dpo-settings') || '{}').state?.theme || 'system'
+        if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = t
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
