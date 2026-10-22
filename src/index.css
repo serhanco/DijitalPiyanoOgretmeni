@@ -3292,6 +3292,130 @@ button.chip {
   border-radius: 999px;
   padding: 5px 12px;
 }
+/* Görsel dünya: each unit's scenery (progress/scenery.ts). The path sits on the unit's sky, things stand
+   beside the nodes, and Notiş waits at the lesson to play next. */
+.home {
+  --prop-x: clamp(118px, 38vw - 10px, 220px);
+}
+.unit[data-scene] .path {
+  position: relative;
+  margin-top: -12px;
+  padding: 36px 0 18px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: linear-gradient(180deg, var(--sky), var(--ground));
+}
+:root[data-theme='dark'] .unit[data-scene] .path {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sky) 9%, var(--bg)),
+    color-mix(in srgb, var(--ground) 14%, var(--bg))
+  );
+}
+.unit[data-scene] .unit-banner {
+  position: relative;
+  z-index: 1;
+}
+.scene-prop,
+.map-notis {
+  position: absolute;
+  top: 6px;
+  left: calc(50% + var(--dir) * var(--prop-x) - var(--off));
+  pointer-events: none;
+}
+.scene-prop {
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  color: #2b1a5c;
+  overflow: visible;
+  opacity: 0.92;
+}
+:root[data-theme='dark'] .scene-prop {
+  color: #ddd5ff;
+  opacity: 0.8;
+}
+.map-notis {
+  top: -6px;
+  width: 58px;
+  margin-left: -29px;
+  z-index: 2;
+}
+.scene-prop[data-prop='cloud'] {
+  animation: prop-drift 7s ease-in-out infinite;
+}
+.scene-prop[data-prop='gull'],
+.scene-prop[data-prop='wave'],
+.scene-prop[data-prop='comet'] {
+  animation: prop-bob 3.2s ease-in-out infinite;
+}
+.scene-prop[data-prop='star'],
+.scene-prop[data-prop='sun'] {
+  animation: prop-twinkle 2.6s ease-in-out infinite;
+}
+@keyframes prop-drift {
+  50% {
+    transform: translateX(8px);
+  }
+}
+@keyframes prop-bob {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes prop-twinkle {
+  50% {
+    transform: scale(1.1) rotate(6deg);
+  }
+}
+/* The key units' journey: Notiş's balloon on the banner carries the key signature. */
+.unit-banner:has(.unit-balloon) {
+  padding-right: 78px;
+}
+.unit-balloon {
+  position: absolute;
+  right: 12px;
+  top: -10px;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #2b1a5c;
+  animation: prop-bob 4s ease-in-out infinite;
+}
+.balloon-svg {
+  width: 56px;
+  height: 56px;
+  overflow: visible;
+}
+.key-sign {
+  margin-top: -4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: #2b1a5c;
+  font-weight: 900;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.15);
+}
+/* A unit just finished: its nodes turn gold one after the other. */
+.unit[data-celebrate] .node.open {
+  --node: #ffc800;
+  animation: node-gold 0.7s ease-out both;
+}
+@keyframes node-gold {
+  from {
+    transform: scale(0.85);
+    filter: brightness(1.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-prop,
+  .unit-balloon,
+  .unit[data-celebrate] .node.open {
+    animation: none;
+  }
+}
+
 /* Finished lessons in a row fold into one capsule on the path (progress/mapFold.ts). */
 .path-fold {
   margin-bottom: 10px;
