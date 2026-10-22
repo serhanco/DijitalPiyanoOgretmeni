@@ -658,10 +658,24 @@ async function opening(page, snap) {
     .catch(() => errors.push('Açılış 2,5 saniyede bitmedi'))
   await page.reload()
   await page.waitForSelector('[data-opening]')
-  await page.mouse.click(20, 200)
+  // A tap starts the fade at once (`data-leaving`), well before the opening would end on its own.
+  const tapped = await page.evaluate(() => {
+    const start = performance.now()
+    document.querySelector('[data-opening]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    return new Promise((resolve) => {
+      const look = () =>
+        document.querySelector('[data-opening][data-leaving]')
+          ? resolve(performance.now() - start)
+          : performance.now() - start > 1500
+            ? resolve(null)
+            : requestAnimationFrame(look)
+      look()
+    })
+  })
+  if (tapped === null || tapped > 400) errors.push(`Dokununca açılış geçmedi (${tapped ?? 'yok'} ms)`)
   await page
-    .waitForSelector('[data-opening]', { state: 'detached', timeout: 800 })
-    .catch(() => errors.push('Dokununca açılış geçmedi'))
+    .waitForSelector('[data-opening]', { state: 'detached', timeout: 2500 })
+    .catch(() => errors.push('Dokunduktan sonra açılış kapanmadı'))
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.reload()
   await page.waitForTimeout(300)

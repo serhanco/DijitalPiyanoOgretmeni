@@ -36,6 +36,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
       transition={{ duration: 0.25 }}
       onAnimationComplete={() => leaving && onDone()}
       data-opening
+      data-leaving={leaving || undefined}
     >
       <div className="opening-stage">
         <motion.div
