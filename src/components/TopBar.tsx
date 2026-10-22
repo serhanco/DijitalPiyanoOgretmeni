@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { currentStreak, dayKey, levelFromXp } from '../progress/gamification'
 import { useProfile } from '../state/profile'
 import { SettingsPanel } from './SettingsPanel'
+import { Icon } from './icons/Icon'
 
 interface Props {
   onProfile: () => void
@@ -53,10 +54,10 @@ export function TopBar({ onProfile, onCalibrate, onSetup, onUnits, onHint }: Pro
           )
         }
       >
-        🔥 {streakNow}
+        <Icon name="streak" size={18} /> {streakNow}
       </button>
       <button className="chip xp" onClick={() => onHint?.(`XP: ders bitirerek kazandığın puan. Toplam ${totalXp} XP.`)}>
-        ⚡ {totalXp}
+        <Icon name="xp" size={18} /> {totalXp}
       </button>
       <button
         className="chip goal"
@@ -68,10 +69,10 @@ export function TopBar({ onProfile, onCalibrate, onSetup, onUnits, onHint }: Pro
         {xpToday}/{dailyGoal}
       </button>
       <button className="chip level" onClick={onProfile} aria-label="Profil" title={`Seviye ${level}`}>
-        Sv. {level} 👤
+        Sv. {level} <Icon name="profile" size={18} />
       </button>
       <button className="chip units-btn" onClick={onUnits} aria-label="Üniteler">
-        🧭
+        <Icon name="units" size={20} />
       </button>
       <button
         className="chip settings-btn"
@@ -79,7 +80,7 @@ export function TopBar({ onProfile, onCalibrate, onSetup, onUnits, onHint }: Pro
         aria-label="Ayarlar"
         aria-expanded={settingsOpen}
       >
-        ⚙️
+        <Icon name="settings" size={20} />
       </button>
       {settingsOpen && (
         <SettingsPanel

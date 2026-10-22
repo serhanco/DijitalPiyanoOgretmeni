@@ -40,6 +40,12 @@
 :root[data-theme='dark'] .staff svg {
   filter: invert(1) hue-rotate(180deg);
 }
+:root[data-theme='dark'] .icon {
+  color: #ddd5ff;
+}
+:root[data-theme='dark'] .node .icon {
+  color: #2b1a5c;
+}
 :root[data-theme='dark'] .quiz-option.right,
 :root[data-theme='dark'] .case-pin.clean {
   background: color-mix(in srgb, var(--primary) 22%, var(--surface));
@@ -55,6 +61,31 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* The app's own icons (components/icons): outlines drawn in the icon's colour. */
+.icon {
+  color: #2b1a5c;
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+  overflow: visible;
+}
+.icon:not([width]) {
+  width: 1.25em;
+  height: 1.25em;
+}
+.node .icon {
+  width: 48px;
+  height: 48px;
+}
+.node.locked .icon {
+  width: 36px;
+  height: 36px;
+}
+.node.boss .icon {
+  width: 60px;
+  height: 60px;
 }
 
 body {
@@ -726,6 +757,9 @@ kbd {
 }
 button.chip {
   cursor: pointer;
+}
+.top-bar .chip {
+  gap: 4px;
 }
 .chip.streak {
   color: var(--muted);

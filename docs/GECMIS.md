@@ -116,6 +116,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-21 | Faz 14: Tonlar yolculuğu. 12 ton ünitesi (beşliler çemberi sırasıyla, her biri 15 ders): her tonda gam, iki el, tonun yedi akoru, çevrimler, kadanslar, arpejler, göreceli minör, hafıza, o tona taşınmış şarkı ve boss; Ton çemberi, 3 rozet                      | dal `claude/project-thread-9i936j`     |
 | 2026-10-21 | Faz 15a: Etüt Kitaplığı (3 seviye, 38 ders), partisyon görünümü (iki porte, bağ, parmak, 16'lık, 2/4), Mutopia içe aktarma aracı, 9 kamu malı eser (Bach defteri, Pleyel, Czerny Op. 821); Uzay ve Akor Barmeni kartlarında ♯/♭, ton ünitelerinde bu iki oyun      | dal `claude/project-thread-vn0hlf`     |
 | 2026-10-22 | Faz 15b: Kitaplık 8 seviye, 106 ders: beş parmak pozisyonu (kuralla), Hanon 1–10 (kuralla, her tona; ton ünitelerine birer ders), Burgmüller Op. 100'den 11 etüt, Çaykovski Çocuk Albümü'nden 3 parça, Czerny Op. 840, Kuhlau Andante; 4 rozet                     | dal `claude/project-thread-vn0hlf`     |
+| 2026-10-22 | Faz 16a: elle karanlık mod (Ayarlar → Görünüm: Sistem / Açık / Koyu), haritada ve Etüt Kitaplığı'nda art arda bitmiş 3+ dersi tek kapsüle katlama, emoji yerine Notiş çizgisinde kendi simge setimiz (27 ders türü, harita kartları, üst çubuk)                    | dal `claude/project-thread-fj207v`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -298,6 +299,13 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   LilyPond 2.24 ile derlenmeyen kaynak); Burgmüller No. 17 (3/8) ve Czerny Op. 840 No. 9 (40 süs notası) bilerek
   alınmadı. Clementi Op. 36 No. 1 (MIDI dosyası yok), Beethoven WoO 82 (MIDI tutmadı), Haydn menüetleri ve Kuhlau'nun
   Allegro'su araçtan geçmedi; Kuhlau'nun Rondo'su (158 ölçü) şimdilik çok uzun.
+
+- **Faz 16 (Görsel dünya):** Plan gözden geçirildi (`/mnt/project-files/faz-16/plan.md`). Serhan'ın cevapları: tek PR,
+  önce 16a (karanlık mod, katlama, simgeler) sonra 16b (manzaralar, Notiş haritada, geçişler, açılış, küçük
+  dokunuşlar); ton üniteleri tek "balon yolculuğu" (dört manzara, üç tonda bir değişir, her ünitenin rengi ve ton
+  tabelası); katlama eşiği 3 ders; açılış animasyonu her açılışta, 1 saniyeden kısa, dokununca geçer; düğme tık sesi
+  varsayılan açık; kalıcı Android imza anahtarı sonraya. Yerleştirme sınavı Faz 18'de kalıyor. Simgeler kodla çizilir
+  (SVG), dışarıdan resim ya da lisanslı simge kullanılmaz.
 
 ## Açık konular
 

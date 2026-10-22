@@ -3,7 +3,6 @@ import { Greeting } from '../components/Greeting'
 import { DailyMixCard } from '../components/DailyMixCard'
 import { FoldCapsule } from '../components/FoldCapsule'
 import { SalonCard } from '../components/SalonCard'
-import { KIND_ICON } from './kindIcons'
 import { HomeShortcuts } from '../components/HomeShortcuts'
 import { MidiPanel } from '../components/MidiPanel'
 import { QuestBoard } from '../components/QuestBoard'
@@ -20,6 +19,7 @@ import { buildReviewLesson, isUnlocked, mapNodeOf, UNITS, weakestNotes } from '.
 import { noteScores } from '../progress/history'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
+import { Icon } from '../components/icons/Icon'
 
 interface Props {
   onStart: (lesson: NoteLesson) => void
@@ -231,7 +231,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
                   }
                   aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
                 >
-                  {unlocked ? KIND_ICON[lesson.kind ?? 'drill'] : '🔒'}
+                  <Icon name={unlocked ? (lesson.kind ?? 'drill') : 'lock'} />
                 </button>
                 {unlocked && stars > 0 && (
                   <span className={`medal m${stars}`} aria-hidden>
@@ -328,7 +328,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
                           }
                           aria-label={`Zayıf notalar tekrarı (${CLEF_NAMES[clef]})`}
                         >
-                          🏋️
+                          <Icon name="review" />
                         </button>
                         <span className="node-title">Zayıf Notalar</span>
                       </div>
@@ -344,7 +344,6 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
       {peek && (
         <LessonPeek
           lesson={peek}
-          icon={KIND_ICON[peek.kind ?? 'drill']}
           stars={bestStars(peek.id)}
           bestAccuracy={lessons[peek.id] ? lessons[peek.id].bestAccuracy : null}
           plays={lessons[peek.id]?.plays ?? 0}

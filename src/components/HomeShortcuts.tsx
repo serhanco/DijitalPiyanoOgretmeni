@@ -5,6 +5,7 @@ import { useProfile } from '../state/profile'
 import { MidiPanel } from './MidiPanel'
 import { QuestBoard } from './QuestBoard'
 import { Sheet } from './Sheet'
+import { Icon } from './icons/Icon'
 
 /** Two short cards under the greeting; the quest board and the MIDI panel open from them as sheets. */
 export function HomeShortcuts({ onSetup }: { onSetup?: () => void }) {
@@ -31,7 +32,7 @@ export function HomeShortcuts({ onSetup }: { onSetup?: () => void }) {
       <div className="shortcuts">
         <button className="shortcut" data-shortcut="quests" onClick={() => setOpen('quests')}>
           <span className="shortcut-icon" aria-hidden>
-            {quests?.chest ? '🎉' : '🎁'}
+            <Icon name={quests?.chest ? 'chest' : 'quests'} size={34} />
           </span>
           <span className="shortcut-body">
             <b>Görevler</b>
@@ -40,7 +41,7 @@ export function HomeShortcuts({ onSetup }: { onSetup?: () => void }) {
         </button>
         <button className={`shortcut midi-${tone}`} data-shortcut="midi" onClick={() => setOpen('midi')}>
           <span className="shortcut-icon" aria-hidden>
-            🎹
+            <Icon name="keyboard" size={34} />
           </span>
           <span className="shortcut-body">
             <b>Klavye</b>

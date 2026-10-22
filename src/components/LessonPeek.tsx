@@ -1,5 +1,6 @@
 import type { LessonKind, NoteLesson } from '../games/noteHunter/lessons'
 import { Sheet } from './Sheet'
+import { Icon } from './icons/Icon'
 
 const KIND_NAME: Record<LessonKind, string> = {
   theory: 'Bilgi kartları ve sorular',
@@ -33,7 +34,6 @@ const KIND_NAME: Record<LessonKind, string> = {
 
 interface Props {
   lesson: NoteLesson
-  icon: string
   stars: number
   bestAccuracy: number | null
   plays: number
@@ -42,11 +42,11 @@ interface Props {
 }
 
 /** The small card that opens when a lesson is tapped on the map: what it is, your best, and Başla. */
-export function LessonPeek({ lesson, icon, stars, bestAccuracy, plays, onStart, onClose }: Props) {
+export function LessonPeek({ lesson, stars, bestAccuracy, plays, onStart, onClose }: Props) {
   return (
     <Sheet title={lesson.title} onClose={onClose} className="lesson-peek">
       <p className="peek-kind">
-        <span aria-hidden>{icon}</span> {KIND_NAME[lesson.kind ?? 'drill']}
+        <Icon name={lesson.kind ?? 'drill'} size={28} /> {KIND_NAME[lesson.kind ?? 'drill']}
       </p>
       <p className="peek-desc">{lesson.description}</p>
       <p className="peek-best">

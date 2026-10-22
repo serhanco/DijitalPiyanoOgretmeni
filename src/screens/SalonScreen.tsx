@@ -2,7 +2,6 @@
 // map's lessons are passed; each pair keeps its own record.
 
 import { useEffect, useRef, useState } from 'react'
-import { KIND_ICON } from './kindIcons'
 import { ALL_LESSONS, findLesson } from '../progress/curriculum'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import {
@@ -19,6 +18,7 @@ import {
 } from '../games/salon/salon'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
+import { Icon } from '../components/icons/Icon'
 
 interface Props {
   onStart: (lesson: NoteLesson) => void
@@ -65,7 +65,9 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
           ✕
         </button>
         <div>
-          <h1>🕹️ Oyun Salonu</h1>
+          <h1>
+            <Icon name="salon" size={36} /> Oyun Salonu
+          </h1>
           <p className="muted small">
             Sevdiğin oyunu açtığın bir beceriyle oyna. Canların bitene kadar puan topla, rekorunu geç!
           </p>
@@ -93,7 +95,7 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
               }}
             >
               <span className="salon-icon" aria-hidden>
-                {isOpen ? KIND_ICON[g.kind] : '🔒'}
+                <Icon name={isOpen ? g.kind : 'lock'} size={44} />
               </span>
               <b>{g.name}</b>
               <span className="small">
@@ -113,7 +115,7 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
       {picked && (
         <section ref={pickRef} className="card salon-pick" aria-label={`${picked.name}: beceri seç`}>
           <h2>
-            {KIND_ICON[picked.kind]} {picked.name}
+            <Icon name={picked.kind} size={32} /> {picked.name}
           </h2>
           <p className="small muted">Hangi beceriyle oynayalım?</p>
           <div className="salon-skills">

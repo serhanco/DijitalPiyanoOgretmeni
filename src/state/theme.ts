@@ -27,11 +27,9 @@ const listeners = new Set<() => void>()
 function apply() {
   const theme = resolveTheme(useSettings.getState().theme, deviceDark())
   const root = document.documentElement
-  if (root.dataset.theme !== theme) {
-    root.dataset.theme = theme
-    root.style.colorScheme = theme
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BAR_COLOR[theme])
-  }
+  root.dataset.theme = theme
+  root.style.colorScheme = theme
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BAR_COLOR[theme])
   listeners.forEach((l) => l())
 }
 

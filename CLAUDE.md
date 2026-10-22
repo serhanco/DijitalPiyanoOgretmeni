@@ -100,10 +100,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                              |
-| ------ | -------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–14, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
-| This   | Phase 15a + 15b: the Etüt Kitaplığı, the score view, Hanon (`claude/project-thread-vn0hlf`)        |
+| Branch | State                                                                                                |
+| ------ | ---------------------------------------------------------------------------------------------------- |
+| `main` | Phases 0–15, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live   |
+| This   | Phase 16a: manual dark mode, folding finished lessons, own icon set (`claude/project-thread-fj207v`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -525,7 +525,7 @@ Game round (`claude/project-thread-q9rplm`, the owner picked items from the game
   (`ENDLESS_LENGTH`, `ENDLESS_RAMP`, `.endless-bar`, no stars), beat games play 8 random bars. `profile.salon` keeps
   `SalonRecord { best, bestCombo, plays }` (`LessonOutcome.salon`, `Reward.record`); Salon games keep no lesson
   progress, pace, note statistics or review cards. Results: `RecordCard`, "Salona dön" (back to the salon with the
-  game picked). Lesson icons moved to `screens/kindIcons.ts`.
+  game picked). Lesson icons are drawn in `components/icons/` (phase 16a).
 - `SMOKE_ONLY=games` plays Başlangıç, Nota Treni (checks each song is named) and two endless Salon games (a record,
   then not); layout cases `train`, `chirp` and the `salon` check (screen, pick, endless game, record, way back).
 
@@ -686,6 +686,27 @@ tonic, octaves)` repeats the figure a step higher / lower: 14 groups up and Hano
 - Smoke `SMOKE_ONLY=etudes` also plays five-finger, Hanon on the metronome, Burgmüller, the 6/8 Pastorale and
   Tchaikovsky; the keys run plays Hanon 2 in G. Layout cases `etude-five`, `etude-hanon` (two octaves), `etude-pastorale`,
   `key-hanon`.
+
+Phase 16a (Görsel dünya, first part, `claude/project-thread-fj207v`; plan in `/mnt/project-files/faz-16/plan.md`):
+
+- **Theme** (`state/theme.ts`): `settings.theme` = `system | light | dark` (Ayarlar → Görünüm,
+  `[data-theme-choice]`). `setupTheme()` (in `main.tsx`) puts `data-theme="light | dark"` on `<html>`, sets
+  `color-scheme` and `<meta name="theme-color">` (`BAR_COLOR`), and follows the device only for `system`; an inline
+  script in `index.html` sets it before the first paint. Dark CSS lives under `:root[data-theme='dark']`, never
+  `@media (prefers-color-scheme)`. Drawings that pick their own colours use `useDark()` (`RhythmStaff`).
+- **Folds** (`progress/mapFold.ts`, pure): `foldPath(lessons, done, keep, opened)` folds runs of `FOLD_MIN` (3)
+  finished lessons into `fold` items (id `fold-<first lesson>`), `unfolded` when the learner opened one.
+  `components/FoldCapsule.tsx` (`.fold-capsule[data-fold][data-titles]`, `.fold-again`). The map folds inside
+  unfinished units (finished ones fold whole, as before), the Etüt Kitaplığı per level; never in test mode, never the
+  current lesson or the one just left (`focus` / `last`). Opened folds are remembered while the app runs. Scripts'
+  `openLesson` calls `unfold(page, title)` first.
+- **Icons** (`components/icons/`): `Icon` (`<svg class="icon" data-icon>` 48 × 48) draws `DRAWINGS[name]`: every
+  `LessonKind`, `lock`, `review`, `salon`, `etudes`, `streak`, `xp`, `units`, `settings`, `profile`, `quests`,
+  `chest`, `keyboard`. Notiş style from `palette.ts` and `parts.tsx` (`Eye`, `Cheek`, `Smile`, `Head`). Outlines use
+  `currentColor`: ink by default, a light ink on dark surfaces, ink again inside `.node`. Text and messages keep
+  their emoji.
+- Layout suite: `topBar` checks each theme choice (root, browser bar, background); `mapFolds` seeds stars into the
+  `kv` profile row, turns test mode off and checks the unit fold, the capsule, opening and folding again.
 
 Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 16 visual world, 17 accounts and social, 18
 placement test and new skills, 19 store release and iOS. The owner asked to **pause after each

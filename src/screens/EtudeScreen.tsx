@@ -9,7 +9,7 @@ import { ETUDE_LEVELS, etudeOpen } from '../games/etudes/lessons'
 import type { NoteLesson } from '../games/noteHunter/lessons'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
-import { KIND_ICON } from './kindIcons'
+import { Icon } from '../components/icons/Icon'
 
 interface Props {
   onStart: (lesson: NoteLesson) => void
@@ -49,7 +49,9 @@ export function EtudeScreen({ onStart, onBack, last }: Props) {
           ✕
         </button>
         <div>
-          <h1>📜 Etüt Kitaplığı</h1>
+          <h1>
+            <Icon name="etudes" size={36} /> Etüt Kitaplığı
+          </h1>
           <p className="muted small">
             Gerçek bestecilerin parçaları, kısa cümlelerle: önce her el ayrı, sonra iki elle, en son metronomla. Hepsi
             kamu malı eski baskılardan.
@@ -102,7 +104,7 @@ export function EtudeScreen({ onStart, onBack, last }: Props) {
                       onClick={() => setPeek(l)}
                     >
                       <span className="etude-icon" aria-hidden>
-                        {ok ? KIND_ICON[l.kind ?? 'drill'] : '🔒'}
+                        <Icon name={ok ? (l.kind ?? 'drill') : 'lock'} size={34} />
                       </span>
                       <span className="etude-text">
                         <b>{l.title}</b>
@@ -124,7 +126,6 @@ export function EtudeScreen({ onStart, onBack, last }: Props) {
       {peek && (
         <LessonPeek
           lesson={peek}
-          icon={KIND_ICON[peek.kind ?? 'drill']}
           stars={bestStars(peek.id)}
           bestAccuracy={lessons[peek.id] ? lessons[peek.id].bestAccuracy : null}
           plays={lessons[peek.id]?.plays ?? 0}

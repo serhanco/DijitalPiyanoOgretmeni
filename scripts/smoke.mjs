@@ -2174,7 +2174,7 @@ await page.waitForTimeout(1000)
 const xp = (await page.textContent('.chip.xp'))?.trim()
 await browser.close()
 
-if (xp === '⚡ 0') errors.push('Progress was not persisted across a reload')
+if (xp === '0') errors.push('Progress was not persisted across a reload')
 if (errors.length) {
   console.error('Smoke test failed:', [...new Set(errors)])
   process.exit(1)

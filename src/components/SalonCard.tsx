@@ -2,6 +2,7 @@ import { gameOpen, SALON_GAMES } from '../games/salon/salon'
 import { ALL_LESSONS } from '../progress/curriculum'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
+import { Icon } from './icons/Icon'
 
 /** The map's way into the Oyun Salonu, shown once a game is open. */
 export function SalonCard({ onOpen }: { onOpen: () => void }) {
@@ -16,7 +17,7 @@ export function SalonCard({ onOpen }: { onOpen: () => void }) {
   return (
     <section className="salon-card" data-node="salon" aria-label="Oyun Salonu">
       <span className="salon-card-icon" aria-hidden>
-        🕹️
+        <Icon name="salon" size={44} />
       </span>
       <div className="salon-card-body">
         <h2>Oyun Salonu</h2>
