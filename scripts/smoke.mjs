@@ -33,7 +33,6 @@ page.on('pageerror', (e) => {
 // Piano samples cannot load without network; ignore those.
 page.on('console', (m) => m.type() === 'error' && !/ERR_FAILED|ERR_TUNNEL/.test(m.text()) && errors.push(m.text()))
 
-/** Open a lesson from the map: tap its node, then Başla / Tekrar çal on the card that opens. */
 /** A finished lesson may sit in a fold of finished lessons (map or Etüt Kitaplığı): open the fold first. */
 async function unfold(page, title) {
   await page.evaluate((title) => {
@@ -48,10 +47,24 @@ async function unfold(page, title) {
   }, title)
 }
 
+/** Open a lesson from the map: tap its node, then Başla / Tekrar çal on the card that opens. */
 async function openLesson(title, force = false) {
+  await settleMap()
   await unfold(page, title)
   await page.getByRole('button', { name: title, exact: true }).click({ force })
   await page.locator('.lesson-peek-go').click()
+}
+
+/** Back on the map the page glides to the lesson just played: wait until it stands still before tapping. */
+async function settleMap() {
+  if (!(await page.$('.home'))) return
+  let last = -1
+  for (let i = 0, still = 0; i < 40 && still < 3; i++) {
+    const y = await page.evaluate(() => window.scrollY)
+    still = y === last ? still + 1 : 0
+    last = y
+    await page.waitForTimeout(80)
+  }
 }
 
 /** Play a lesson to the end. `wrongFirst` presses keys from the top until the right one. */
@@ -2128,7 +2141,7 @@ await earUnit()
 await songsUnit()
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.
-await page.locator('.calib-tip').click()
+await page.locator('.calib-tip').first().click()
 await page.getByText('Ölçmeye başla').click()
 await page.waitForFunction(() => window.__dpoCalibration)
 await page.evaluate(() => {
