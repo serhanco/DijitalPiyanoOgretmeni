@@ -100,10 +100,10 @@ Principles:
 
 ## Current state and next steps
 
-| Branch | State                                                                                                |
-| ------ | ---------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–15, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live   |
-| This   | Phase 16a: manual dark mode, folding finished lessons, own icon set (`claude/project-thread-fj207v`) |
+| Branch | State                                                                                              |
+| ------ | -------------------------------------------------------------------------------------------------- |
+| `main` | Phases 0–15, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
+| This   | Phase 16: dark mode, folds, icons, scenery, transitions, opening (`claude/project-thread-fj207v`)  |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -707,6 +707,26 @@ Phase 16a (Görsel dünya, first part, `claude/project-thread-fj207v`; plan in `
   their emoji.
 - Layout suite: `topBar` checks each theme choice (root, browser bar, background); `mapFolds` seeds stars into the
   `kv` profile row, turns test mode off and checks the unit fold, the capsule, opening and folding again.
+
+Phase 16b (Görsel dünya, second part, same branch):
+
+- **Scenery** (`progress/scenery.ts`, pure): `sceneOf(unitId, keyIndex)` gives each unit a `Scene` (sky and ground
+  colours, three props); the key units are one balloon journey whose land changes every three keys (`village`,
+  `forest`, `peak`, `snow`). `propSide(offset, i)` puts a prop on the side away from the zigzag node; `keySign(major)`
+  gives the balloon's sign ("2♯", "3♭", "♮"). `components/scenery/props.tsx` (`PROPS`, 33 things + `balloon`, drawn
+  like the icons) and `Scenery.tsx` (`SceneProp` `.scene-prop[data-prop]`, `KeyBalloon` `.unit-balloon` on key
+  banners). The map's `.unit[data-scene]` paints the path with `--sky` / `--ground` (dimmed in the dark theme); props
+  sit at `--prop-x` from the path's middle.
+- **Notiş on the map** (`components/MapNotis.tsx`): beside the current lesson instead of its prop, hopping in when the
+  map comes back from a lesson. `unitToCelebrate` (localStorage `dpo-celebrated`; the first run counts finished units
+  as seen) celebrates the unit just finished once: confetti, `.unit[data-celebrate]` gold nodes, Notiş cheering, a toast.
+- **Transitions:** `App` wraps each screen in `.screen[data-enter="side | rise | fade"]` (CSS, the way in only, no
+  transform left after it ends). **Açılış** (`components/Intro.tsx`, `introState.ts`): on every start, < 1 s, a tap skips
+  it, never with reduced motion; scripts set `dpo-intro` to `off` in their init script (`on` forces it).
+  `sfx.hello` (Do-Mi-Sol) sounds in the Android app or on the skipping tap.
+- **Small touches:** `settings.clickSound` (default on, Ayarlar → Ses) with `attachClickSound` in `App`: a soft tap for
+  buttons outside the lessons; chips, pills and rows bounce on press; the level chip has a `.level-bar`.
+- Layout suite: `opening` checks the opening (shown, gone in time, tap skips, reduced motion).
 
 Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 16 visual world, 17 accounts and social, 18
 placement test and new skills, 19 store release and iOS. The owner asked to **pause after each

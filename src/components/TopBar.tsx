@@ -40,7 +40,7 @@ export function TopBar({ onProfile, onCalibrate, onSetup, onUnits, onHint }: Pro
   const [today] = useState(() => dayKey(new Date()))
   const streakNow = currentStreak(streak, today)
   const xpToday = daily.day === today ? daily.xp : 0
-  const { level } = levelFromXp(totalXp)
+  const { level, intoLevel, needed } = levelFromXp(totalXp)
 
   return (
     <div className="top-bar">
@@ -68,8 +68,16 @@ export function TopBar({ onProfile, onCalibrate, onSetup, onUnits, onHint }: Pro
         <GoalRing value={xpToday} goal={dailyGoal} size={28} />
         {xpToday}/{dailyGoal}
       </button>
-      <button className="chip level" onClick={onProfile} aria-label="Profil" title={`Seviye ${level}`}>
+      <button
+        className="chip level"
+        onClick={onProfile}
+        aria-label="Profil"
+        title={`Seviye ${level}: ${intoLevel} / ${needed} XP`}
+      >
         Sv. {level} <Icon name="profile" size={18} />
+        <span className="level-bar" aria-hidden>
+          <span style={{ width: `${Math.round((intoLevel / needed) * 100)}%` }} />
+        </span>
       </button>
       <button className="chip units-btn" onClick={onUnits} aria-label="Üniteler">
         <Icon name="units" size={20} />

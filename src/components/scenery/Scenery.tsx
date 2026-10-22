@@ -1,4 +1,4 @@
-import { BALLOON, PROPS, type PropName } from './props'
+import { PROPS, type PropName } from './props'
 
 /**
  * One thing standing by the map's path, beside a lesson node: on the side away from the node, which is
@@ -24,7 +24,7 @@ export function KeyBalloon({ sign }: { sign: string }) {
   return (
     <span className="unit-balloon" aria-hidden>
       <svg viewBox="0 0 48 48" className="balloon-svg">
-        {BALLOON}
+        {PROPS.balloon}
       </svg>
       <span className="key-sign">{sign}</span>
     </span>

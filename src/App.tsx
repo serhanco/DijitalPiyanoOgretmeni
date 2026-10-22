@@ -1,4 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { attachClickSound } from './audio/sfx'
 import { useSoundRouting } from './audio/useSoundRouting'
 import { type NoteLesson, PATTERN_KINDS } from './games/noteHunter/lessons'
 import type { SessionSummary } from './games/noteHunter/summary'
@@ -20,6 +21,8 @@ import { type Reward, useProfile } from './state/profile'
 import { useSettings } from './state/settings'
 import { UpdateToast } from './components/UpdateToast'
 import { Welcome } from './components/Welcome'
+import { Intro } from './components/Intro'
+import { introWanted } from './components/introState'
 import { welcomeDone } from './components/welcomeState'
 import { consumeFinishRequest } from './testing/finishRequest'
 import { type Place, TestTools } from './testing/TestTools'
@@ -71,10 +74,16 @@ export default function App() {
   const profileLoaded = useProfileLoaded()
   const lessonsCompleted = useProfile((s) => s.lessonsCompleted)
   const [welcomed, setWelcomed] = useState(welcomeDone)
+  const [intro, setIntro] = useState(introWanted)
   // Old players (who have finished a lesson) never see the welcome.
   const showWelcome = !welcomed && profileLoaded && lessonsCompleted === 0
 
   useSoundRouting()
+  const inLesson = useRef(false)
+  useEffect(() => {
+    inLesson.current = screen.name === 'play'
+  }, [screen.name])
+  useEffect(() => attachClickSound(() => inLesson.current), [])
   useEffect(() => attachComputerKeyboard(), [])
   useEffect(() => void loadGame(), [])
 
@@ -203,62 +212,70 @@ export default function App() {
   return (
     <main className="app">
       <ErrorBoundary resetKey={screen.name === 'play' ? `play-${screen.run}` : screen.name} onHome={home}>
-        {screen.name === 'home' && (
-          <HomeScreen
-            onStart={start}
-            onProfile={() => setScreen({ name: 'profile' })}
-            onCalibrate={() => setScreen({ name: 'calibrate' })}
-            onSetup={() => setScreen({ name: 'setup' })}
-            onSalon={() => setScreen({ name: 'salon' })}
-            onEtudes={() => setScreen({ name: 'etudes' })}
-            focus={screen.focus}
-          />
-        )}
-        {screen.name === 'profile' && <ProfileScreen onBack={home} />}
-        {screen.name === 'salon' && (
-          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-            <SalonScreen onStart={start} onBack={home} last={screen.last} />
-          </Suspense>
-        )}
-        {screen.name === 'etudes' && (
-          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-            <EtudeScreen onStart={start} onBack={home} last={screen.last} />
-          </Suspense>
-        )}
-        {screen.name === 'calibrate' && (
-          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-            <CalibrationScreen onBack={screen.from === 'setup' ? () => setScreen({ name: 'setup' }) : home} />
-          </Suspense>
-        )}
-        {screen.name === 'setup' && (
-          <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
-            <KeyboardSetupScreen onBack={home} onCalibrate={() => setScreen({ name: 'calibrate', from: 'setup' })} />
-          </Suspense>
-        )}
-        {screen.name === 'play' && (
-          <LessonPlayer
-            key={screen.run}
-            lesson={screen.lesson}
-            onFinish={finish(screen.lesson)}
-            onExit={backFrom(screen.lesson)}
-          />
-        )}
-        {screen.name === 'results' && (
-          <ResultsScreen
-            lesson={screen.lesson}
-            summary={screen.summary}
-            reward={screen.reward}
-            trial={screen.trial}
-            moves={screen.moves}
-            tempo={screen.tempo}
-            onRetry={() => start(screen.lesson)}
-            onHome={backFrom(screen.lesson)}
-            onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
-          />
-        )}
+        {/* A new screen glides in (CSS only, nothing waits for it): a lesson from the side, results from below. */}
+        <div
+          className="screen"
+          key={screen.name === 'play' ? `play-${screen.run}` : screen.name}
+          data-enter={screen.name === 'play' ? 'side' : screen.name === 'results' ? 'rise' : 'fade'}
+        >
+          {screen.name === 'home' && (
+            <HomeScreen
+              onStart={start}
+              onProfile={() => setScreen({ name: 'profile' })}
+              onCalibrate={() => setScreen({ name: 'calibrate' })}
+              onSetup={() => setScreen({ name: 'setup' })}
+              onSalon={() => setScreen({ name: 'salon' })}
+              onEtudes={() => setScreen({ name: 'etudes' })}
+              focus={screen.focus}
+            />
+          )}
+          {screen.name === 'profile' && <ProfileScreen onBack={home} />}
+          {screen.name === 'salon' && (
+            <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+              <SalonScreen onStart={start} onBack={home} last={screen.last} />
+            </Suspense>
+          )}
+          {screen.name === 'etudes' && (
+            <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+              <EtudeScreen onStart={start} onBack={home} last={screen.last} />
+            </Suspense>
+          )}
+          {screen.name === 'calibrate' && (
+            <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+              <CalibrationScreen onBack={screen.from === 'setup' ? () => setScreen({ name: 'setup' }) : home} />
+            </Suspense>
+          )}
+          {screen.name === 'setup' && (
+            <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+              <KeyboardSetupScreen onBack={home} onCalibrate={() => setScreen({ name: 'calibrate', from: 'setup' })} />
+            </Suspense>
+          )}
+          {screen.name === 'play' && (
+            <LessonPlayer
+              key={screen.run}
+              lesson={screen.lesson}
+              onFinish={finish(screen.lesson)}
+              onExit={backFrom(screen.lesson)}
+            />
+          )}
+          {screen.name === 'results' && (
+            <ResultsScreen
+              lesson={screen.lesson}
+              summary={screen.summary}
+              reward={screen.reward}
+              trial={screen.trial}
+              moves={screen.moves}
+              tempo={screen.tempo}
+              onRetry={() => start(screen.lesson)}
+              onHome={backFrom(screen.lesson)}
+              onPractice={(notes, clef) => start(buildReviewLesson(clef, notes))}
+            />
+          )}
+        </div>
       </ErrorBoundary>
       {screen.name === 'home' && <UpdateToast />}
       {showWelcome && <Welcome onDone={() => setWelcomed(true)} />}
+      {intro && <Intro onDone={() => setIntro(false)} />}
       {testMode && <TestTools place={place} />}
     </main>
   )

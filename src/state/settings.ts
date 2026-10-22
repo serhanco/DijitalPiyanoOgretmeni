@@ -21,6 +21,8 @@ interface SettingsState {
   hintGlow: boolean
   /** Short synthesized sounds for right/wrong answers and celebrations. */
   soundEffects: boolean
+  /** Düğme sesi: a soft tap when a button is pressed outside the lessons. */
+  clickSound: boolean
   /** Ses katmanları: in the note games a run of right notes gets a soft accompaniment, layer by layer. */
   musicLayers: boolean
   /** Vibrate on mistakes (Android). */
@@ -55,6 +57,7 @@ export const useSettings = create<SettingsState>()(
       relaxedMode: false,
       hintGlow: true,
       soundEffects: true,
+      clickSound: true,
       musicLayers: true,
       vibration: true,
       metronome: true,

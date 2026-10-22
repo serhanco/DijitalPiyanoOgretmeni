@@ -88,6 +88,11 @@ export function SettingsPanel({ onCalibrate, onSetup, onClose }: Props) {
           onChange={(v) => settings.set({ soundEffects: v })}
         />
         <Toggle
+          label="Düğme sesi: dokununca hafif bir tık (derslerde çalmaz)"
+          checked={settings.clickSound}
+          onChange={(v) => settings.set({ clickSound: v })}
+        />
+        <Toggle
           label="Oyun müziği: doğru notalar seri uzadıkça katman katman eşlik kazansın"
           checked={settings.musicLayers}
           onChange={(v) => settings.set({ musicLayers: v })}

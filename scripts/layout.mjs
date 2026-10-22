@@ -642,6 +642,37 @@ async function mapFolds(page, snap, vpId) {
   return [{ name: 'katlama', errors, warnings: [], shot: `${vpId}-katlama.png` }]
 }
 
+/**
+ * Açılış: on every start the opening plays for under a second and leaves the map; a tap skips it at once;
+ * with reduced motion it never shows.
+ */
+async function opening(page, snap) {
+  const errors = []
+  await page.evaluate(() => localStorage.setItem('dpo-intro', 'on'))
+  await page.reload()
+  await page.waitForSelector('[data-intro]', { timeout: 3000 }).catch(() => errors.push('Açılış görünmedi'))
+  await page.waitForTimeout(450)
+  await snap('acilis')
+  await page
+    .waitForSelector('[data-intro]', { state: 'detached', timeout: 2500 })
+    .catch(() => errors.push('Açılış 2,5 saniyede bitmedi'))
+  await page.reload()
+  await page.waitForSelector('[data-intro]')
+  await page.mouse.click(20, 200)
+  await page
+    .waitForSelector('[data-intro]', { state: 'detached', timeout: 800 })
+    .catch(() => errors.push('Dokununca açılış geçmedi'))
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.reload()
+  await page.waitForTimeout(300)
+  if (await page.$('[data-intro]')) errors.push('Hareketi azalt açıkken açılış gösterildi')
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.evaluate(() => localStorage.setItem('dpo-intro', 'off'))
+  await page.reload()
+  await page.waitForTimeout(500)
+  return [{ name: 'açılış', errors, warnings: [] }]
+}
+
 /** The map with the seeded history: last week's summary and the mix card, then the summary closed. */
 async function smartMap(page, snap, vpId) {
   await page.evaluate(seedSmart)
@@ -1166,6 +1197,7 @@ async function runViewport(vp) {
   })
   await context.addInitScript(() => {
     localStorage.setItem('dpo-welcomed', '1')
+    if (localStorage.getItem('dpo-intro') === null) localStorage.setItem('dpo-intro', 'off')
     // Oyun arası Notiş would cover every game the first time: the intro has its own check.
     if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
   })
@@ -1204,6 +1236,16 @@ async function runViewport(vp) {
     menu.checks.push(...(await topBar(page, snap, vp.id)))
   } catch (e) {
     menu.checks.push({ name: 'çalıştırma', errors: [`Üst menü denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
+    await page.goto(url)
+    await page.waitForTimeout(800)
+  }
+
+  const intro = { id: 'acilis', name: 'Açılış animasyonu', checks: [] }
+  results.push(intro)
+  try {
+    intro.checks.push(...(await opening(page, snap)))
+  } catch (e) {
+    intro.checks.push({ name: 'çalıştırma', errors: [`Açılış denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
     await page.goto(url)
     await page.waitForTimeout(800)
   }

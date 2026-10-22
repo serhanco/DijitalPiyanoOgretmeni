@@ -15,6 +15,7 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
 await context.addInitScript(() => {
   localStorage.setItem('dpo-welcomed', '1')
+  if (localStorage.getItem('dpo-intro') === null) localStorage.setItem('dpo-intro', 'off')
   if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
   // Test mode opens every lesson.
   if (!localStorage.getItem('dpo-settings'))

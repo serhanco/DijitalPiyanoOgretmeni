@@ -156,12 +156,17 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
     }
     return celebrate
   })
+  const [cheering, setCheering] = useState(!!celebrate)
   useEffect(() => {
     if (!celebrate) return
-    const t = window.setTimeout(burstConfetti, 700)
-    setToast(`🎉 ${UNITS.find((u) => u.id === celebrate)?.title} bitti!`)
-    return () => clearTimeout(t)
+    const confetti = window.setTimeout(burstConfetti, 700)
+    const quiet = window.setTimeout(() => setCheering(false), 3200)
+    return () => {
+      clearTimeout(confetti)
+      clearTimeout(quiet)
+    }
   }, [celebrate])
+  const shownToast = toast ?? (cheering ? `🎉 ${UNITS.find((u) => u.id === celebrate)?.title} bitti!` : null)
 
   const stars = (unit: (typeof UNITS)[number]) => unit.lessons.reduce((n, l) => n + bestStars(l.id), 0)
   const folded = (unit: (typeof UNITS)[number]) => finished(unit) && !openedUnits.has(unit.id)
@@ -239,7 +244,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
         // Beside each node: Notiş at the lesson to play next, else a thing of the unit's scenery.
         const beside = (i: number, offset: number, isCurrent: boolean) =>
           isCurrent ? (
-            <MapNotis side={propSide(offset, i)} offset={offset} hop={!!focus} cheer={celebrate === unit.id} />
+            <MapNotis side={propSide(offset, i)} offset={offset} hop={!!focus} cheer={cheering} />
           ) : (
             <SceneProp name={scene.props[i % scene.props.length]} side={propSide(offset, i)} offset={offset} />
           )
@@ -406,9 +411,9 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
       )}
       {navOpen && <UnitNav rows={unitRows} onPick={jumpTo} onClose={() => setNavOpen(false)} />}
 
-      {toast && (
+      {shownToast && (
         <div className="toast" role="status">
-          {toast}
+          {shownToast}
         </div>
       )}
     </div>

@@ -65,6 +65,7 @@ export type PropName =
   | 'mushroom'
   | 'snowpine'
   | 'snowman'
+  | 'balloon'
 
 export const PROPS: Record<PropName, ReactNode> = {
   plant: (
@@ -398,15 +399,14 @@ export const PROPS: Record<PropName, ReactNode> = {
       <circle cx={24} cy={36} r={1.2} fill={INK} />
     </g>
   ),
+  // Notiş's hot-air balloon on the key units' banners (the basket carries the key's sign).
+  balloon: (
+    <g>
+      <path d="M24 2 q16 0 16 15 q0 10 -12 17 h-8 q-12 -7 -12 -17 q0 -15 16 -15 z" fill={PURPLE} {...line} />
+      <path d="M24 2 q-6 8 -4 32 M24 2 q6 8 4 32" fill="none" {...line} strokeWidth={1.4} />
+      <path d="M10 14 q14 4 28 0" fill="none" stroke={YELLOW} strokeWidth={3} />
+      <path d="M20 34 l-2 6 M28 34 l2 6" {...line} strokeWidth={1.4} />
+      <rect x={16} y={39} width={16} height={8} rx={2} fill={WOOD_LIGHT} {...line} />
+    </g>
+  ),
 }
-
-/** Notiş's hot-air balloon for the key units' banners: the basket carries the key's sign. */
-export const BALLOON: ReactNode = (
-  <g>
-    <path d="M24 2 q16 0 16 15 q0 10 -12 17 h-8 q-12 -7 -12 -17 q0 -15 16 -15 z" fill={PURPLE} {...line} />
-    <path d="M24 2 q-6 8 -4 32 M24 2 q6 8 4 32" fill="none" {...line} strokeWidth={1.4} />
-    <path d="M10 14 q14 4 28 0" fill="none" stroke={YELLOW} strokeWidth={3} />
-    <path d="M20 34 l-2 6 M28 34 l2 6" {...line} strokeWidth={1.4} />
-    <rect x={16} y={39} width={16} height={8} rx={2} fill={WOOD_LIGHT} {...line} />
-  </g>
-)

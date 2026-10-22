@@ -20,6 +20,7 @@ await page.addInitScript(() => {
 // The welcome shows once per device; tests start on the map.
 await page.addInitScript(() => {
   localStorage.setItem('dpo-welcomed', '1')
+  if (localStorage.getItem('dpo-intro') === null) localStorage.setItem('dpo-intro', 'off')
   // Oyun arası Notiş would cover every game the first time: the intro has its own check.
   if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
 })
@@ -648,6 +649,7 @@ async function testModeFlow() {
   const other = await browser.newPage({ viewport: { width: 390, height: 844 } })
   await other.addInitScript(() => {
     localStorage.setItem('dpo-welcomed', '1')
+    if (localStorage.getItem('dpo-intro') === null) localStorage.setItem('dpo-intro', 'off')
     // Oyun arası Notiş would cover every game the first time: the intro has its own check.
     if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
   })
