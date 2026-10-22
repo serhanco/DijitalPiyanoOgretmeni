@@ -77,6 +77,7 @@ const CASES = [
   { id: 'space', name: 'Uzay Savunması', title: 'Uzay Savunması', drive: 'chordArcade', area: '.pixi-stage' },
   { id: 'chordbar', name: 'Akor Barmeni', title: 'Akor Barmeni', drive: 'chordArcade', area: '.pixi-stage' },
   // Cards with sharps and flats (a key unit): the accidentals must stay on the card.
+  { id: 'key-hanon', name: 'Hanon (bemoller)', title: 'Hanon 1: Re♭ Majör', drive: 'waterfall', area: '.beat-field' },
   { id: 'key-space', name: 'Uzay (diyezler)', title: 'Uzay: Fa# Majör', drive: 'chordArcade', area: '.pixi-stage' },
   {
     id: 'key-chordbar',
@@ -153,6 +154,30 @@ const CASES = [
     name: 'Etüt (on altılıklar)',
     title: 'Czerny 8: İki El',
     etude: 'etude-czerny-8-both',
+    drive: 'waterfall',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-five',
+    name: 'Etüt (beş parmak, ters yön)',
+    title: 'Ayna: Ters Yönde İki El',
+    etude: 'etude-five-c-mirror',
+    drive: 'waterfall',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-hanon',
+    name: 'Etüt (Hanon, iki oktav)',
+    title: 'Hanon 1 (iki oktav): Metronomla',
+    etude: 'etude-hanon-1-2-both-tempo',
+    drive: 'beat',
+    area: '.beat-field',
+  },
+  {
+    id: 'etude-pastorale',
+    name: 'Etüt (Burgmüller, 6/8)',
+    title: 'Kır Şarkısı: İki El',
+    etude: 'etude-burg-pastorale-both',
     drive: 'waterfall',
     area: '.beat-field',
   },

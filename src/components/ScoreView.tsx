@@ -175,6 +175,9 @@ export function ScoreView({ score, bars, staves, current, stateOf, version }: Pr
           st.addClef(score.staves[s].clefs[b])
           st.addKeySignature(source.key)
           if (b === 0) st.addTimeSignature(source.time[0] === 2 && source.time[1] === 2 ? 'C|' : source.time.join('/'))
+        } else if (score.staves[s].clefs[b] !== score.staves[s].clefs[b - 1]) {
+          // A clef that changes at the bar line, drawn small at the start of the bar.
+          st.addClef(score.staves[s].clefs[b], 'small')
         }
         if (b === bars[1]) st.setEndBarType(b === score.bars.length - 1 ? 3 : 1)
         st.setContext(ctx).draw()

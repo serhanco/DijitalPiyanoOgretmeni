@@ -5,6 +5,7 @@ import { TREBLE_LESSONS } from '../games/noteHunter/lessons'
 import { BASS_LESSONS } from '../games/noteHunter/bassLessons'
 import { CHORD_LESSONS } from '../games/chords/lessons'
 import { SCALE_LESSONS } from '../games/scales/lessons'
+import { ETUDE_LEVELS } from '../games/etudes/lessons'
 import {
   type Badge,
   DEFAULT_DAILY_GOAL,
@@ -203,6 +204,9 @@ export const useProfile = create<ProfileState>()(
             bossCount: BOSS_LESSON_IDS.length,
             weeklyDone: q.weeklyDone,
             keyUnitsDone: KEY_UNITS.filter((u) => unitDone(u.id, (id) => lessons[id]?.bestStars ?? 0)).map((u) => u.id),
+            etudeLevelsDone: ETUDE_LEVELS.filter((l) =>
+              l.lessons.every((x) => (lessons[x.id]?.bestStars ?? 0) >= 1),
+            ).map((l) => l.level),
           },
           Object.keys(s.badges),
         )

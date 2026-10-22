@@ -12,8 +12,8 @@ import type { SongNote } from '../songs/song'
 /** What the import script writes for a piece. */
 export interface ScoreSource {
   id: string
-  /** The Mutopia folder it came from. */
-  mutopia: string
+  /** The Mutopia folder it came from; null for an exercise written by rule (drills.ts). */
+  mutopia: string | null
   title: string | null
   composer: string | null
   opus: string | null

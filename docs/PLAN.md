@@ -37,7 +37,7 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 13 Gerçek piyano ve her cihaz (Android)       | Birleşti (PR #45) |
 | 14 Tonlar yolculuğu (12 ton ünitesi)          | Birleşti (PR #46) |
 | 15a Klasik etütler: partisyon, seviye 1–3     | Bu dal            |
-| 15b Klasik etütler: Hanon, Burgmüller, 4–6    | Başlanmadı        |
+| 15b Klasik etütler: beş parmak, Hanon, 4–8    | Bu dal            |
 | 16 Görsel dünya                               | Başlanmadı        |
 | 17 Hesap ve sosyal                            | Başlanmadı        |
 | 18 Yerleştirme ve yeni beceriler              | Başlanmadı        |
@@ -316,8 +316,15 @@ numaraları, ölçü içi değiştirme işaretleri; çalınan notalar renklenir;
 cümleler, Seviye 2 iki elle menüetler, Seviye 3 on altılıklar ve 2/4; 38 ders. Ayrıca Uzay Savunması ve Akor
 Barmeni kartları ♯/♭ çiziyor; her ton ünitesine bu iki oyun eklendi (üniteler 17 ders).
 
-**15b (sıradaki):** Hanon (kuralla, her tona), Burgmüller Op. 100 (Mutopia'da kamu malı), Seviye 4–6, rozetler, ton
-ünitelerine Hanon dersi.
+**15b (yapıldı, aynı dal):** Serhan: "marka / isimden ziyade o tip başka pratiklerle içeriği genişletmek". Kitaplık
+8 seviye, 106 ders. **Beş parmak pozisyonu** (yeni Seviye 1, kuralla yazılan kendi alıştırmalarımız, Beyer'in
+yöntemindeki gibi: her el ayrı, iki el aynı ve ters yönde, melodi ve eşlik, vals; Do, Sol, Fa, Re ve La minör
+pozisyonları). **Hanon 1–10** (Seviye 5): kalıplar 1873 baskısından okundu, kural her tona ve bir ya da iki oktava
+taşır (iki oktavda sağ el fa anahtarıyla başlar; anahtar değişimleri ölçü başında küçük anahtarla yazılır); her ton
+ünitesine bir Hanon dersi (üniteler 18 ders; Do'da 1, Sol'de 2, …). Mutopia'dan yeni kamu malı eserler: **Burgmüller
+Op. 100**'den 11 etüt (Seviye 6–7), **Çaykovski** Çocuk Albümü'nden Sabah Duası, Tahta Askerlerin Marşı, Eski Fransız
+Şarkısı, **Czerny Op. 840** No. 1 ve 6, **Kuhlau** Sonatin Op. 20 No. 1 Andante (Seviye 8). 6/8 ölçü. Dört rozet: Beş
+Parmak, Hanon Çırağı, Hikâye Anlatıcısı, Kitap Kurdu.
 
 ### Faz 16 — Görsel dünya
 

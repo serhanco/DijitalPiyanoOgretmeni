@@ -4,6 +4,7 @@ import { lessonPart } from '../songs/song'
 import { tempoPlan } from '../songs/tempo'
 import { WaitSession } from '../songs/wait'
 import { ETUDE_PIECES } from './catalog'
+import { FIVE_PIECES, fiveScore, HANON, hanonScore } from './drills'
 import { ETUDE_LESSONS, ETUDE_LEVELS, etudeOpen } from './lessons'
 import { parseScore, type ScoreSource, scoreNotes, valueOf } from './score'
 
@@ -111,5 +112,55 @@ describe('Etüt Kitaplığı', () => {
     expect(etudeOpen(three[0].id, starred([one[0].id]))).toBe(false)
     // A lesson before a starred one stays open.
     expect(etudeOpen(one[3].id, starred([one[4].id]))).toBe(true)
+  })
+})
+
+describe('exercises written by rule', () => {
+  const notesOf = (bar: string) => bar.split(' ').filter((t) => !t.startsWith('@'))
+
+  it('writes Hanon 1 as in the original: the figure a step higher each bar, the hands an octave apart', () => {
+    const s = hanonScore(1)
+    const [right] = s.staves[0].voices
+    const [left] = s.staves[1].voices
+    expect(right[0]).toBe('C4:1/16 E4:2/16 F4:3/16 G4:4/16 A4:5/16 G4:4/16 F4:3/16 E4:2/16')
+    expect(right[1]).toBe('D4/16 F4/16 G4/16 A4/16 B4/16 A4/16 G4/16 F4/16')
+    expect(left[0]).toBe('C3:5/16 E3:4/16 F3:3/16 G3:2/16 A3:1/16 G3:2/16 F3:3/16 E3:4/16')
+    // Up to the group on the seventh, down from its top note, the tonic last.
+    expect(right[6]).toMatch(/^B4\/16 D5/)
+    expect(right[7]).toMatch(/^G5:5\/16 E5:4/)
+    expect(right.at(-1)).toBe('C4:1/h')
+    const notes = scoreNotes(parseScore(s))
+    const r = notes.filter((n) => n.hand === 'right').map((n) => n.midi)
+    const l = notes.filter((n) => n.hand === 'left').map((n) => n.midi)
+    expect(l).toEqual(r.map((m) => m - 12))
+  })
+
+  it('carries every Hanon exercise into any key over one or two octaves', () => {
+    for (const h of HANON)
+      for (const key of ['C', 'G', 'F#', 'Bb', 'Db', 'B'])
+        for (const octaves of [1, 2] as const) {
+          const s = hanonScore(h.no, key, octaves)
+          const parsed = parseScore(s)
+          expect(parsed.bars.length).toBe(s.bars)
+          // Every group but the last bar is eight sixteenths, with Hanon's fingers on the first group up.
+          expect(s.staves[0].voices[0].slice(0, -1).every((b) => notesOf(b).length === 8)).toBe(true)
+          expect(notesOf(s.staves[0].voices[0][0]).every((t) => /:\d\//.test(t))).toBe(true)
+        }
+    // In G the F is sharp; over two octaves the right hand starts on the bass staff, as Hanon wrote it.
+    expect(hanonScore(1, 'G').staves[0].voices[0][3]).toContain('F#5')
+    expect(hanonScore(1, 'C', 2).staves[0].voices[0][0]).toMatch(/^@bass C3:1/)
+  })
+
+  it('writes five-finger pieces in a position, the mirror with the same fingers', () => {
+    for (const p of FIVE_PIECES) parseScore(fiveScore(p, { tonic: 'D', type: 'major' }))
+    const mirror = fiveScore(
+      FIVE_PIECES.find((p) => p.slug === 'mirror')!,
+      { tonic: 'C', type: 'major' },
+    )
+    expect(mirror.staves[0].voices[0][0]).toBe('C4:1/q D4/q E4/q F4/q')
+    expect(mirror.staves[1].voices[0][0]).toBe('G3:1/q F3/q E3/q D3/q')
+    const minor = fiveScore(FIVE_PIECES[0], { tonic: 'A', type: 'natural' })
+    expect(minor.key).toBe('Am')
+    expect(minor.staves[1].voices[0][0]).toBe('A2:5/q B2/q C3/q D3/q')
   })
 })

@@ -27,6 +27,8 @@ import type { ArpeggioPart } from '../chords/arpeggio'
 import { arpeggioLesson, chordLesson, type ChordSpec } from '../chords/lessons'
 import { stepsKeyboard, type ScalePart } from '../scales/steps'
 import { ladderLesson, memoryLesson, scaleLesson } from '../scales/lessons'
+import { HANON } from '../etudes/drills'
+import { etudePart, hanonPiece } from '../etudes/part'
 import type { NoteLesson } from '../noteHunter/lessons'
 import type { Question, TheorySpec } from '../theory/quiz'
 import { pieceSteps, type PiecePart } from './piece'
@@ -448,6 +450,7 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
         ...(level >= 1 ? [part('major', 'contrary')] : []),
       ],
     ),
+    hanonLesson(id('hanon'), k, index),
     chordLesson('chord', id('chords'), `${M} Akorları`, 'Gamın her basamağında bir üçlü: I’den vii°’ye ve geri', {
       chords: scaleChords(k.major),
       mode: 'exact',
@@ -545,6 +548,14 @@ export function keyLessons(k: KeyDef, index: number): NoteLesson[] {
     pieceLesson(id('piece'), { tune: k.tune, key: k.major }),
   ]
   return [...lessons, keyBoss(k, lessons)]
+}
+
+/** Hanon's exercises one after another around the circle (No. 1 in C, No. 2 in G, …), one octave, both hands. */
+function hanonLesson(id: string, k: KeyDef, index: number): NoteLesson {
+  const no = (index % HANON.length) + 1
+  const song = hanonPiece(no, k.major)
+  const lesson = etudePart(id, song, 'both', 'wait', [1, song.score!.bars], `Hanon ${no}: ${majorName(k)}`)
+  return { ...lesson, description: `Hanon’un ${no}. alıştırması ${majorName(k)} tonunda, iki el bir oktav` }
 }
 
 /** I – IV – V7 – I, then ii – V7 – I: the two cadences of the key, one chord flowing into the next. */

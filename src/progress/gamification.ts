@@ -153,12 +153,15 @@ export interface BadgeContext {
   weeklyDone?: boolean
   /** Key units (Tonlar yolculuğu) with every lesson starred, this lesson included. */
   keyUnitsDone?: string[]
+  /** Etüt Kitaplığı levels with every lesson starred, this lesson included. */
+  etudeLevelsDone?: number[]
 }
 
 /** The key units with sharps and with flats, as unit ids. */
 const SHARP_KEY_UNITS = ['key-g', 'key-d', 'key-a', 'key-e', 'key-b', 'key-fs']
 const FLAT_KEY_UNITS = ['key-f', 'key-bb', 'key-eb', 'key-ab', 'key-db']
 const allDone = (ids: string[], c: BadgeContext) => ids.every((id) => c.keyUnitsDone?.includes(id))
+const levelsDone = (levels: number[], c: BadgeContext) => levels.every((l) => c.etudeLevelsDone?.includes(l))
 
 export interface Badge {
   id: string
@@ -383,6 +386,34 @@ export const BADGES: Badge[] = [
     description: 'Beşliler çemberinin on iki ton ünitesini bitir',
     icon: '🎡',
     earned: (c) => allDone(['key-c', ...SHARP_KEY_UNITS, ...FLAT_KEY_UNITS], c),
+  },
+  {
+    id: 'five-finger',
+    title: 'Beş Parmak',
+    description: 'Etüt Kitaplığı’nda beş parmak pozisyonu seviyesini bitir',
+    icon: '🖐️',
+    earned: (c) => levelsDone([1], c),
+  },
+  {
+    id: 'hanon',
+    title: 'Hanon Çırağı',
+    description: 'Hanon’un ilk on alıştırmasının seviyesini bitir',
+    icon: '🏋️',
+    earned: (c) => levelsDone([5], c),
+  },
+  {
+    id: 'storyteller',
+    title: 'Hikâye Anlatıcısı',
+    description: 'Burgmüller’in iki seviyesini bitir',
+    icon: '📖',
+    earned: (c) => levelsDone([6, 7], c),
+  },
+  {
+    id: 'bookworm',
+    title: 'Kitap Kurdu',
+    description: 'Etüt Kitaplığı’nın bütün seviyelerini bitir',
+    icon: '📚',
+    earned: (c) => levelsDone([1, 2, 3, 4, 5, 6, 7, 8], c),
   },
   {
     id: 'week-star',

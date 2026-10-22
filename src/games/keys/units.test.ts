@@ -40,7 +40,7 @@ describe('key units', () => {
 
   it('has seventeen lessons per unit, the boss last', () => {
     for (const u of KEY_UNITS) {
-      expect(u.lessons).toHaveLength(17)
+      expect(u.lessons).toHaveLength(18)
       expect(u.lessons.at(-1)!.kind).toBe('boss')
       expect(u.lessons[0].kind).toBe('theory')
     }

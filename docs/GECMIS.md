@@ -115,6 +115,7 @@ Sohbet boyunca eklenen istekler (2026-10-07):
 | 2026-10-20 | Faz 13: Piyanonu bağla sihirbazı ve raporu, sustain pedalı, örnek notalar piyanodan (MIDI çıkışı), ders sırasında ekran açık, Notiş simgeleri, yükleme ve güncelleme bildirimi, Android uygulaması (yerel USB ve Bluetooth MIDI)                                   | PR #45                                 |
 | 2026-10-21 | Faz 14: Tonlar yolculuğu. 12 ton ünitesi (beşliler çemberi sırasıyla, her biri 15 ders): her tonda gam, iki el, tonun yedi akoru, çevrimler, kadanslar, arpejler, göreceli minör, hafıza, o tona taşınmış şarkı ve boss; Ton çemberi, 3 rozet                      | dal `claude/project-thread-9i936j`     |
 | 2026-10-21 | Faz 15a: Etüt Kitaplığı (3 seviye, 38 ders), partisyon görünümü (iki porte, bağ, parmak, 16'lık, 2/4), Mutopia içe aktarma aracı, 9 kamu malı eser (Bach defteri, Pleyel, Czerny Op. 821); Uzay ve Akor Barmeni kartlarında ♯/♭, ton ünitelerinde bu iki oyun      | dal `claude/project-thread-vn0hlf`     |
+| 2026-10-22 | Faz 15b: Kitaplık 8 seviye, 106 ders: beş parmak pozisyonu (kuralla), Hanon 1–10 (kuralla, her tona; ton ünitelerine birer ders), Burgmüller Op. 100'den 11 etüt, Çaykovski Çocuk Albümü'nden 3 parça, Czerny Op. 840, Kuhlau Andante; 4 rozet                     | dal `claude/project-thread-vn0hlf`     |
 | 2026-10-07 | Plan genişletildi: gamlar, mini oyun matrisi, 14 faz; devir belgeleri yazıldı                                                                                                                                                                                      | `main`                                 |
 
 - **Fa anahtarı ve iki el (Faz 6):** Büyük portede Orta Do ve üst portede yazılan notalar sağ el, alt portedekiler sol
@@ -287,6 +288,16 @@ Sohbet boyunca eklenen istekler (2026-10-07):
   ortasında eksik ölçü olan parçalar içe aktarma aracınca reddedilir; süslemeler (mordan, tril) çalınmaz, yalnızca ana
   nota. Tekrarlar açılmış yazılır (ölçü numaraları çalındığı gibi). LilyPond deponun dışında kalır (araç
   `LILYPOND` ile yolunu alır); indirilenler geçici klasörde, iş bitince silinir.
+
+- **Faz 15b (Klasik etütler, ikinci bölüm):** Serhan Beyer ve Czerny Op. 599 için "marka / isimden ziyade o tip başka
+  pratiklerle içeriği genişletmek konumuz" dedi, sonra "hallet işte sen". Beyer tarzı beş parmak alıştırmaları
+  uygulamanın kendi parçaları olarak kuralla yazıldı (`src/games/etudes/drills.ts`). Hanon'un kalıpları 1873 baskısının
+  Mutopia'daki dizgisinden okundu (o dizgi CC BY-SA olduğu için depoya alınmadı; yalnızca her alıştırmanın ilk çıkış ve
+  iniş kalıbı ile Hanon'un parmakları, kamu malı eserin kendisi); kural her tona taşır. Burgmüller Op. 100'ün 7, 9, 12,
+  14, 15 ve 18. etütleri, Czerny Op. 840'ın 2–5, 7, 8 ve 10. parçaları araçtan geçmedi (üçleme, ton değişimi ya da
+  LilyPond 2.24 ile derlenmeyen kaynak); Burgmüller No. 17 (3/8) ve Czerny Op. 840 No. 9 (40 süs notası) bilerek
+  alınmadı. Clementi Op. 36 No. 1 (MIDI dosyası yok), Beethoven WoO 82 (MIDI tutmadı), Haydn menüetleri ve Kuhlau'nun
+  Allegro'su araçtan geçmedi; Kuhlau'nun Rondo'su (158 ölçü) şimdilik çok uzun.
 
 ## Açık konular
 

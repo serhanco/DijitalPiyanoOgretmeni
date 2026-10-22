@@ -4,36 +4,49 @@
 // before it; inside a level the lessons open in order.
 
 import type { NoteLesson } from '../noteHunter/lessons'
-import { waterfall } from '../songs/lessons'
 import type { Song, SongSpec } from '../songs/song'
 import type { TheorySpec } from '../theory/quiz'
-import { ARIA, CZERNY_17, CZERNY_2, CZERNY_8, MENUET_BB, MENUET_G, MENUET_GM, MUSETTE, PLEYEL_MENUETT } from './catalog'
+import {
+  ARIA,
+  BURG_ARABESQUE,
+  BURG_BERGERONNETTE,
+  BURG_CANDEUR,
+  BURG_CONSOLATION,
+  BURG_FLEUR,
+  BURG_GRACIEUSE,
+  BURG_INNOCENCE,
+  BURG_PASTORALE,
+  BURG_PLAINTE,
+  BURG_PROGRES,
+  BURG_REUNION,
+  CZERNY_17,
+  CZERNY_2,
+  CZERNY_8,
+  CZERNY_840_1,
+  CZERNY_840_6,
+  KUHLAU_ANDANTE,
+  MENUET_BB,
+  MENUET_G,
+  MENUET_GM,
+  MORNING_PRAYER,
+  MUSETTE,
+  OLD_FRENCH_SONG,
+  PLEYEL_MENUETT,
+  WOODEN_SOLDIERS,
+} from './catalog'
+import { etudePart, fivePiece, hanonPiece } from './part'
 
 export const ETUDE_PREFIX = 'etude-'
 
-const HANDS = { right: 'sağ el', left: 'sol el', both: 'iki el' }
-
-/** Bars given from 1, as printed; the lesson keeps them from 0. */
-function part(
+/** An étude lesson on bars given from 1, as printed. */
+const part = (
   slug: string,
   song: Song,
   hands: SongSpec['hands'],
   mode: SongSpec['mode'],
-  [from, to]: [number, number],
+  bars: [number, number],
   title: string,
-): NoteLesson {
-  const bars: [number, number] = [from - 1, to - 1]
-  const how = mode === 'wait' ? 'notalar seni bekler' : 'metronomla'
-  const lesson = waterfall(
-    `${ETUDE_PREFIX}${slug}`,
-    title,
-    `${song.title}: ${HANDS[hands]}, ölçü ${from}–${to}, ${how}`,
-    { songs: [song], hands, mode, bars },
-    // On the metronome the suggested tempo starts slower than the piece.
-    mode === 'tempo' ? { bpm: Math.round(((song.bpm ?? 80) * 0.7) / 2) * 2 } : {},
-  )
-  return { ...lesson, kind: 'etude' }
-}
+) => etudePart(`${ETUDE_PREFIX}${slug}`, song, hands, mode, bars, title)
 
 const INTRO: TheorySpec = {
   cards: [
@@ -136,13 +149,82 @@ export interface EtudeLevel {
   lessons: NoteLesson[]
 }
 
+const C = { tonic: 'C', type: 'major' } as const
+const STEPS_C = fivePiece('steps', C)
+const THIRDS_C = fivePiece('thirds', C)
+const EIGHTHS_C = fivePiece('eighths', C)
+
+/** The whole piece (or its first `bars`) given as printed bars. */
+const all = (song: Song, bars = song.score!.bars): [number, number] => [1, Math.min(bars, song.score!.bars)]
+
+const hanon = (no: number, hands: SongSpec['hands'], mode: SongSpec['mode'], octaves: 1 | 2 = 1) => {
+  const song = hanonPiece(no, 'C', octaves)
+  const how = hands === 'both' ? (mode === 'tempo' ? 'Metronomla' : 'İki El') : 'Sağ El'
+  return part(
+    `hanon-${no}${octaves === 2 ? '-2' : ''}-${hands}-${mode}`,
+    song,
+    hands,
+    mode,
+    all(song),
+    `${song.title}: ${how}`,
+  )
+}
+
 export const ETUDE_LEVELS: EtudeLevel[] = [
   {
     level: 1,
+    title: 'Beş parmak pozisyonu',
+    text: 'Her parmak kendi tuşunda: önce her el ayrı, sonra iki el birlikte, aynı ve ters yönde.',
+    lessons: [
+      intro,
+      part('five-c-steps-right', STEPS_C, 'right', 'wait', all(STEPS_C), 'Basamaklar: Sağ El'),
+      part('five-c-steps-left', STEPS_C, 'left', 'wait', all(STEPS_C), 'Basamaklar: Sol El'),
+      part('five-c-steps-both', STEPS_C, 'both', 'wait', all(STEPS_C), 'Basamaklar: İki El'),
+      part('five-c-thirds-right', THIRDS_C, 'right', 'wait', all(THIRDS_C), 'Üçlü Atlamalar: Sağ El'),
+      part('five-c-thirds-both', THIRDS_C, 'both', 'wait', all(THIRDS_C), 'Üçlü Atlamalar: İki El'),
+      part('five-c-mirror', fivePiece('mirror', C), 'both', 'wait', [1, 8], 'Ayna: Ters Yönde İki El'),
+      part('five-c-song', fivePiece('song', C), 'both', 'wait', [1, 8], 'Melodi ve Eşlik'),
+      part('five-c-eighths', EIGHTHS_C, 'both', 'wait', all(EIGHTHS_C), 'Sekizlik Merdiven'),
+      part('five-c-eighths-tempo', EIGHTHS_C, 'both', 'tempo', all(EIGHTHS_C), 'Sekizlik Merdiven: Metronomla'),
+      part(
+        'five-g-steps',
+        fivePiece('steps', { tonic: 'G', type: 'major' }),
+        'both',
+        'wait',
+        [1, 8],
+        'Sol Pozisyonu: Basamaklar',
+      ),
+      part(
+        'five-f-thirds',
+        fivePiece('thirds', { tonic: 'F', type: 'major' }),
+        'both',
+        'wait',
+        [1, 8],
+        'Fa Pozisyonu: Üçlüler',
+      ),
+      part(
+        'five-d-waltz',
+        fivePiece('waltz', { tonic: 'D', type: 'major' }),
+        'both',
+        'wait',
+        [1, 8],
+        'Re Pozisyonu: Küçük Vals',
+      ),
+      part(
+        'five-am-song',
+        fivePiece('song', { tonic: 'A', type: 'natural' }),
+        'both',
+        'wait',
+        [1, 8],
+        'La Minör: Melodi ve Eşlik',
+      ),
+    ],
+  },
+  {
+    level: 2,
     title: 'Tek elle ilk cümleler',
     text: 'Menüetlerin ilk ölçüleri, her el ayrı. Partisyon sen basana kadar bekler.',
     lessons: [
-      intro,
       part('menuet-g-right', MENUET_G, 'right', 'wait', [1, 8], 'Sol Majör Menüet: Sağ El'),
       part('menuet-g-left', MENUET_G, 'left', 'wait', [1, 8], 'Sol Majör Menüet: Sol El'),
       part('menuet-g-right-2', MENUET_G, 'right', 'wait', [9, 16], 'Menüetin İkinci Cümlesi'),
@@ -154,7 +236,7 @@ export const ETUDE_LEVELS: EtudeLevel[] = [
     ],
   },
   {
-    level: 2,
+    level: 3,
     title: 'İki elle menüetler',
     text: 'Aynı parçalar iki elle, önce bekleyen modda, sonra metronomla.',
     lessons: [
@@ -173,7 +255,7 @@ export const ETUDE_LEVELS: EtudeLevel[] = [
     ],
   },
   {
-    level: 3,
+    level: 4,
     title: 'On altılıklar ve 2/4',
     text: 'İki vuruşlu Musette, hızlı notalarla Si♭ Menüet ve Czerny’nin sekiz ölçülük alıştırmaları.',
     lessons: [
@@ -193,6 +275,90 @@ export const ETUDE_LEVELS: EtudeLevel[] = [
       part('czerny-17-right', CZERNY_17, 'right', 'wait', [1, 8], 'Czerny 17: Sağ El'),
       part('czerny-17-both', CZERNY_17, 'both', 'wait', [1, 8], 'Czerny 17: İki El'),
       part('czerny-17-tempo', CZERNY_17, 'both', 'tempo', [1, 8], 'Czerny 17: Metronomla'),
+    ],
+  },
+  {
+    level: 5,
+    title: 'Hanon: parmak bağımsızlığı',
+    text: 'Hanon’un ilk on alıştırması, bir oktav çıkıp inerek: her kalıp bir basamak yukarıda yinelenir, iki el aynı notaları çalar.',
+    lessons: [
+      hanon(1, 'right', 'wait'),
+      hanon(1, 'both', 'wait'),
+      hanon(1, 'both', 'tempo'),
+      hanon(2, 'both', 'wait'),
+      hanon(3, 'both', 'wait'),
+      hanon(3, 'both', 'tempo'),
+      hanon(4, 'both', 'wait'),
+      hanon(5, 'both', 'wait'),
+      hanon(5, 'both', 'tempo'),
+      hanon(6, 'both', 'wait'),
+      hanon(7, 'both', 'wait'),
+      hanon(8, 'both', 'wait'),
+      hanon(9, 'both', 'wait'),
+      hanon(10, 'both', 'wait'),
+      hanon(10, 'both', 'tempo'),
+      hanon(1, 'both', 'tempo', 2),
+    ],
+  },
+  {
+    level: 6,
+    title: 'Burgmüller: ilk hikâyeler',
+    text: 'Burgmüller’in adı olan etütleri: Saflık, Masumiyet, İlerleme, Arabesk ve Teselli.',
+    lessons: [
+      part('burg-candeur-right', BURG_CANDEUR, 'right', 'wait', [1, 8], 'Saflık: Sağ El'),
+      part('burg-candeur-both', BURG_CANDEUR, 'both', 'wait', [1, 8], 'Saflık: İki El'),
+      part('burg-candeur-tempo', BURG_CANDEUR, 'both', 'tempo', [1, 16], 'Saflık: Metronomla'),
+      part('burg-innocence-both', BURG_INNOCENCE, 'both', 'wait', [1, 8], 'Masumiyet: İki El'),
+      part('burg-innocence-2', BURG_INNOCENCE, 'both', 'wait', [9, 16], 'Masumiyet: İkinci Cümle'),
+      part('burg-innocence-tempo', BURG_INNOCENCE, 'both', 'tempo', [1, 16], 'Masumiyet: Metronomla'),
+      part('burg-progres-both', BURG_PROGRES, 'both', 'wait', [1, 8], 'İlerleme: İki El'),
+      part('burg-progres-tempo', BURG_PROGRES, 'both', 'tempo', [1, 8], 'İlerleme: Metronomla'),
+      part('burg-arabesque-left', BURG_ARABESQUE, 'left', 'wait', [1, 8], 'Arabesk: Sol El'),
+      part('burg-arabesque-both', BURG_ARABESQUE, 'both', 'wait', [1, 8], 'Arabesk: İki El'),
+      part('burg-arabesque-tempo', BURG_ARABESQUE, 'both', 'tempo', [1, 16], 'Arabesk: Metronomla'),
+      part('burg-consolation-both', BURG_CONSOLATION, 'both', 'wait', [1, 8], 'Teselli: İki El'),
+      part('burg-consolation-tempo', BURG_CONSOLATION, 'both', 'tempo', [1, 8], 'Teselli: Metronomla'),
+    ],
+  },
+  {
+    level: 7,
+    title: 'Burgmüller: kuşlar ve çiçekler',
+    text: 'Zarafet, Küçük Buluşma, Narin Çiçek, Kuyruksallayan Kuşu, Tatlı Yakınma ve 6/8’lik Kır Şarkısı.',
+    lessons: [
+      part('burg-gracieuse-both', BURG_GRACIEUSE, 'both', 'wait', [1, 8], 'Zarafet: İki El'),
+      part('burg-gracieuse-tempo', BURG_GRACIEUSE, 'both', 'tempo', [1, 8], 'Zarafet: Metronomla'),
+      part('burg-reunion-both', BURG_REUNION, 'both', 'wait', [1, 8], 'Küçük Buluşma: İki El'),
+      part('burg-reunion-tempo', BURG_REUNION, 'both', 'tempo', [1, 8], 'Küçük Buluşma: Metronomla'),
+      part('burg-fleur-both', BURG_FLEUR, 'both', 'wait', [1, 8], 'Narin Çiçek: İki El'),
+      part('burg-fleur-tempo', BURG_FLEUR, 'both', 'tempo', [1, 8], 'Narin Çiçek: Metronomla'),
+      part('burg-bergeronnette-both', BURG_BERGERONNETTE, 'both', 'wait', [1, 8], 'Kuyruksallayan Kuşu: İki El'),
+      part('burg-bergeronnette-2', BURG_BERGERONNETTE, 'both', 'wait', [9, 16], 'Kuyruksallayan Kuşu: İkinci Cümle'),
+      part('burg-bergeronnette-tempo', BURG_BERGERONNETTE, 'both', 'tempo', [1, 16], 'Kuyruksallayan Kuşu: Metronomla'),
+      part('burg-plainte-both', BURG_PLAINTE, 'both', 'wait', [1, 8], 'Tatlı Yakınma: İki El'),
+      part('burg-plainte-tempo', BURG_PLAINTE, 'both', 'tempo', [1, 8], 'Tatlı Yakınma: Metronomla'),
+      part('burg-pastorale-both', BURG_PASTORALE, 'both', 'wait', [1, 8], 'Kır Şarkısı: İki El'),
+      part('burg-pastorale-tempo', BURG_PASTORALE, 'both', 'tempo', [1, 8], 'Kır Şarkısı: Metronomla'),
+    ],
+  },
+  {
+    level: 8,
+    title: 'Küçük konser parçaları',
+    text: 'Çaykovski’nin Çocuk Albümü’nden üç parça, Czerny’nin melodik alıştırmaları ve Kuhlau’nun sonatininden bir Andante.',
+    lessons: [
+      part('tchaik-prayer-both', MORNING_PRAYER, 'both', 'wait', [1, 8], 'Sabah Duası: İki El'),
+      part('tchaik-prayer-2', MORNING_PRAYER, 'both', 'wait', [9, 24], 'Sabah Duası: Sonu'),
+      part('tchaik-prayer-tempo', MORNING_PRAYER, 'both', 'tempo', [1, 16], 'Sabah Duası: Metronomla'),
+      part('tchaik-french-both', OLD_FRENCH_SONG, 'both', 'wait', [1, 8], 'Eski Fransız Şarkısı: İki El'),
+      part('tchaik-french-2', OLD_FRENCH_SONG, 'both', 'wait', [9, 16], 'Eski Fransız Şarkısı: İkinci Cümle'),
+      part('tchaik-french-tempo', OLD_FRENCH_SONG, 'both', 'tempo', [1, 16], 'Eski Fransız Şarkısı: Metronomla'),
+      part('tchaik-soldiers-both', WOODEN_SOLDIERS, 'both', 'wait', [1, 8], 'Tahta Askerler: İki El'),
+      part('tchaik-soldiers-tempo', WOODEN_SOLDIERS, 'both', 'tempo', [1, 16], 'Tahta Askerler: Metronomla'),
+      part('czerny-840-1-both', CZERNY_840_1, 'both', 'wait', [1, 8], 'Czerny Melodik 1: İki El'),
+      part('czerny-840-1-tempo', CZERNY_840_1, 'both', 'tempo', [1, 8], 'Czerny Melodik 1: Metronomla'),
+      part('czerny-840-6-both', CZERNY_840_6, 'both', 'wait', [1, 8], 'Czerny Melodik 6: İki El'),
+      part('czerny-840-6-tempo', CZERNY_840_6, 'both', 'tempo', [1, 8], 'Czerny Melodik 6: Metronomla'),
+      part('kuhlau-andante-both', KUHLAU_ANDANTE, 'both', 'wait', [1, 8], 'Kuhlau Andante: İki El'),
+      part('kuhlau-andante-tempo', KUHLAU_ANDANTE, 'both', 'tempo', [1, 8], 'Kuhlau Andante: Metronomla'),
     ],
   },
 ]

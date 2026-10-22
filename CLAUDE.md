@@ -103,7 +103,7 @@ Principles:
 | Branch | State                                                                                              |
 | ------ | -------------------------------------------------------------------------------------------------- |
 | `main` | Phases 0–14, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
-| This   | Phase 15a: the Etüt Kitaplığı and the score view (`claude/project-thread-vn0hlf`)                  |
+| This   | Phase 15a + 15b: the Etüt Kitaplığı, the score view, Hanon (`claude/project-thread-vn0hlf`)        |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -665,8 +665,29 @@ Phase 15a (Klasik etütler, first part, `claude/project-thread-vn0hlf`; plan in 
 - `SMOKE_ONLY=etudes`; layout cases `etude-theory`, `etude-wait`, `etude-czerny`, `etude-tempo` (opened from the
   library, `etudePlace` checks the way back), `key-space`, `key-chordbar`.
 
-Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 15b (Hanon by rule
-in every key, Burgmüller Op. 100 from Mutopia, levels 4–6), 16 visual world, 17 accounts and social, 18
+Phase 15b (Klasik etütler, second part, same branch; Serhan: "marka / isimden ziyade o tip başka pratiklerle içeriği
+genişletmek"):
+
+- `games/etudes/drills.ts` (pure) writes scores by rule in the import format (`ScoreSource.mutopia: null`):
+  **five-finger pieces** (`FIVE_PIECES`, degrees 0–4 in a position, the left hand `parallel`, `contrary` = mirrored
+  with the same fingers, or its own part; positions C D F G and A minor via `fiveScore`) and **Hanon 1–10**
+  (`HANON`: each exercise's first group up and down with Hanon's fingers, read from the 1873 original; `hanonScore(no,
+tonic, octaves)` repeats the figure a step higher / lower: 14 groups up and Hanon's count down over two octaves, 7
+  fewer each over one; `lastUp` / `lastDown` variants; one 2/4 bar of sixteenths per group, the tonic last). A bar lying
+  mostly across middle C gets the other clef (`withClefs`); `ScoreView` now draws a clef that changes at a bar line.
+- `games/etudes/part.ts`: `etude(score, info)` (a score as a `Song`), `fivePiece`, `hanonPiece`, `etudePart` (a lesson on
+  printed bars), kept out of `catalog.ts` so key units can use Hanon without the imported scores.
+- New Mutopia imports: Burgmüller Op. 100 Nos. 1–6, 8, 10, 11, 13, 16; Tchaikovsky Op. 39 Nos. 1, 5, 16; Czerny Op. 840
+  Nos. 1, 6; Kuhlau Op. 20 No. 1 Andante. 6/8 plays as 3 quarter beats per bar.
+- `ETUDE_LEVELS`: 1 Beş parmak pozisyonu (intro first), 2 Tek elle ilk cümleler, 3 İki elle menüetler, 4 On altılıklar
+  ve 2/4, 5 Hanon, 6–7 Burgmüller, 8 Küçük konser parçaları; 106 lessons. Old lesson ids are kept.
+- Key units: `key-<id>-hanon` after the hands lesson (Hanon No. `index % 10 + 1` in the key, one octave, waiting mode;
+  18 lessons per unit). Badges Beş Parmak, Hanon Çırağı, Hikâye Anlatıcısı, Kitap Kurdu (`BadgeContext.etudeLevelsDone`).
+- Smoke `SMOKE_ONLY=etudes` also plays five-finger, Hanon on the metronome, Burgmüller, the 6/8 Pastorale and
+  Tchaikovsky; the keys run plays Hanon 2 in G. Layout cases `etude-five`, `etude-hanon` (two octaves), `etude-pastorale`,
+  `key-hanon`.
+
+Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 16 visual world, 17 accounts and social, 18
 placement test and new skills, 19 store release and iOS. The owner asked to **pause after each
 phase**: check the plan against the code, test, report with suggestions, and wait for the go.
 
