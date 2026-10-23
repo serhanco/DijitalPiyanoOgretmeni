@@ -23,7 +23,7 @@ import { initPiano } from '../audio/piano'
 import { playParts } from '../audio/earSound'
 import { ArcadeChips } from './arcade/ArcadeChips'
 import { GhostChip } from './arcade/Ghost'
-import { useSecondTrace, useStoredGhost } from './arcade/ghostHooks'
+import { useDuelName, useSecondTrace, useStoredGhost } from './arcade/ghostHooks'
 import { arcadeStats, FEVER_AT, melodyOf, useCombo, useHint, useSurprise } from './arcade/useArcade'
 import { PixiStage } from '../games/arcade/PixiStage'
 import { noteSkill, type SkillProvider, type SkillTarget } from '../games/arcade/skill'
@@ -167,6 +167,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const { combo, bestCombo, hit, miss } = useCombo()
   // Hayalet: an endless game races the best run of the same game and skill.
   const ghost = useStoredGhost(lesson.id, endless)
+  const duelName = useDuelName(lesson.id)
   const trace = useSecondTrace(() => game.score, endless)
   const traceRun = trace.run
 
@@ -495,7 +496,7 @@ export function ArcadeScreen({ lesson, onFinish, onExit }: Props) {
             Hız {paceText(pace)}
           </span>
         )}
-        {ghost && <GhostChip ghost={ghost} at={trace.second} mine={hud.score} />}
+        {ghost && <GhostChip ghost={ghost} at={trace.second} mine={hud.score} name={duelName} />}
         <ArcadeChips combo={combo} record={endless ? undefined : record} />
         <span className="arcade-score">⭐ {hud.score}</span>
       </div>

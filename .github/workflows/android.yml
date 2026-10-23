@@ -22,6 +22,10 @@ jobs:
           java-version: 21
       - run: npm ci
       - run: npm run build
+        env:
+          # The cloud for accounts and friends (docs/HESAP.md); without them the build has no account features.
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
       - run: npx cap sync android
       - name: Signing key from the secrets, when there is one
         env:

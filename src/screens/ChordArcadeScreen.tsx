@@ -27,7 +27,7 @@ import { useProfile } from '../state/profile'
 import { ENDLESS_RAMP } from '../games/arcade/ramp'
 import { ArcadeChips } from './arcade/ArcadeChips'
 import { GhostChip } from './arcade/Ghost'
-import { useSecondTrace, useStoredGhost } from './arcade/ghostHooks'
+import { useDuelName, useSecondTrace, useStoredGhost } from './arcade/ghostHooks'
 import { arcadeStats, FEVER_AT, useCombo, useSurprise } from './arcade/useArcade'
 
 const ARCADE_HEARTS = 3
@@ -65,6 +65,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
   const { combo, bestCombo, hit, miss } = useCombo()
   // Hayalet: an endless game races the best run of the same game and skill.
   const ghost = useStoredGhost(lesson.id, endless)
+  const duelName = useDuelName(lesson.id)
   const trace = useSecondTrace(() => game.score, endless)
   const traceRun = trace.run
 
@@ -254,7 +255,7 @@ export function ChordArcadeScreen({ lesson, onFinish, onExit }: Props) {
       <div className="arcade-info">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={56} />
         <p className="arcade-message">{message}</p>
-        {ghost && <GhostChip ghost={ghost} at={trace.second} mine={hud.score} />}
+        {ghost && <GhostChip ghost={ghost} at={trace.second} mine={hud.score} name={duelName} />}
         <ArcadeChips combo={combo} record={endless ? undefined : record} />
         <span className="arcade-score">⭐ {hud.score}</span>
       </div>

@@ -422,6 +422,28 @@ export const BADGES: Badge[] = [
     icon: '🏵️',
     earned: (c) => !!c.weeklyDone,
   },
+  // Arkadaşlar (phase 17): given outside lessons (profile.socialReward / giveBadge).
+  {
+    id: 'first-friend',
+    title: 'İlk Arkadaş',
+    description: 'Bir arkadaşını davet kodunla ekle',
+    icon: '👋',
+    earned: () => false,
+  },
+  {
+    id: 'team-player',
+    title: 'Takım Oyuncusu',
+    description: 'Bir arkadaşınla ortak haftalık görevi bitir',
+    icon: '🤝',
+    earned: () => false,
+  },
+  {
+    id: 'league-first',
+    title: 'Ligin Birincisi',
+    description: 'Haftalık arkadaş liginde birinci ol',
+    icon: '🥇',
+    earned: () => false,
+  },
 ]
 
 export function newlyEarnedBadges(ctx: BadgeContext, alreadyEarned: Iterable<string>): Badge[] {

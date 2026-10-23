@@ -30,6 +30,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # The cloud for accounts and friends (docs/HESAP.md); without them the build has no account features.
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
       # The Android app, downloadable from Ayarlar → Uygulama on an Android phone.
       - uses: actions/download-artifact@v4
         with:

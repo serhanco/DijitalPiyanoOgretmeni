@@ -4505,3 +4505,159 @@ button.chip:not(.streak):not(.xp) {
 .key-node-label.filled {
   fill: #fff;
 }
+
+/* Hesap ve arkadaşlar (phase 17): the map card, the account panel, the friends screen */
+.friends-card {
+  position: relative;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 2px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+.friends-card.nudge {
+  padding-right: 44px;
+}
+.friends-card-icon {
+  font-size: 2rem;
+}
+.friends-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.friends-card-body h2 {
+  font-size: 1rem;
+  font-weight: 900;
+}
+.friends-card-body p {
+  margin: 2px 0 0;
+}
+.friends-card-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+.friends-badge {
+  color: var(--accent);
+  font-weight: 800;
+}
+.account-signin,
+.account-in {
+  display: grid;
+  gap: 8px;
+}
+.account-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.account-row input {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.account-google span {
+  font-weight: 900;
+  margin-right: 6px;
+}
+.account-or {
+  text-align: center;
+  margin: 2px 0;
+}
+.account-error {
+  color: var(--danger);
+}
+.account-delete {
+  color: var(--danger);
+}
+.account-confirm {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+.privacy summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.friends .card {
+  margin-top: 14px;
+}
+.friends h2 {
+  font-size: 1.05rem;
+  margin: 0 0 6px;
+}
+.friends-code {
+  font-size: 1.3rem;
+  letter-spacing: 0.12em;
+  font-family: ui-monospace, monospace;
+}
+.league {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.league li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+.league li.me {
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  font-weight: 800;
+}
+.league-place {
+  width: 2em;
+  text-align: center;
+}
+.league-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pair-bar {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.pair-bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  border-radius: inherit;
+  transition: width 0.4s;
+}
+.news,
+.friend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.news li,
+.friend-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.salon-duels {
+  margin-top: 10px;
+}

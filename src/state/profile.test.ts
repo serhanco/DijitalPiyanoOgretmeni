@@ -30,6 +30,7 @@ beforeEach(async () => {
     salon: {},
     ghosts: {},
     costume: null,
+    social: { pairWeek: null, medalWeek: null },
   })
   await Promise.all([db.sessions.clear(), db.noteStats.clear(), db.review.clear()])
 })
@@ -214,5 +215,18 @@ describe('history', () => {
     // Middle C read on the bass staff is kept apart.
     expect(await noteScores('bass')).toEqual([{ midi: 60, shown: 2, firstTry: 0, avgReactionMs: null }])
     expect(await db.sessions.count()).toBe(2)
+  })
+})
+
+describe('friends rewards', () => {
+  it('gives the shared quest chest once a week, with its badge', () => {
+    const now = new Date(2026, 9, 23, 10)
+    const give = () => useProfile.getState().socialReward('pair', '2026-W43', 30, 'team-player', now)
+    expect(give()).toBe(true)
+    expect(give()).toBe(false)
+    const s = useProfile.getState()
+    expect([s.totalXp, s.daily.xp, !!s.badges['team-player']]).toEqual([30, 30, true])
+    expect(useProfile.getState().socialReward('medal', '2026-W42', 20, undefined, now)).toBe(true)
+    expect(useProfile.getState().totalXp).toBe(50)
   })
 })

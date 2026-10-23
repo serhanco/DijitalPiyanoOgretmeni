@@ -40,12 +40,15 @@ npm run build         # tsc -b && vite build → dist/
 npm run smoke         # Playwright smoke test against a running preview (see below)
 npm run layout        # Layout suite: every game type on desktop, phone upright and sideways (see below)
 npm run piano         # Phase 13 checks with a fake Clavinova: setup wizard, pedal, piano output, offline start
+npm run cloud         # Phase 17 checks with the fake cloud: two devices, invite link, league, duel, delete account
 npx cap sync android  # After npm run build: copy dist/ into the Android app (built by CI, android.yml)
 LILYPOND=/path/to/lilypond node scripts/etudes/import.mjs <id> <mutopia dir>   # Import an étude (see phase 15a)
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR, and the layout suite in a second
-job (report in the job summary, screenshots as the `layout-screens` artifact). `deploy.yml` publishes `dist/` to
+CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR, and the layout suite (then
+`npm run piano` and `npm run cloud`) in a second job (report in the job summary, screenshots as the `layout-screens`
+artifact). The builds read the repository variables `SUPABASE_URL` and `SUPABASE_ANON_KEY` (`docs/HESAP.md`);
+`supabase-keepalive.yml` pings the project weekly. `deploy.yml` publishes `dist/` to
 GitHub Pages on every push to `main` (requires Settings → Pages → Source: "GitHub Actions"). Vite `base` is `./` so the
 build works under the repo sub-path.
 
@@ -75,6 +78,9 @@ src/
   testing/                Test mode (notes with context, TestTools) and the progress code (backup, backupStore)
   progress/               (phase 2) gamification rules, Dexie DB, history, curriculum
   state/profile.ts        (phase 2) XP/streak/badges store persisted to IndexedDB via a Dexie kv table
+  cloud/                  (phase 17) accounts and friends: backend (Supabase or fake), merge, social, account store
+  notify/reminder.ts      (phase 17) Android streak reminders (local notifications)
+supabase/schema.sql       (phase 17) tables and row level security, run once in the Supabase SQL editor
 ```
 
 Principles:
@@ -102,8 +108,8 @@ Principles:
 
 | Branch | State                                                                                              |
 | ------ | -------------------------------------------------------------------------------------------------- |
-| `main` | Phases 0–15, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
-| This   | Phase 16: dark mode, folds, icons, scenery, transitions, opening (`claude/project-thread-fj207v`)  |
+| `main` | Phases 0–16, Başlangıç, test mode, the rhythm curriculum, the game rounds and the polish PRs, live |
+| This   | Phase 17: accounts, cloud sync, friends, league, duels, reminders (`claude/project-thread-fj207v`) |
 
 When a PR is merged, retarget the next one in the stack to `main`. Check live PR state with `gh pr list` before branching.
 
@@ -728,8 +734,51 @@ Phase 16b (Görsel dünya, second part, same branch):
   buttons outside the lessons; chips, pills and rows bounce on press; the level chip has a `.level-bar`.
 - Layout suite: `opening` checks the opening (shown, gone in time, tap skips, reduced motion).
 
-Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 16 visual world, 17 accounts and social, 18
-placement test and new skills, 19 store release and iOS. The owner asked to **pause after each
+Phase 17 (Hesap ve sosyal, `claude/project-thread-fj207v`; plan in `/mnt/project-files/faz-17/plan.md`, setup in
+`docs/HESAP.md`):
+
+- **Optional account.** `cloud/backend.ts`: `CloudBackend` (Google, e-mail code, sign out, delete, pull / push the
+  progress, players, friends, events). `cloudKind()` is `supabase` when the build has `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_ANON_KEY`, `fake` when localStorage `dpo-cloud` is `fake` (scripts; `cloud/fakeBackend.ts` keeps a
+  cloud in localStorage, e-mail code `123456`, `window.__dpoFakeCloud` adds players and notes), otherwise null and no
+  account UI shows at all. Each backend is its own lazy chunk (`supabaseBackend.ts`: PKCE, Google returns to the page
+  or, in the Android app, to `io.github.serhanco.piyano://auth` through `@capacitor/browser` and `@capacitor/app`).
+  E-mail sign-in is a six-digit code (`verifyOtp`), so it works inside the app.
+- **Sync** (`cloud/account.ts`, zustand `useAccount`; `initAccount()` in `main.tsx`): on sign-in, at start, after
+  every lesson (`syncSoon` in `App.finish`) and when the app comes back after 10 min: `collectBackup` → `pull` →
+  `mergeBackups` (`cloud/merge.ts`, pure: sessions and review cards joined, stars / records / ghosts keep the best,
+  badges both, XP and lessons counted as the cloud's plus what this device added since its last sync,
+  `dpo-sync-base`; settings stay per device) → written here in one Dexie transaction (stops if the profile changed
+  meanwhile) and `useProfile.persist.rehydrate()` → `push` → publish the player summary. Signing out or deleting the
+  account keeps this device's progress.
+- **Profile writes wait for hydration** (`state/profile.ts`): the storage drops writes until the saved profile has
+  been read, and `ensureQuests` waits for it. Before, the map's quest board wrote an empty profile over the saved one
+  on every start.
+- **Friends** (`cloud/social.ts`, pure): `Player` (name, six-character code, streak, this and last week's XP and
+  lessons, Salon records and ghosts, quest partner), `league` (equal XP share a place), `lastWeekPlace` (`MEDAL_XP`
+  30/20/10, badge Ligin Birincisi), `pairQuest` (both picked each other, `PAIR_GOAL` 20 lessons together →
+  `PAIR_XP`, badge Takım Oyuncusu), `news` (notes received, streaks ≥ 3, the league leader; 👏 once each), `rivalsFor`.
+  `profile.socialReward(kind, week, xp, badge)` gives each reward once a week; `giveBadge('first-friend')`.
+  `?arkadas=CODE` links are kept in sessionStorage and used after sign-in.
+- **Screens:** `components/AccountPanel.tsx` (Ayarlar → Hesap; sign-in, sync state `[data-sync]`, name, sign out,
+  delete with a confirmation, `Privacy` text), `components/FriendsCard.tsx` on the map (`[data-node="account"]`
+  "İlerlemeni kaybetme" until closed, then `[data-node="friends"]`), `screens/FriendsScreen.tsx` (screen
+  `friends`: code and share link, add by code, league `[data-league-row][data-place]`, shared quest
+  `[data-partner]`, news, friend list). Icons `cloud` and `friends`.
+- **Hayalet düellosu:** `cloud/rival.ts` `setDuel` / `duelFor`; Salon shows `[data-duel]` chips per friend with a
+  record for the picked game; `useStoredGhost` races the friend's ghost, `GhostChip name` says whose; results
+  `DuelLine` (`[data-duel]`) and a won duel sends the friend a `beat` note.
+- **Seri hatırlatması** (`notify/reminder.ts`, Android app only, `settings.reminder { on, hour }`, Ayarlar → Ders):
+  `@capacitor/local-notifications`, the next seven days at the hour, today skipped once played; rescheduled at start
+  and after each lesson.
+- **Cloud schema** (`supabase/schema.sql`): `progress`, `players`, `friends` (both ways, only through `add_friend`),
+  `events`; `remove_friend`, `delete_account`. `src/cloud/schema.test.ts` runs it in PGlite with a stand-in auth schema
+  and checks the row level security.
+- `npm run cloud` (`scripts/cloud.mjs`, in CI): two devices merging into one account, an invite link, the league, the
+  shared quest's chest, a cheer, a Salon duel, e-mail codes, deleting the account. Layout check `arkadaslar`.
+
+Next phases (each one's content is reviewed with the owner before it starts, see `docs/PLAN.md`): 18 placement test
+and new skills, 19 store release and iOS. The owner asked to **pause after each
 phase**: check the plan against the code, test, report with suggestions, and wait for the go.
 
 ## Testing in a real browser
@@ -780,3 +829,4 @@ that error.
   MK3** (25 keys, USB only, class compliant, no sound of its own). Port names in `keyboards.ts` are educated guesses
   until the owner connects them.
 - Font bundle includes all Nunito subsets; could be trimmed to latin + latin-ext.
+- Accounts and friends have only run against the fake cloud until the Supabase project is set up (`docs/HESAP.md`).

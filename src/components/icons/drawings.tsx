@@ -44,6 +44,8 @@ export type IconName =
   | 'quests'
   | 'chest'
   | 'keyboard'
+  | 'cloud'
+  | 'friends'
 
 export const DRAWINGS: Record<IconName, ReactNode> = {
   // Teori: an open book with a note on its right page.
@@ -513,6 +515,32 @@ export const DRAWINGS: Record<IconName, ReactNode> = {
         {...line}
         strokeWidth={1}
       />
+    </g>
+  ),
+  // Hesap: a smiling cloud with a note on it (the progress kept in the cloud).
+  cloud: (
+    <g>
+      <path d="M12 38 q-8 0 -8 -8 q0 -7 8 -8 q1 -10 11 -10 q8 0 10 7 q9 -1 10 8 q1 11 -9 11 z" fill={SKY} {...line} />
+      <Eye x={19} y={27} r={2.6} />
+      <Eye x={29} y={27} r={2.6} />
+      <Smile x={24} y={32} w={5} />
+      <Cheek x={14} y={31} />
+      <Cheek x={34} y={31} />
+    </g>
+  ),
+  // Arkadaşlar: two Notiş heads side by side.
+  friends: (
+    <g>
+      <circle cx={31} cy={22} r={12} fill={BLUE} {...line} />
+      <Eye x={27.5} y={21} r={2.4} />
+      <Eye x={34.5} y={21} r={2.4} />
+      <Smile x={31} y={26} w={4} />
+      <circle cx={17} cy={28} r={13} fill={PURPLE} {...line} />
+      <Eye x={13} y={27} r={2.6} />
+      <Eye x={21} y={27} r={2.6} />
+      <Smile x={17} y={33} w={4.5} />
+      <Cheek x={10} y={32} />
+      <Cheek x={25} y={32} />
     </g>
   ),
   // Klavye: a short keyboard.

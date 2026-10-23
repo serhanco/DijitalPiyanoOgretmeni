@@ -25,6 +25,8 @@ import { type Reward, useProfile } from '../state/profile'
 import type { Costume } from '../progress/wardrobe'
 import { paceText } from '../progress/adaptive'
 import { type CardMove, inDays, MAX_BOX } from '../progress/srs'
+import { duelFor } from '../cloud/rival'
+import { sendBeat } from '../cloud/account'
 
 interface Props {
   lesson: NoteLesson
@@ -662,6 +664,23 @@ function Comparison({ before, now }: { before: number | null; now: number }) {
   return <p className={`compare ${diff > 0 ? 'up' : ''}`}>{text}</p>
 }
 
+/** Hayalet düellosu: the friend's record against this game's score; a win tells the friend. */
+function DuelLine({ lesson, score, unit, trial }: { lesson: NoteLesson; score: number; unit: string; trial: boolean }) {
+  const [duel] = useState(() => duelFor(lesson.id))
+  const won = !!duel && score > duel.best
+  useEffect(() => {
+    if (duel && won && !trial) void sendBeat(duel.friendId, lesson.title)
+  }, [duel, won, trial, lesson.title])
+  if (!duel) return null
+  return (
+    <p className={`compare ${won ? 'up' : ''}`} data-duel={won}>
+      {won
+        ? `⚔️ Düelloyu kazandın! ${duel.name}: ${duel.best}${unit}, sen: ${score}${unit}. ${trial ? '' : 'Ona haber verdik.'}`
+        : `⚔️ ${duel.name} bu kez önde: ${duel.best}${unit}, sen: ${score}${unit}. Tekrar dene!`}
+    </p>
+  )
+}
+
 export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome, onPractice, moves, tempo }: Props) {
   const practiceNotes = [...new Set(summary.weakest.map((n) => n.midi))]
   const practiceClefs = new Set(summary.weakest.map((n) => n.clef))
@@ -758,6 +777,9 @@ export function ResultsScreen({ lesson, summary, reward, trial, onRetry, onHome,
       </h1>
       {!summary.failed && !lesson.salon && <Comparison before={reward.previousBestAccuracy} now={summary.accuracy} />}
       {lesson.salon && <RecordCard record={trial ? undefined : reward.record} endless={endless} summary={summary} />}
+      {lesson.salon && reward.record && (
+        <DuelLine lesson={lesson} score={reward.record.score} unit={endless ? '' : '%'} trial={!!trial} />
+      )}
       {!lesson.salon && summary.arcade && summary.arcade.bestCombo >= 5 && (
         <p className="compare up" data-combo={summary.arcade.bestCombo}>
           🔥 En uzun serin {summary.arcade.bestCombo} doğru üst üste

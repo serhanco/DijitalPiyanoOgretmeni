@@ -3,6 +3,10 @@ import { useProfile } from '../state/profile'
 import { type ThemeChoice, useSettings } from '../state/settings'
 import { BackupPanel } from '../testing/BackupPanel'
 import { InstallPanel } from './InstallPanel'
+import { AccountPanel } from './AccountPanel'
+import { useAccount } from '../cloud/account'
+import { isNativeApp } from '../midi/nativeMidi'
+import { scheduleReminders } from '../notify/reminder'
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -30,6 +34,11 @@ interface Props {
 export function SettingsPanel({ onCalibrate, onSetup, onClose }: Props) {
   const settings = useSettings()
   const { dailyGoal, setDailyGoal } = useProfile()
+  const cloud = useAccount((s) => s.kind)
+  const setReminder = (reminder: { on: boolean; hour: number }) => {
+    settings.set({ reminder })
+    void scheduleReminders().catch(() => undefined)
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -46,6 +55,12 @@ export function SettingsPanel({ onCalibrate, onSetup, onClose }: Props) {
             ✕
           </button>
         </header>
+        {cloud && (
+          <>
+            <h3 className="settings-group">Hesap</h3>
+            <AccountPanel />
+          </>
+        )}
         <h3 className="settings-group">Ders</h3>
         <div className="goal-picker">
           <span>Günlük hedef</span>
@@ -65,6 +80,29 @@ export function SettingsPanel({ onCalibrate, onSetup, onClose }: Props) {
           checked={settings.hintGlow}
           onChange={(v) => settings.set({ hintGlow: v })}
         />
+        {isNativeApp() && (
+          <>
+            <Toggle
+              label="Seri hatırlatması: o gün çalmadıysan akşam bir bildirim"
+              checked={settings.reminder.on}
+              onChange={(on) => setReminder({ ...settings.reminder, on })}
+            />
+            {settings.reminder.on && (
+              <div className="goal-picker">
+                <span>Saat</span>
+                {[17, 18, 19, 20, 21].map((hour) => (
+                  <button
+                    key={hour}
+                    className={`pill ${settings.reminder.hour === hour ? 'on' : ''}`}
+                    onClick={() => setReminder({ on: true, hour })}
+                  >
+                    {hour}:00
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
         <h3 className="settings-group">Görünüm</h3>
         <div className="goal-picker" role="radiogroup" aria-label="Tema">
           <span>Tema</span>
