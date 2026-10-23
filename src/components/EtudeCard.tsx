@@ -2,6 +2,7 @@ import { ETUDE_LESSONS } from '../games/etudes/lessons'
 import { unitDone } from '../progress/curriculum'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
+import { Icon } from './icons/Icon'
 
 /** The map's way into the Etüt Kitaplığı: open once Başlangıç is done. */
 export function EtudeCard({ onOpen }: { onOpen: () => void }) {
@@ -13,7 +14,7 @@ export function EtudeCard({ onOpen }: { onOpen: () => void }) {
   return (
     <section className="salon-card etude-card" data-node="etudes" aria-label="Etüt Kitaplığı">
       <span className="salon-card-icon" aria-hidden>
-        📜
+        <Icon name="etudes" size={44} />
       </span>
       <div className="salon-card-body">
         <h2>Etüt Kitaplığı</h2>

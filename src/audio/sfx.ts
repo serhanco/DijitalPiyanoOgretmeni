@@ -66,6 +66,27 @@ export const sfx = {
       { freq: 262, at: 0.4, dur: 0.5, type: 'triangle' },
     ]),
   tick: () => play([{ freq: 1500, at: 0, dur: 0.03, type: 'square', gain: 0.03 }]),
+  /** A soft tap on a button (settings.clickSound). */
+  click: () => {
+    if (useSettings.getState().clickSound) play([{ freq: 1250, at: 0, dur: 0.035, gain: 0.045 }])
+  },
+  /** Do-Mi-Sol, the opening animation's keys. */
+  hello: () =>
+    play([523.25, 659.25, 783.99].map((freq, i) => ({ freq, at: i * 0.13, dur: 0.32, type: 'triangle' as const }))),
+}
+
+/**
+ * Düğme sesi: a soft tap for every button outside the lessons (`inLesson` says when one is being played,
+ * where buttons must not sound over the music). Returns the detach function.
+ */
+export function attachClickSound(inLesson: () => boolean) {
+  const onDown = (e: PointerEvent) => {
+    const button = (e.target as Element | null)?.closest?.('button')
+    if (!button || (button as HTMLButtonElement).disabled || inLesson() || button.closest('.key')) return
+    sfx.click()
+  }
+  document.addEventListener('pointerdown', onDown)
+  return () => document.removeEventListener('pointerdown', onDown)
 }
 
 export function vibrate(ms: number) {

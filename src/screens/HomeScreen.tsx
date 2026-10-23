@@ -1,14 +1,20 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { Greeting } from '../components/Greeting'
 import { DailyMixCard } from '../components/DailyMixCard'
+import { FoldCapsule } from '../components/FoldCapsule'
 import { SalonCard } from '../components/SalonCard'
-import { KIND_ICON } from './kindIcons'
 import { HomeShortcuts } from '../components/HomeShortcuts'
 import { MidiPanel } from '../components/MidiPanel'
 import { QuestBoard } from '../components/QuestBoard'
 import { EtudeCard } from '../components/EtudeCard'
 import { LessonPeek } from '../components/LessonPeek'
 import { LastWeekCard } from '../components/WeekSummary'
+import { foldPath } from '../progress/mapFold'
+import { keySign, propSide, sceneOf, unitToCelebrate } from '../progress/scenery'
+import { KeyBalloon, SceneProp } from '../components/scenery/Scenery'
+import { MapNotis } from '../components/MapNotis'
+import { burstConfetti } from '../components/confetti'
+import { KEYS } from '../games/keys/units'
 import { MIX_LESSON_ID } from '../progress/mix'
 import { TopBar } from '../components/TopBar'
 import { UnitNav, type UnitRow } from '../components/UnitNav'
@@ -18,6 +24,7 @@ import { buildReviewLesson, isUnlocked, mapNodeOf, UNITS, weakestNotes } from '.
 import { noteScores } from '../progress/history'
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
+import { Icon } from '../components/icons/Icon'
 
 interface Props {
   onStart: (lesson: NoteLesson) => void
@@ -74,8 +81,22 @@ function useWide(): boolean {
   return wide
 }
 
+const CELEBRATED_KEY = 'dpo-celebrated'
+
+/** Units whose end was celebrated (`unitToCelebrate`), kept in localStorage. */
+function celebratedUnits(): string[] | null {
+  try {
+    const raw = localStorage.getItem(CELEBRATED_KEY)
+    return raw ? (JSON.parse(raw) as string[]) : null
+  } catch {
+    return null
+  }
+}
+
 /** Finished units that the learner opened again, kept while the app runs. */
 const openedUnits = new Set<string>()
+/** Folds of finished lessons in a row (`progress/mapFold.ts`) that the learner opened, kept while the app runs. */
+const openedFolds = new Set<string>()
 
 /** Horizontal offsets that make the lesson path zigzag, Duolingo style. */
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
@@ -119,18 +140,48 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
   )
 
   // A finished unit (boss included) folds into its banner; test mode and a lesson just left keep it open.
+  const allDone = (unit: (typeof UNITS)[number]) => !unit.comingSoon && unit.lessons.every((l) => bestStars(l.id) > 0)
   const finished = (unit: (typeof UNITS)[number]) =>
-    !testMode &&
-    !unit.comingSoon &&
-    unit.lessons.every((l) => bestStars(l.id) > 0) &&
-    !unit.lessons.some((l) => mapNodeOf(l) === focus || l.id === focus)
+    !testMode && allDone(unit) && !unit.lessons.some((l) => mapNodeOf(l) === focus || l.id === focus)
+  // Back from the lesson that finished a unit: confetti, a golden path and Notiş dancing, once per unit.
+  const [celebrate] = useState(() => {
+    if (testMode) return undefined
+    const focusUnit = UNITS.find((u) => u.lessons.some((l) => l.id === focus || mapNodeOf(l) === focus))?.id
+    const done = UNITS.filter(allDone).map((u) => u.id)
+    const { celebrate, seen } = unitToCelebrate(focusUnit, done, celebratedUnits())
+    try {
+      localStorage.setItem(CELEBRATED_KEY, JSON.stringify(seen))
+    } catch {
+      // Without storage the celebration may come again; nothing else depends on it.
+    }
+    return celebrate
+  })
+  const [cheering, setCheering] = useState(!!celebrate)
+  useEffect(() => {
+    if (!celebrate) return
+    const confetti = window.setTimeout(burstConfetti, 700)
+    const quiet = window.setTimeout(() => setCheering(false), 3200)
+    return () => {
+      clearTimeout(confetti)
+      clearTimeout(quiet)
+    }
+  }, [celebrate])
+  const shownToast = toast ?? (cheering ? `🎉 ${UNITS.find((u) => u.id === celebrate)?.title} bitti!` : null)
+
   const stars = (unit: (typeof UNITS)[number]) => unit.lessons.reduce((n, l) => n + bestStars(l.id), 0)
   const folded = (unit: (typeof UNITS)[number]) => finished(unit) && !openedUnits.has(unit.id)
-  const toggleUnit = (id: string) => {
-    if (openedUnits.has(id)) openedUnits.delete(id)
-    else openedUnits.add(id)
+  const toggle = (opened: Set<string>, id: string) => {
+    if (opened.has(id)) opened.delete(id)
+    else opened.add(id)
     rerender((n) => n + 1)
   }
+  const toggleUnit = (id: string) => toggle(openedUnits, id)
+  // Inside an unfinished unit, finished lessons in a row fold; the current lesson and the one just left stay out.
+  const keepInSight = (l: NoteLesson) => l.id === current?.id || l.id === focus || mapNodeOf(l) === focus
+  const pathOf = (unit: (typeof UNITS)[number], path: NoteLesson[]) =>
+    testMode || finished(unit)
+      ? path.map((lesson) => ({ kind: 'node' as const, lesson }))
+      : foldPath(path, (l) => bestStars(l.id) > 0 && unlockedLesson(l.id), keepInSight, openedFolds)
   const unitRows: UnitRow[] = UNITS.map((u) => ({
     id: u.id,
     title: u.title,
@@ -187,18 +238,30 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
         // The weak-notes review comes before the boss, the unit's last node.
         const path = unit.lessons.filter((l) => l.kind !== 'boss')
         const boss = unit.lessons.find((l) => l.kind === 'boss')
+        const items = pathOf(unit, path)
+        const keyIndex = KEYS.findIndex((k) => `key-${k.id}` === unit.id)
+        const scene = sceneOf(unit.id, keyIndex < 0 ? undefined : keyIndex)
+        // Beside each node: Notiş at the lesson to play next, else a thing of the unit's scenery.
+        const beside = (i: number, offset: number, isCurrent: boolean) =>
+          isCurrent ? (
+            <MapNotis side={propSide(offset, i)} offset={offset} hop={!!focus} cheer={cheering} />
+          ) : (
+            <SceneProp name={scene.props[i % scene.props.length]} side={propSide(offset, i)} offset={offset} />
+          )
         const node = (lesson: NoteLesson, i: number) => {
           const unlocked = unlockedLesson(lesson.id)
           const stars = bestStars(lesson.id)
           const isCurrent = current?.id === lesson.id
           const isBoss = lesson.kind === 'boss'
+          const offset = isBoss ? 0 : ZIGZAG[i % ZIGZAG.length]
           return (
             <div
               key={lesson.id}
               className={`path-step ${focus === lesson.id ? 'back' : ''} ${isBoss ? 'boss-step-node' : ''}`}
               data-node={lesson.id}
-              style={{ transform: `translateX(${isBoss ? 0 : ZIGZAG[i % ZIGZAG.length]}px)` }}
+              style={{ transform: `translateX(${offset}px)` }}
             >
+              {!isBoss && beside(i, offset, isCurrent)}
               {(isCurrent || (isBoss && isUnlocked(lesson.id, bestStars) && stars === 0)) && (
                 <span className={`start-bubble ${isBoss ? 'boss' : ''}`}>{isBoss ? 'BOSS!' : 'BAŞLA'}</span>
               )}
@@ -219,7 +282,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
                   }
                   aria-label={`${lesson.title}${unlocked ? '' : ' (kilitli)'}`}
                 >
-                  {unlocked ? KIND_ICON[lesson.kind ?? 'drill'] : '🔒'}
+                  <Icon name={unlocked ? (lesson.kind ?? 'drill') : 'lock'} />
                 </button>
                 {unlocked && stars > 0 && (
                   <span className={`medal m${stars}`} aria-hidden>
@@ -245,8 +308,12 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
             data-unit={unit.id}
             data-waiting={waiting || undefined}
             data-folded={folded(unit) || undefined}
+            data-scene={scene.id}
+            data-celebrate={celebrate === unit.id || undefined}
+            style={{ '--sky': scene.sky, '--ground': scene.ground } as React.CSSProperties}
           >
             <header className="unit-banner" style={{ background: unit.comingSoon ? undefined : unit.color }}>
+              {keyIndex >= 0 && <KeyBalloon sign={keySign(KEYS[keyIndex].major)} />}
               <h2>{unit.title}</h2>
               <p>{unit.comingSoon ? 'Yakında' : unit.subtitle}</p>
               {!unit.comingSoon && !waiting && (
@@ -280,7 +347,22 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
 
             {!unit.comingSoon && !folded(unit) && (
               <div className="path">
-                {path.map(node)}
+                {items.map((item, i) =>
+                  item.kind === 'node' ? (
+                    node(item.lesson, i)
+                  ) : (
+                    <div key={item.id} className={`path-step path-fold ${item.kind === 'fold' ? '' : 'open'}`}>
+                      <FoldCapsule
+                        id={item.id}
+                        lessons={item.lessons}
+                        folded={item.kind === 'fold'}
+                        stars={bestStars}
+                        color={unit.color}
+                        onToggle={() => toggle(openedFolds, item.id)}
+                      />
+                    </div>
+                  ),
+                )}
 
                 {unit.review &&
                   (() => {
@@ -290,7 +372,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
                       <div
                         className={`path-step ${focus === `review-${clef}` ? 'back' : ''}`}
                         data-node={`review-${clef}`}
-                        style={{ transform: `translateX(${ZIGZAG[path.length % ZIGZAG.length]}px)` }}
+                        style={{ transform: `translateX(${ZIGZAG[items.length % ZIGZAG.length]}px)` }}
                       >
                         <button
                           className={`node review ${notes.length ? 'open' : 'locked'}`}
@@ -301,7 +383,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
                           }
                           aria-label={`Zayıf notalar tekrarı (${CLEF_NAMES[clef]})`}
                         >
-                          🏋️
+                          <Icon name="review" />
                         </button>
                         <span className="node-title">Zayıf Notalar</span>
                       </div>
@@ -317,7 +399,6 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
       {peek && (
         <LessonPeek
           lesson={peek}
-          icon={KIND_ICON[peek.kind ?? 'drill']}
           stars={bestStars(peek.id)}
           bestAccuracy={lessons[peek.id] ? lessons[peek.id].bestAccuracy : null}
           plays={lessons[peek.id]?.plays ?? 0}
@@ -330,9 +411,9 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
       )}
       {navOpen && <UnitNav rows={unitRows} onPick={jumpTo} onClose={() => setNavOpen(false)} />}
 
-      {toast && (
+      {shownToast && (
         <div className="toast" role="status">
-          {toast}
+          {shownToast}
         </div>
       )}
     </div>

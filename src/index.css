@@ -28,23 +28,64 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131f24;
-    --surface: #1b2a31;
-    --text: #eef3f6;
-    --muted: #9aa9b3;
-    --border: #2c3d45;
-    --key-white: #f1f4f6;
-    color-scheme: dark;
-  }
-  .staff svg {
-    filter: invert(1) hue-rotate(180deg);
-  }
+:root[data-theme='dark'] {
+  --bg: #131f24;
+  --surface: #1b2a31;
+  --text: #eef3f6;
+  --muted: #9aa9b3;
+  --border: #2c3d45;
+  --key-white: #f1f4f6;
+  color-scheme: dark;
+}
+:root[data-theme='dark'] .staff svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+:root[data-theme='dark'] .icon {
+  color: #ddd5ff;
+}
+:root[data-theme='dark'] .node .icon {
+  color: #2b1a5c;
+}
+:root[data-theme='dark'] .quiz-option.right,
+:root[data-theme='dark'] .case-pin.clean {
+  background: color-mix(in srgb, var(--primary) 22%, var(--surface));
+  color: #9be15d;
+}
+:root[data-theme='dark'] .quiz-option.wrong {
+  background: color-mix(in srgb, var(--danger) 22%, var(--surface));
+  color: #ff8a8a;
+}
+:root[data-theme='dark'] .key.white[data-held] {
+  background: #b9c6d2;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* The app's own icons (components/icons): outlines drawn in the icon's colour. */
+.icon {
+  color: #2b1a5c;
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+  overflow: visible;
+}
+.icon:not([width]) {
+  width: 1.25em;
+  height: 1.25em;
+}
+.node .icon {
+  width: 48px;
+  height: 48px;
+}
+.node.locked .icon {
+  width: 36px;
+  height: 36px;
+}
+.node.boss .icon {
+  width: 60px;
+  height: 60px;
 }
 
 body {
@@ -716,6 +757,9 @@ kbd {
 }
 button.chip {
   cursor: pointer;
+}
+.top-bar .chip {
+  gap: 4px;
 }
 .chip.streak {
   color: var(--muted);
@@ -1710,11 +1754,9 @@ button.chip {
   padding: 2px 8px;
   display: inline-block;
 }
-@media (prefers-color-scheme: dark) {
-  .finger-tip.cross {
-    background: #3a2c12;
-    color: #ffb54a;
-  }
+:root[data-theme='dark'] .finger-tip.cross {
+  background: #3a2c12;
+  color: #ffb54a;
 }
 @keyframes pop-in {
   from {
@@ -3249,6 +3291,346 @@ button.chip {
   border: none;
   border-radius: 999px;
   padding: 5px 12px;
+}
+/* A small bounce on the buttons that have no press effect of their own. */
+.pill,
+.chip,
+.icon-btn,
+.salon-game,
+.etude-row,
+.fold-again {
+  transition: transform 0.08s;
+}
+.pill:active,
+.chip:active,
+.icon-btn:active,
+.salon-game:active:not(:disabled),
+.etude-row:active:not(:disabled),
+.fold-again:active {
+  transform: scale(0.94);
+}
+/* The level chip shows how far the next level is. */
+.chip.level {
+  position: relative;
+}
+.level-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+.level-bar span {
+  display: block;
+  height: 100%;
+  background: #7c4dff;
+}
+/* Açılış (components/Intro.tsx): Notiş hops out of the keys, Do-Mi-Sol light up. */
+.opening {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  cursor: pointer;
+}
+.opening-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.opening-notis {
+  margin-bottom: -18px;
+  position: relative;
+  z-index: 1;
+}
+.opening-keys {
+  position: relative;
+  display: flex;
+  width: min(300px, 80vw);
+  height: 96px;
+  border: 3px solid #2b1a5c;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #2b1a5c;
+  gap: 2px;
+}
+.opening-key {
+  flex: 1;
+  background: var(--key-white);
+  border-radius: 0 0 5px 5px;
+  animation: opening-press 0.32s ease-out backwards;
+}
+@keyframes opening-press {
+  0% {
+    background: var(--key-white);
+  }
+  30% {
+    background: #b49cff;
+    transform: translateY(3px);
+  }
+  100% {
+    background: var(--key-white);
+  }
+}
+.opening-black {
+  position: absolute;
+  top: 0;
+  width: 7%;
+  height: 58%;
+  margin-left: -3.5%;
+  background: #2b1a5c;
+  border-radius: 0 0 4px 4px;
+}
+.opening-title {
+  margin-top: 16px;
+  font-weight: 900;
+  font-size: 1.3rem;
+  color: #7c4dff;
+}
+
+/* Screen transitions (App.tsx): only the way in, short, and no transform left behind (fixed sheets and
+   sticky bars inside keep working once it ends). */
+.screen[data-enter] {
+  animation: screen-fade 0.2s ease-out backwards;
+}
+.screen[data-enter='side'] {
+  animation-name: screen-side;
+}
+.screen[data-enter='rise'] {
+  animation-name: screen-rise;
+  animation-duration: 0.26s;
+}
+@keyframes screen-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes screen-side {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes screen-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen[data-enter] {
+    animation: none;
+  }
+}
+
+/* Görsel dünya: each unit's scenery (progress/scenery.ts). The path sits on the unit's sky, things stand
+   beside the nodes, and Notiş waits at the lesson to play next. */
+.home {
+  --prop-x: clamp(118px, 38vw - 10px, 220px);
+}
+.unit[data-scene] .path {
+  position: relative;
+  margin-top: -12px;
+  padding: 36px 0 18px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: linear-gradient(180deg, var(--sky), var(--ground));
+}
+:root[data-theme='dark'] .unit[data-scene] .path {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sky) 9%, var(--bg)),
+    color-mix(in srgb, var(--ground) 14%, var(--bg))
+  );
+}
+.unit[data-scene] .unit-banner {
+  position: relative;
+  z-index: 1;
+}
+.scene-prop,
+.map-notis {
+  position: absolute;
+  top: 6px;
+  left: calc(50% + var(--dir) * var(--prop-x) - var(--off));
+  pointer-events: none;
+}
+.scene-prop {
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  color: #2b1a5c;
+  overflow: visible;
+  opacity: 0.92;
+}
+:root[data-theme='dark'] .scene-prop {
+  color: #ddd5ff;
+  opacity: 0.8;
+}
+.map-notis {
+  top: -6px;
+  width: 58px;
+  margin-left: -29px;
+  z-index: 2;
+}
+.scene-prop[data-prop='cloud'] {
+  animation: prop-drift 7s ease-in-out infinite;
+}
+.scene-prop[data-prop='gull'],
+.scene-prop[data-prop='wave'],
+.scene-prop[data-prop='comet'] {
+  animation: prop-bob 3.2s ease-in-out infinite;
+}
+.scene-prop[data-prop='star'],
+.scene-prop[data-prop='sun'] {
+  animation: prop-twinkle 2.6s ease-in-out infinite;
+}
+@keyframes prop-drift {
+  50% {
+    transform: translateX(8px);
+  }
+}
+@keyframes prop-bob {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes prop-twinkle {
+  50% {
+    transform: scale(1.1) rotate(6deg);
+  }
+}
+/* The key units' journey: Notiş's balloon on the banner carries the key signature. */
+.unit-banner:has(.unit-balloon) {
+  padding-right: 78px;
+}
+.unit-balloon {
+  position: absolute;
+  right: 12px;
+  top: -10px;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #2b1a5c;
+  animation: prop-bob 4s ease-in-out infinite;
+}
+.balloon-svg {
+  width: 56px;
+  height: 56px;
+  overflow: visible;
+}
+.key-sign {
+  margin-top: -4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: #2b1a5c;
+  font-weight: 900;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.15);
+}
+/* A unit just finished: its nodes turn gold one after the other. */
+.unit[data-celebrate] .node.open {
+  --node: #ffc800;
+  animation: node-gold 0.7s ease-out both;
+}
+@keyframes node-gold {
+  from {
+    transform: scale(0.85);
+    filter: brightness(1.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-prop,
+  .unit-balloon,
+  .unit[data-celebrate] .node.open {
+    animation: none;
+  }
+}
+
+/* Finished lessons in a row fold into one capsule on the path (progress/mapFold.ts). */
+.path-fold {
+  margin-bottom: 10px;
+}
+.fold-capsule {
+  --node: var(--primary);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  min-width: 210px;
+  max-width: 280px;
+  padding: 8px 16px 8px 8px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  background: color-mix(in srgb, var(--node) 14%, var(--surface));
+  border: 2px solid color-mix(in srgb, var(--node) 45%, var(--border));
+  border-radius: 999px;
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--node) 30%, var(--border));
+  transition: transform 0.08s;
+}
+.fold-capsule:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--node) 30%, var(--border));
+}
+.fold-check {
+  grid-row: span 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #fff;
+  background: var(--node);
+}
+.fold-text {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.fold-text span {
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.fold-medals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.fold-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #cd7f32;
+}
+.fold-dot.m2 {
+  background: #9aa5b1;
+}
+.fold-dot.m3 {
+  background: #ffc800;
+}
+.fold-again {
+  font: inherit;
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 14px;
 }
 .unit[data-folded] .unit-banner {
   opacity: 0.9;

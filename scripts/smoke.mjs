@@ -20,6 +20,7 @@ await page.addInitScript(() => {
 // The welcome shows once per device; tests start on the map.
 await page.addInitScript(() => {
   localStorage.setItem('dpo-welcomed', '1')
+  if (localStorage.getItem('dpo-intro') === null) localStorage.setItem('dpo-intro', 'off')
   // Oyun arası Notiş would cover every game the first time: the intro has its own check.
   if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
 })
@@ -32,10 +33,38 @@ page.on('pageerror', (e) => {
 // Piano samples cannot load without network; ignore those.
 page.on('console', (m) => m.type() === 'error' && !/ERR_FAILED|ERR_TUNNEL/.test(m.text()) && errors.push(m.text()))
 
+/** A finished lesson may sit in a fold of finished lessons (map or Etüt Kitaplığı): open the fold first. */
+async function unfold(page, title) {
+  await page.evaluate((title) => {
+    const node = [...document.querySelectorAll('.home .node, .etudes .etude-row')].find(
+      (n) => n.getAttribute('aria-label') === title,
+    )
+    if (node) return
+    const fold = [...document.querySelectorAll('.fold-capsule')].find((f) =>
+      JSON.parse(f.dataset.titles).includes(title),
+    )
+    fold?.click()
+  }, title)
+}
+
 /** Open a lesson from the map: tap its node, then Başla / Tekrar çal on the card that opens. */
 async function openLesson(title, force = false) {
+  await settleMap()
+  await unfold(page, title)
   await page.getByRole('button', { name: title, exact: true }).click({ force })
   await page.locator('.lesson-peek-go').click()
+}
+
+/** Back on the map the page glides to the lesson just played: wait until it stands still before tapping. */
+async function settleMap() {
+  if (!(await page.$('.home'))) return
+  let last = -1
+  for (let i = 0, still = 0; i < 40 && still < 3; i++) {
+    const y = await page.evaluate(() => window.scrollY)
+    still = y === last ? still + 1 : 0
+    last = y
+    await page.waitForTimeout(80)
+  }
 }
 
 /** Play a lesson to the end. `wrongFirst` presses keys from the top until the right one. */
@@ -633,6 +662,7 @@ async function testModeFlow() {
   const other = await browser.newPage({ viewport: { width: 390, height: 844 } })
   await other.addInitScript(() => {
     localStorage.setItem('dpo-welcomed', '1')
+    if (localStorage.getItem('dpo-intro') === null) localStorage.setItem('dpo-intro', 'off')
     // Oyun arası Notiş would cover every game the first time: the intro has its own check.
     if (localStorage.getItem('dpo-intros') === null) localStorage.setItem('dpo-intros', 'off')
   })
@@ -646,7 +676,7 @@ async function testModeFlow() {
   await other.waitForTimeout(1000)
   const xpThere = (await other.textContent('.chip.xp'))?.trim()
   if (xpThere !== xpHere) errors.push(`Progress code moved ${xpThere} instead of ${xpHere}`)
-  const stars = await other.locator('.node-stars .on').count()
+  const stars = await other.locator('.node-stars .on, .fold-dot').count()
   if (!stars) errors.push('Progress code moved no stars')
   await other.close()
 }
@@ -2111,7 +2141,7 @@ await earUnit()
 await songsUnit()
 
 // Latency calibration: taps 30 ms after every click should measure 30 ms.
-await page.locator('.calib-tip').click()
+await page.locator('.calib-tip').first().click()
 await page.getByText('Ölçmeye başla').click()
 await page.waitForFunction(() => window.__dpoCalibration)
 await page.evaluate(() => {
@@ -2159,7 +2189,7 @@ await page.waitForTimeout(1000)
 const xp = (await page.textContent('.chip.xp'))?.trim()
 await browser.close()
 
-if (xp === '⚡ 0') errors.push('Progress was not persisted across a reload')
+if (xp === '0') errors.push('Progress was not persisted across a reload')
 if (errors.length) {
   console.error('Smoke test failed:', [...new Set(errors)])
   process.exit(1)

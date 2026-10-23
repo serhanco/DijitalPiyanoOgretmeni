@@ -8,40 +8,41 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 
 ## Durum
 
-| Faz                                           | Durum             |
-| --------------------------------------------- | ----------------- |
-| 0 Altyapı                                     | Birleşti (PR #1)  |
-| 1 Çekirdek ve Nota Avcısı                     | Birleşti (PR #1)  |
-| 2 Oyunlaştırma ve ilerleme                    | Birleşti (PR #2)  |
-| 3 Karakterler ve animasyon                    | Birleşti (PR #3)  |
-| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma | Birleşti (PR #4)  |
-| 5 Ritim, tempo, zamanlama                     | Birleşti (PR #5)  |
-| Cila turu (Faz 5 sonrası)                     | Birleşti (PR #6)  |
-| 6 Fa anahtarı ve iki el                       | Birleşti (PR #7)  |
-| 7 Gamlar                                      | Birleşti (PR #9)  |
-| Faz 7 iyileştirmeleri                         | Birleşti (PR #10) |
-| 8 Akorlar, çevrimler, arpejler                | Birleşti (PR #11) |
-| Faz 8 ekleri (Akor Barmeni, kulaktan akor)    | Birleşti (PR #12) |
-| Başlangıç ünitesi (teori, notalar ikişer)     | Birleşti (PR #15) |
-| Başlangıç önerileri (kilit, fa, okuma, ses)   | Birleşti (PR #16) |
-| Test modu ve ilerleme kodu                    | Birleşti (PR #13) |
-| Tek oktav ekran klavyesi                      | Birleşti (PR #14) |
-| Ritim müfredatı (iki ünite, Yankı, şarkılar)  | Birleşti (PR #30) |
-| 9 Kulak eğitimi ve hafıza                     | Birleşti (PR #31) |
-| 10 Şarkılar                                   | Birleşti (PR #32) |
-| 11 Boss'lar, günlük görevler, haftalık        | Birleşti (PR #33) |
-| 12 Akıllı öğrenme                             | Birleşti (PR #34) |
-| Oyun turu (Salon, Nota Treni, Kuş Sesi)       | Birleşti (PR #38) |
-| Oyun turu 2 (altın hedef, ipucu, kostüm, …)   | Birleşti (PR #39) |
-| Oyun turu 3 (Notiş kuralı, ses, hayalet, …)   | Birleşti (PR #44) |
-| 13 Gerçek piyano ve her cihaz (Android)       | Birleşti (PR #45) |
-| 14 Tonlar yolculuğu (12 ton ünitesi)          | Birleşti (PR #46) |
-| 15a Klasik etütler: partisyon, seviye 1–3     | Bu dal            |
-| 15b Klasik etütler: beş parmak, Hanon, 4–8    | Bu dal            |
-| 16 Görsel dünya                               | Başlanmadı        |
-| 17 Hesap ve sosyal                            | Başlanmadı        |
-| 18 Yerleştirme ve yeni beceriler              | Başlanmadı        |
-| 19 Yayın (mağazalar, iOS)                     | Başlanmadı        |
+| Faz                                            | Durum             |
+| ---------------------------------------------- | ----------------- |
+| 0 Altyapı                                      | Birleşti (PR #1)  |
+| 1 Çekirdek ve Nota Avcısı                      | Birleşti (PR #1)  |
+| 2 Oyunlaştırma ve ilerleme                     | Birleşti (PR #2)  |
+| 3 Karakterler ve animasyon                     | Birleşti (PR #3)  |
+| 4 Mini oyun motoru, Nota Kuşu, Balon Patlatma  | Birleşti (PR #4)  |
+| 5 Ritim, tempo, zamanlama                      | Birleşti (PR #5)  |
+| Cila turu (Faz 5 sonrası)                      | Birleşti (PR #6)  |
+| 6 Fa anahtarı ve iki el                        | Birleşti (PR #7)  |
+| 7 Gamlar                                       | Birleşti (PR #9)  |
+| Faz 7 iyileştirmeleri                          | Birleşti (PR #10) |
+| 8 Akorlar, çevrimler, arpejler                 | Birleşti (PR #11) |
+| Faz 8 ekleri (Akor Barmeni, kulaktan akor)     | Birleşti (PR #12) |
+| Başlangıç ünitesi (teori, notalar ikişer)      | Birleşti (PR #15) |
+| Başlangıç önerileri (kilit, fa, okuma, ses)    | Birleşti (PR #16) |
+| Test modu ve ilerleme kodu                     | Birleşti (PR #13) |
+| Tek oktav ekran klavyesi                       | Birleşti (PR #14) |
+| Ritim müfredatı (iki ünite, Yankı, şarkılar)   | Birleşti (PR #30) |
+| 9 Kulak eğitimi ve hafıza                      | Birleşti (PR #31) |
+| 10 Şarkılar                                    | Birleşti (PR #32) |
+| 11 Boss'lar, günlük görevler, haftalık         | Birleşti (PR #33) |
+| 12 Akıllı öğrenme                              | Birleşti (PR #34) |
+| Oyun turu (Salon, Nota Treni, Kuş Sesi)        | Birleşti (PR #38) |
+| Oyun turu 2 (altın hedef, ipucu, kostüm, …)    | Birleşti (PR #39) |
+| Oyun turu 3 (Notiş kuralı, ses, hayalet, …)    | Birleşti (PR #44) |
+| 13 Gerçek piyano ve her cihaz (Android)        | Birleşti (PR #45) |
+| 14 Tonlar yolculuğu (12 ton ünitesi)           | Birleşti (PR #46) |
+| 15a Klasik etütler: partisyon, seviye 1–3      | Birleşti (PR #47) |
+| 15b Klasik etütler: beş parmak, Hanon, 4–8     | Birleşti (PR #47) |
+| 16a Görsel dünya: koyu tema, katlama, simgeler | Bu dal            |
+| 16b Görsel dünya: manzara, geçiş, açılış       | Sırada            |
+| 17 Hesap ve sosyal                             | Başlanmadı        |
+| 18 Yerleştirme ve yeni beceriler               | Başlanmadı        |
+| 19 Yayın (mağazalar, iOS)                      | Başlanmadı        |
 
 Güncel ayrıntılar ve bir sonraki adım için: [CLAUDE.md](../CLAUDE.md) ve [docs/GECMIS.md](GECMIS.md).
 
@@ -328,8 +329,13 @@ Parmak, Hanon Çırağı, Hikâye Anlatıcısı, Kitap Kurdu.
 
 ### Faz 16 — Görsel dünya
 
-- Ünite manzaraları (12 ton ünitesi dahil), Notiş çizgisinde kendi simge setimiz, ekran geçişleri ve açılış animasyonu
-- Elle karanlık mod (Sistem / Açık / Koyu), art arda bitmiş dersleri haritada katlama
+Gözden geçirilmiş plan: `/mnt/project-files/faz-16/plan.md` (Serhan onayladı, 2026-10-22).
+
+- **16a:** elle karanlık mod (Sistem / Açık / Koyu), art arda bitmiş 3+ dersi haritada ve Etüt Kitaplığı'nda katlama,
+  Notiş çizgisinde kendi simge setimiz (emoji yerine)
+- **16b:** ünite manzaraları (ton üniteleri tek balon yolculuğu: dört manzara, her ünitenin rengi ve ton tabelası),
+  Notiş haritada sıradaki dersin yanında, ekran geçişleri, açılış animasyonu, düğme zıplaması ve tık sesi (varsayılan
+  açık), seviye çubuğu
 
 ### Faz 17 — Hesap ve sosyal (Duolingo gibi)
 

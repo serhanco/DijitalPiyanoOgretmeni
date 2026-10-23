@@ -5,6 +5,7 @@ import { allCards } from '../progress/history'
 import { buildMix, MIX_LESSON_ID, MIX_XP } from '../progress/mix'
 import { type Card, countsText, dueCounts, MASTERED_BOX, nextDueText } from '../progress/srs'
 import { useProfile } from '../state/profile'
+import { Icon } from './icons/Icon'
 
 // The map's "Günün Karışımı" card: what is due for review today and a
 // button that builds the mix from it. Hidden until the first cards exist.
@@ -44,7 +45,7 @@ export function DailyMixCard({ onStart, back }: { onStart: (lesson: NoteLesson) 
       aria-label="Günün Karışımı"
     >
       <span className="mix-icon" aria-hidden>
-        🔀
+        <Icon name="mix" size={40} />
       </span>
       <div className="mix-body">
         <h2>Günün Karışımı</h2>
