@@ -26,10 +26,13 @@ import { introWanted } from './components/introState'
 import { welcomeDone } from './components/welcomeState'
 import { consumeFinishRequest } from './testing/finishRequest'
 import { type Place, TestTools } from './testing/TestTools'
+import { syncSoon } from './cloud/account'
+import { scheduleReminders } from './notify/reminder'
 
 // The note-reading drill is the most played screen: load it right after the map.
 const loadGame = () => import('./screens/NoteHunterScreen')
 const EtudeScreen = lazy(() => import('./screens/EtudeScreen').then((m) => ({ default: m.EtudeScreen })))
+const FriendsScreen = lazy(() => import('./screens/FriendsScreen').then((m) => ({ default: m.FriendsScreen })))
 const SalonScreen = lazy(() => import('./screens/SalonScreen').then((m) => ({ default: m.SalonScreen })))
 const KeyboardSetupScreen = lazy(() =>
   import('./screens/KeyboardSetupScreen').then((m) => ({ default: m.KeyboardSetupScreen })),
@@ -44,6 +47,7 @@ type Screen =
   | { name: 'calibrate'; from?: 'setup' }
   | { name: 'setup' }
   | { name: 'salon'; last?: string }
+  | { name: 'friends' }
   | { name: 'etudes'; last?: string }
   | { name: 'play'; lesson: NoteLesson; run: number }
   | {
@@ -86,6 +90,8 @@ export default function App() {
   useEffect(() => attachClickSound(() => inLesson.current), [])
   useEffect(() => attachComputerKeyboard(), [])
   useEffect(() => void loadGame(), [])
+  // Seri hatırlatması (Android app): the next week's reminders, today's skipped once played.
+  useEffect(() => void scheduleReminders().catch(() => undefined), [])
 
   // Chrome remembers a granted MIDI permission, so try quietly on load.
   // The Android app needs no permission for USB keyboards: connect at once.
@@ -152,10 +158,13 @@ export default function App() {
     const reading =
       !summary.timing && !lesson.salon && (lesson.kind === 'mix' || !PATTERN_KINDS.includes(lesson.kind ?? 'drill'))
     if (!trial)
-      void recordSession(
-        { ...outcome, at: Date.now(), xp: reward.xpGained, timing },
-        reading ? summary.perNote : [],
-      ).catch((err) => console.error('Could not save the session', err))
+      void recordSession({ ...outcome, at: Date.now(), xp: reward.xpGained, timing }, reading ? summary.perNote : [])
+        .then(() => {
+          // Signed in: the lesson goes to the cloud; the reminder skips today.
+          syncSoon()
+          void scheduleReminders().catch(() => undefined)
+        })
+        .catch((err) => console.error('Could not save the session', err))
     // Rhythm lessons: three stars suggest a little faster next time, lost hearts a little slower.
     let tempo: { from: number; to: number } | undefined
     if (summary.timing && lesson.rhythm && adaptsTempo(lesson.kind, !!lesson.rhythm.tempoLadder)) {
@@ -206,7 +215,9 @@ export default function App() {
                       ? 'Oyun Salonu'
                       : screen.name === 'etudes'
                         ? 'Etüt Kitaplığı'
-                        : 'Harita',
+                        : screen.name === 'friends'
+                          ? 'Arkadaşlar'
+                          : 'Harita',
           }
 
   return (
@@ -226,6 +237,7 @@ export default function App() {
               onSetup={() => setScreen({ name: 'setup' })}
               onSalon={() => setScreen({ name: 'salon' })}
               onEtudes={() => setScreen({ name: 'etudes' })}
+              onFriends={() => setScreen({ name: 'friends' })}
               focus={screen.focus}
             />
           )}
@@ -233,6 +245,11 @@ export default function App() {
           {screen.name === 'salon' && (
             <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
               <SalonScreen onStart={start} onBack={home} last={screen.last} />
+            </Suspense>
+          )}
+          {screen.name === 'friends' && (
+            <Suspense fallback={<p className="muted">Yükleniyor…</p>}>
+              <FriendsScreen onBack={home} />
             </Suspense>
           )}
           {screen.name === 'etudes' && (

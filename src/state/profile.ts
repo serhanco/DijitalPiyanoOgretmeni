@@ -95,6 +95,15 @@ interface ProfileState {
   ghosts: Record<string, Ghost>
   /** Kostüm dolabı: the costume Notiş wears, or none. */
   costume: CostumeId | null
+  /** Arkadaşlar: the week whose shared quest chest and league medal were given. */
+  social: { pairWeek: string | null; medalWeek: string | null }
+  /**
+   * A friends reward (the shared quest's chest, last week's league medal), once per week: adds the XP to the
+   * total and today's XP and gives the badge. False when it was given already.
+   */
+  socialReward: (kind: 'pair' | 'medal', week: string, xp: number, badge?: string, now?: Date) => boolean
+  /** A badge earned outside a lesson (the first friend). */
+  giveBadge: (id: string, now?: Date) => void
   setCostume: (id: CostumeId | null) => void
   closeWeekSummary: (week: string) => void
   /** Picks today's quests and this week's challenge when they are not picked yet. */
@@ -104,10 +113,18 @@ interface ProfileState {
   setDailyGoal: (xp: number) => void
 }
 
+/**
+ * Writes wait until the saved profile has been read once. A change made before that (today's quests picked
+ * while the map first renders) would otherwise write an empty profile over the saved progress; the read then
+ * fills the store, but the database kept the empty one until the next change.
+ */
+let hydrated = false
+
 /** zustand storage backed by the IndexedDB key/value table. */
 const idbStorage: StateStorage = {
   getItem: async (key) => (await db.kv.get(key))?.value ?? null,
   setItem: async (key, value) => {
+    if (!hydrated) return
     await db.kv.put({ key, value })
   },
   removeItem: async (key) => {
@@ -133,11 +150,38 @@ export const useProfile = create<ProfileState>()(
       salon: {},
       ghosts: {},
       costume: null,
+      social: { pairWeek: null, medalWeek: null },
+
+      socialReward(kind, week, xp, badge, now = new Date()) {
+        const s = get()
+        const field = kind === 'pair' ? 'pairWeek' : 'medalWeek'
+        if (s.social[field] === week) return false
+        const today = dayKey(now)
+        set({
+          social: { ...s.social, [field]: week },
+          totalXp: s.totalXp + xp,
+          daily: { day: today, xp: (s.daily.day === today ? s.daily.xp : 0) + xp },
+          ...(badge && !s.badges[badge] && { badges: { ...s.badges, [badge]: now.getTime() } }),
+        })
+        return true
+      },
+      giveBadge(id, now = new Date()) {
+        const s = get()
+        if (!s.badges[id]) set({ badges: { ...s.badges, [id]: now.getTime() } })
+      },
 
       setCostume: (id) => set({ costume: id }),
       closeWeekSummary: (week) => set({ weekSeen: week }),
 
       ensureQuests(now = new Date()) {
+        // Before the saved profile is read, its quests are not known yet: pick them once it is.
+        if (!useProfile.persist.hasHydrated()) {
+          const off = useProfile.persist.onFinishHydration(() => {
+            off()
+            get().ensureQuests(now)
+          })
+          return
+        }
         const s = get()
         const eligible = questEligible((id) => s.lessons[id]?.bestStars ?? 0)
         const quests = dailyFor(s.quests, dayKey(now), eligible)
@@ -279,12 +323,17 @@ export const useProfile = create<ProfileState>()(
     {
       name: 'profile',
       storage: createJSONStorage(() => idbStorage),
+      onRehydrateStorage: () => () => {
+        hydrated = true
+      },
       partialize: ({
         completeLesson: _c,
         setDailyGoal: _s,
         ensureQuests: _e,
         closeWeekSummary: _w,
         setCostume: _k,
+        socialReward: _r,
+        giveBadge: _g,
         ...data
       }) => data,
     },

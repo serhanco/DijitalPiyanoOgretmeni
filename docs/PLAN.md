@@ -38,9 +38,9 @@ ve ritim, parmak zamanlaması, gamlar, akorlar, akor çevrimleri, arpejler.
 | 14 Tonlar yolculuğu (12 ton ünitesi)           | Birleşti (PR #46) |
 | 15a Klasik etütler: partisyon, seviye 1–3      | Birleşti (PR #47) |
 | 15b Klasik etütler: beş parmak, Hanon, 4–8     | Birleşti (PR #47) |
-| 16a Görsel dünya: koyu tema, katlama, simgeler | Bu dal            |
-| 16b Görsel dünya: manzara, geçiş, açılış       | Sırada            |
-| 17 Hesap ve sosyal                             | Başlanmadı        |
+| 16a Görsel dünya: koyu tema, katlama, simgeler | Birleşti (PR #48) |
+| 16b Görsel dünya: manzara, geçiş, açılış       | Birleşti (PR #48) |
+| 17 Hesap ve sosyal                             | Bu dal            |
 | 18 Yerleştirme ve yeni beceriler               | Başlanmadı        |
 | 19 Yayın (mağazalar, iOS)                      | Başlanmadı        |
 
@@ -339,9 +339,16 @@ Gözden geçirilmiş plan: `/mnt/project-files/faz-16/plan.md` (Serhan onayladı
 
 ### Faz 17 — Hesap ve sosyal (Duolingo gibi)
 
-- Google ya da e-postayla giriş, ilerleme bulutta ve her cihazda aynı
-- Arkadaşlar, haftalık lig, seri hatırlatmaları, Salon oyunlarında arkadaşın hayaletiyle düello, ortak görevler
-- Sonra öğretmen/veli ekranı; hazır bir sunucu servisi (Supabase ya da Firebase)
+Gözden geçirilmiş plan: `/mnt/project-files/faz-17/plan.md` (Serhan "önerilerine evet" dedi, 2026-10-23). Kurulum:
+[docs/HESAP.md](HESAP.md).
+
+- **17a:** isteğe bağlı hesap (Google ya da e-postaya gelen 6 haneli kod), ilerleme Supabase'de, her cihazda
+  birleşerek eşitlenir (dersler ve kartlar birleşir, yıldız ve rekorların en iyisi, iki cihazdaki XP toplanır),
+  hesabı silme, gizlilik metni (KVKK)
+- **17b:** davet kodu ve bağlantısıyla arkadaş ekleme, haftalık arkadaş ligi (ilk üçe XP, birinciye rozet), bir
+  arkadaşla ortak haftalık görev (birlikte 20 ders, sandık), arkadaş haberleri ve alkış, Salon'da arkadaşın
+  hayaletiyle düello, Android'de akşam seri hatırlatması
+- Sonraya: öğretmen/veli ekranı, tarayıcıya bildirim gönderme (sunucu ister)
 
 ### Faz 18 — Yerleştirme ve yeni beceriler
 

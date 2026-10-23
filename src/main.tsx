@@ -4,9 +4,11 @@ import './index.css'
 import App from './App.tsx'
 import { setupAppUpdates } from './state/appUpdate'
 import { setupTheme } from './state/theme'
+import { initAccount } from './cloud/account'
 
 setupTheme()
 setupAppUpdates()
+initAccount()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -41,6 +41,8 @@ jobs:
       # Faz 13: a fake Clavinova, the setup wizard, the pedal, the piano output, offline start.
       - run: npm run piano -- layout-screens/piyano
         if: always()
+      - run: npm run cloud -- layout-screens/bulut
+        if: always()
       - name: Report
         if: always()
         run: cat layout-screens/rapor.md >> "$GITHUB_STEP_SUMMARY" || true

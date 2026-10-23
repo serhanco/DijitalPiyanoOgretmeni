@@ -687,6 +687,63 @@ async function opening(page, snap) {
   return [{ name: 'açılış', errors, warnings: [] }]
 }
 
+/**
+ * Hesap ve arkadaşlar (Faz 17) with the fake cloud: the account panel in Ayarlar after a sign-in, the map's
+ * friends card, the Arkadaşlar screen with a friend added by code. Signs out and turns the fake cloud off after.
+ */
+async function friendsPages(page, snap, vpId) {
+  await page.evaluate(() => localStorage.setItem('dpo-cloud', 'fake'))
+  await page.reload()
+  await page.waitForTimeout(600)
+  await page.getByLabel('Ayarlar', { exact: true }).click()
+  await page.locator('[data-signin="google"]').click()
+  await page.waitForSelector('[data-account="in"][data-sync="ok"]')
+  await snap('hesap')
+  const checks = [
+    {
+      ...(await page.evaluate(measure, { play: false, minKey: 0, minShare: 0 })),
+      name: 'hesap',
+      shot: `${vpId}-hesap.png`,
+    },
+  ]
+  await page.getByLabel('Ayarları kapat').click()
+  const week = await page.evaluate(() => {
+    const d = new Date()
+    const u = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+    u.setUTCDate(u.getUTCDate() + 4 - (u.getUTCDay() || 7))
+    const w = Math.ceil(((u.getTime() - Date.UTC(u.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)
+    return `${u.getUTCFullYear()}-W${String(w).padStart(2, '0')}`
+  })
+  const code = await page.evaluate(
+    (week) =>
+      window.__dpoFakeCloud.addPlayer({ id: 'ayse', name: 'Ayşe Yılmaz Uzunsoyadlı', week, weekXp: 140, streak: 12 }),
+    week,
+  )
+  await page.locator('[data-node="friends"] .btn').click()
+  await page.getByLabel('Arkadaşının kodu').fill(code)
+  await page.locator('[data-add-friend]').click()
+  await page.waitForSelector('[data-league-row="ayse"]')
+  await page.locator('[data-partner="ayse"]').click()
+  await page.waitForTimeout(400)
+  await snap('arkadaslar', true)
+  checks.push({
+    ...(await page.evaluate(measure, { play: false, minKey: 0, minShare: 0 })),
+    name: 'arkadaslar',
+    shot: `${vpId}-arkadaslar.png`,
+  })
+  await page.getByLabel('Haritaya dön').click()
+  await page.waitForSelector('[data-node="friends"]')
+  await page.evaluate(() => document.querySelector('[data-node="friends"]').scrollIntoView({ block: 'center' }))
+  await snap('arkadas-karti')
+  await page.getByLabel('Ayarlar', { exact: true }).click()
+  await page.locator('[data-signout]').click()
+  await page.getByLabel('Ayarları kapat').click()
+  await page.evaluate(() => localStorage.removeItem('dpo-cloud'))
+  await page.reload()
+  await page.waitForTimeout(600)
+  return checks
+}
+
 /** The map with the seeded history: last week's summary and the mix card, then the summary closed. */
 async function smartMap(page, snap, vpId) {
   await page.evaluate(seedSmart)
@@ -1278,6 +1335,18 @@ async function runViewport(vp) {
   } catch (e) {
     folds.checks.push({ name: 'çalıştırma', errors: [`Katlama denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
     await snap('katlama-hata')
+    await page.goto(url)
+    await page.waitForTimeout(800)
+  }
+
+  const social = { id: 'arkadaslar', name: 'Hesap ve arkadaşlar', checks: [] }
+  results.push(social)
+  try {
+    social.checks.push(...(await friendsPages(page, snap, vp.id)))
+  } catch (e) {
+    social.checks.push({ name: 'çalıştırma', errors: [`Hesap denenemedi: ${e.message.split('\n')[0]}`], warnings: [] })
+    await snap('arkadaslar-hata')
+    await page.evaluate(() => localStorage.removeItem('dpo-cloud'))
     await page.goto(url)
     await page.waitForTimeout(800)
   }

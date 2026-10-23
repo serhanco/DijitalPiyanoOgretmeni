@@ -23,6 +23,8 @@ interface SettingsState {
   soundEffects: boolean
   /** Düğme sesi: a soft tap when a button is pressed outside the lessons. */
   clickSound: boolean
+  /** Seri hatırlatması (Android app): a notification at `hour` o'clock on days nothing was played yet. */
+  reminder: { on: boolean; hour: number }
   /** Ses katmanları: in the note games a run of right notes gets a soft accompaniment, layer by layer. */
   musicLayers: boolean
   /** Vibrate on mistakes (Android). */
@@ -58,6 +60,7 @@ export const useSettings = create<SettingsState>()(
       hintGlow: true,
       soundEffects: true,
       clickSound: true,
+      reminder: { on: false, hour: 19 },
       musicLayers: true,
       vibration: true,
       metronome: true,

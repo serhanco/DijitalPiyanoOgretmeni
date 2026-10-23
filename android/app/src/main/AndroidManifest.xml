@@ -22,6 +22,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Google sign-in comes back to the app through io.github.serhanco.piyano://auth -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="io.github.serhanco.piyano" android:host="auth" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -38,6 +46,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Seri hatırlatması: a daily local notification -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- MIDI keyboards over USB and Bluetooth LE MIDI -->
     <uses-feature android:name="android.software.midi" android:required="false" />

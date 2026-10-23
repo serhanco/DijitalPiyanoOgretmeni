@@ -5,11 +5,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { gameNow } from '../../input/gameClock'
 import { type Ghost, GHOST_MAX_POINTS, GHOST_STEP_MS } from '../../progress/ghost'
 import { useProfile } from '../../state/profile'
+import { duelFor } from '../../cloud/rival'
 
-/** The ghost kept for this lesson, read once when the game starts. */
+/** The ghost kept for this lesson (a friend's in a duel), read once when the game starts. */
 export function useStoredGhost(lessonId: string, enabled: boolean): Ghost | null {
-  const [ghost] = useState(() => (enabled ? (useProfile.getState().ghosts[lessonId] ?? null) : null))
+  const [ghost] = useState(() =>
+    enabled ? (duelFor(lessonId)?.ghost ?? useProfile.getState().ghosts[lessonId] ?? null) : null,
+  )
   return ghost
+}
+
+/** In a duel, the friend's name for the ghost chip. */
+export function useDuelName(lessonId: string): string | undefined {
+  const [name] = useState(() => duelFor(lessonId)?.name)
+  return name
 }
 
 /**

@@ -19,6 +19,9 @@ import {
 import { useProfile } from '../state/profile'
 import { useSettings } from '../state/settings'
 import { Icon } from '../components/icons/Icon'
+import { useAccount } from '../cloud/account'
+import { setDuel } from '../cloud/rival'
+import { rivalsFor } from '../cloud/social'
 
 interface Props {
   onStart: (lesson: NoteLesson) => void
@@ -57,6 +60,8 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
   const isSkillOpen = (s: SalonSkill) => skillOpen(s, stars, pickedOpen)
   const chosen = skills.find((s) => s.id === skill && isSkillOpen(s)) ?? skills.find(isSkillOpen)
   const lesson = picked && chosen ? salonLesson(picked, chosen, findLesson) : null
+  const friends = useAccount((s) => s.friends)
+  const rivals = lesson ? rivalsFor(lesson.id, friends) : []
 
   return (
     <div className="salon">
@@ -147,9 +152,44 @@ export function SalonScreen({ onStart, onBack, last }: Props) {
               .
             </p>
           )}
-          <button className="btn salon-play" disabled={!lesson} onClick={() => lesson && onStart(lesson)}>
+          <button
+            className="btn salon-play"
+            disabled={!lesson}
+            onClick={() => {
+              if (!lesson) return
+              setDuel(null)
+              onStart(lesson)
+            }}
+          >
             Oyna
           </button>
+          {lesson && rivals.length > 0 && (
+            <div className="salon-duels" aria-label="Arkadaşlarınla düello">
+              <p className="small muted">⚔️ Arkadaşının hayaletiyle düello:</p>
+              <div className="salon-skills">
+                {rivals.map((r) => (
+                  <button
+                    key={r.player.id}
+                    className="chip salon-skill"
+                    data-duel={r.player.id}
+                    onClick={() => {
+                      setDuel({
+                        lessonId: lesson.id,
+                        friendId: r.player.id,
+                        name: r.player.name,
+                        best: r.best,
+                        ghost: r.ghost,
+                      })
+                      onStart(lesson)
+                    }}
+                  >
+                    {r.player.name} · 🏆 {r.best}
+                    {isEndless(picked) ? '' : '%'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
     </div>

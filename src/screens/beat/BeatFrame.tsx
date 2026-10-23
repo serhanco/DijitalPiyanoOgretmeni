@@ -5,7 +5,7 @@
 
 import { beatGhost } from '../../progress/ghost'
 import { GhostChip } from '../arcade/Ghost'
-import { useStoredGhost } from '../arcade/ghostHooks'
+import { useDuelName, useStoredGhost } from '../arcade/ghostHooks'
 import type { Ghost } from '../../progress/ghost'
 import { useFinishRequest } from '../../testing/finishRequest'
 import { gameNow, gameTimeout } from '../../input/gameClock'
@@ -187,6 +187,7 @@ export function BeatFrame({
   // Hayalet: Dino, Davulcu and every Salon beat game race their best run, note by note.
   const ghostOn = !!lesson.salon || lesson.kind === 'dino' || lesson.kind === 'drum'
   const ghost = useStoredGhost(lesson.id, ghostOn)
+  const duelName = useDuelName(lesson.id)
   /** This run so far, for the ghost chip. */
   const [live, setLive] = useState<Ghost | null>(null)
   const roundTimer = useRef<() => void>(() => undefined)
@@ -436,7 +437,9 @@ export function BeatFrame({
       <div className="arcade-info">
         <Mascot mood={mood.mood} pulse={mood.pulse} size={56} />
         <p className="arcade-message">{message}</p>
-        {ghost && live && <GhostChip ghost={ghost} at={live.points.length} mine={live.score} unit="%" />}
+        {ghost && live && (
+          <GhostChip ghost={ghost} at={live.points.length} mine={live.score} unit="%" name={duelName} />
+        )}
         {track && track.combo >= 3 && <span className="arcade-score">🔥 {track.combo}</span>}
       </div>
 

@@ -7,6 +7,8 @@ import { HomeShortcuts } from '../components/HomeShortcuts'
 import { MidiPanel } from '../components/MidiPanel'
 import { QuestBoard } from '../components/QuestBoard'
 import { EtudeCard } from '../components/EtudeCard'
+import { FriendsCard } from '../components/FriendsCard'
+import { clearToast, useAccount } from '../cloud/account'
 import { LessonPeek } from '../components/LessonPeek'
 import { LastWeekCard } from '../components/WeekSummary'
 import { foldPath } from '../progress/mapFold'
@@ -33,6 +35,7 @@ interface Props {
   onSetup: () => void
   onSalon: () => void
   onEtudes: () => void
+  onFriends: () => void
   /** The node of the lesson the learner comes back from (`mapNodeOf` in curriculum): the map scrolls to it. */
   focus?: string
 }
@@ -102,7 +105,7 @@ const openedFolds = new Set<string>()
 const ZIGZAG = [0, 56, 84, 56, 0, -56, -84, -56]
 const REVIEW_NOTE_COUNT = 4
 
-export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, onEtudes, focus }: Props) {
+export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, onEtudes, onFriends, focus }: Props) {
   const lessons = useProfile((s) => s.lessons)
   const testMode = useSettings((s) => s.testMode)
   const bestStars = (id: string) => lessons[id]?.bestStars ?? 0
@@ -132,6 +135,13 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
     const t = window.setTimeout(() => setToast(null), 2200)
     return () => clearTimeout(t)
   }, [toast])
+  // A friends reward or a new friend says so once.
+  const accountToast = useAccount((s) => s.toast)
+  useEffect(() => {
+    if (!accountToast) return
+    const t = window.setTimeout(clearToast, 3500)
+    return () => clearTimeout(t)
+  }, [accountToast])
 
   // The first unlocked lesson without stars is where the learner is.
   // Bosses are a side challenge: they wave their own bubble.
@@ -166,7 +176,8 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
       clearTimeout(quiet)
     }
   }, [celebrate])
-  const shownToast = toast ?? (cheering ? `🎉 ${UNITS.find((u) => u.id === celebrate)?.title} bitti!` : null)
+  const shownToast =
+    toast ?? accountToast ?? (cheering ? `🎉 ${UNITS.find((u) => u.id === celebrate)?.title} bitti!` : null)
 
   const stars = (unit: (typeof UNITS)[number]) => unit.lessons.reduce((n, l) => n + bestStars(l.id), 0)
   const folded = (unit: (typeof UNITS)[number]) => finished(unit) && !openedUnits.has(unit.id)
@@ -226,6 +237,7 @@ export function HomeScreen({ onStart, onProfile, onCalibrate, onSetup, onSalon, 
       )}
       <Greeting />
       <LastWeekCard />
+      <FriendsCard onOpen={onFriends} />
       <DailyMixCard onStart={onStart} back={focus === MIX_LESSON_ID} />
       <SalonCard onOpen={onSalon} />
       <EtudeCard onOpen={onEtudes} />
